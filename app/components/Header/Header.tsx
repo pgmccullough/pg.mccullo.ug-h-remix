@@ -18,7 +18,7 @@ export const Header: React.FC<{}> = () => {
                         cover: {stampToTime(siteData?.cover_image?.timestamp/1000)}
                         <a 
                             className="gpsPinLink" 
-                            href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps.lat},${siteData?.cover_image?.gps.long}`} 
+                            href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps?.lat},${siteData?.cover_image?.gps?.long}`} 
                             rel="noreferrer"
                             target="_BLANK"
                         >
@@ -26,11 +26,11 @@ export const Header: React.FC<{}> = () => {
                         </a>
                         <div className="gpsCoords">
                             <a 
-                                href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps.lat},${siteData?.cover_image?.gps.long}`}
+                                href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps?.lat},${siteData?.cover_image?.gps?.long}`}
                                 rel="noreferrer"
                                 target="_BLANK"
                             >
-                                {siteData?.cover_image?.gps.string}
+                                {siteData?.cover_image?.gps?.string}
                             </a>
                         </div>
                     </div>
@@ -39,7 +39,7 @@ export const Header: React.FC<{}> = () => {
                     <div className="header__p">profile: {stampToTime(siteData?.profile_image?.timestamp/1000)}
                         <a 
                             className="gpsPinLink" 
-                            href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps.lat},${siteData?.profile_image?.gps.long}`} 
+                            href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps?.lat},${siteData?.profile_image?.gps?.long}`} 
                             rel="noreferrer"
                             target="_BLANK"
                         >
@@ -47,11 +47,11 @@ export const Header: React.FC<{}> = () => {
                         </a>
                         <div className="gpsCoords">
                             <a 
-                                href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps.lat},${siteData?.profile_image?.gps.long}`} 
+                                href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps?.lat},${siteData?.profile_image?.gps?.long}`} 
                                 rel="noreferrer"
                                 target="_BLANK"
                             >
-                                {siteData?.profile_image?.gps.string}
+                                {siteData?.profile_image?.gps?.string}
                             </a>
                         </div>
                     </div>

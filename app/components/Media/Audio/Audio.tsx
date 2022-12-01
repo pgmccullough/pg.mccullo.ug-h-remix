@@ -1,4 +1,4 @@
-const MEDIA_SERVER_URI = process.env.REACT_APP_MEDIA_SERVER_URI;
+const MEDIA_SERVER_URI = 'https://dbt6gfxf4rv9p.cloudfront.net/';
 
 export const Audio: React.FC<{src:string,alt:string}>  = ({src}) => {
     return (

@@ -4,23 +4,23 @@ import { PostCard } from "../../../components/PostCard/PostCard";
 import { clientPromise } from "../../../lib/mongodb";
 import axios from 'axios';
 import { useState } from 'react';
-const SERVER_URI = process.env.REACT_APP_SERVER_URI;
+const SERVER_URI = 'https://api.mccullo.ug/';
 
 export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
     
-    const [scrapeData, getScrapeData] = useState({});
+    // const [scrapeData, getScrapeData] = useState({});
 
-    async function grabData() {
-        const res = await axios.get(`${SERVER_URI}media/scrape/${encodeURIComponent("music.youtube.com/watch?v=_C5jzm6Y3wE")}`);
-        await res.data.map((ogTag:any) => {
-            let keyName = Object.getOwnPropertyNames(ogTag)[0];
-            getScrapeData(prev => {
-                return {...prev,[keyName]:ogTag[keyName]}
-            })
-        })
-    }
+    // async function grabData() {
+    //     const res = await axios.get(`${SERVER_URI}media/scrape/${encodeURIComponent("music.youtube.com/watch?v=_C5jzm6Y3wE")}`);
+    //     await res.data.map((ogTag:any) => {
+    //         let keyName = Object.getOwnPropertyNames(ogTag)[0];
+    //         getScrapeData(prev => {
+    //             return {...prev,[keyName]:ogTag[keyName]}
+    //         })
+    //     })
+    // }
 
-    grabData();
+    // grabData();
 
     return (    
         <>

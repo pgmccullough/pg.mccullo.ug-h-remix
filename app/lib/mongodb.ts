@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb'
+import { MongoClient, ObjectId } from 'mongodb'
 
 if (!process.env.MONGODB_URL) {
   throw new Error('Invalid environment variable: "MONGODB_URI"')
@@ -16,4 +16,4 @@ if (!process.env.MONGODB_URL) {
 client = new MongoClient(uri)
 clientPromise = client.connect()
 
-export { clientPromise };
+export { clientPromise, ObjectId };

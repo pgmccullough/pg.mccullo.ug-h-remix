@@ -1,4 +1,4 @@
-const SERVER_URI = process.env.REACT_APP_SERVER_URI
+const SERVER_URI = 'https://api.mccullo.ug/'
 
 export const Image: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
   return (
