@@ -1,7 +1,203 @@
-.header {
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ThinItalic.ttf") format("truetype");
+  font-weight: 100;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ExtraLightItalic.ttf") format("truetype");
+  font-weight: 200;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-SemiBoldItalic.ttf") format("truetype");
+  font-weight: 600;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
+.header__cover {
+  position: absolute;
+  top: 0px;
+  left: 0px;
   width: 100vw;
-  height: 10rem;
-  background: #000;
+  height: 12.5rem;
+  z-index: 96;
+  overflow: hidden;
+}
+.header__cover img {
+  min-height: 12.5rem;
+  position: relative;
+  left: 50%;
+  top: 0%;
+  transform: translate(-50%, 0%);
+  object-fit: cover;
+}
+.header__bar {
+  position: absolute;
+  top: 12.5rem;
+  left: 0px;
+  background: #666;
+  width: 100vw;
+  height: 4.375rem;
+  z-index: 96;
+  padding-top: 1.5rem;
+  font: 1.3125rem "PGM Sans";
+  color: #fff;
+  box-sizing: border-box;
+  text-align: center;
+}
+@media (min-width: 500px) {
+  .header__bar {
+    text-align: right;
+    padding-right: 3.125rem;
+  }
+}
+@media (min-width: 768px) {
+  .header__bar {
+    text-align: center;
+    font-size: 1.5rem;
+  }
+}
+.header__profile {
+  top: 110px;
+  left: 10px;
+  margin-top: 0px;
+  width: 106px;
+  height: 106px;
+  background-size: 100px 100px;
+  position: absolute;
+  border: 3px #fff solid;
+  border-radius: 100%;
+  z-index: 97;
+}
+@media (min-width: 500px) {
+  .header__profile {
+    top: 182px;
+    left: 50px;
+  }
+}
+.header__text {
+  position: absolute;
+  z-index: 100;
+  color: #fff;
+  top: 0px;
+  right: 1.5rem;
+  text-align: right;
+}
+.header__h1 {
+  font-size: 4rem;
+  text-shadow: 0px 0px 6px #000;
+  margin-top: 3.5rem;
+  margin-bottom: 1.8rem;
+}
+.header__p {
+  margin: 0.3rem 0.3rem 0.8rem 0.3rem;
+  text-shadow: 0px 0px 6px #000;
+}
+
+.gpsPin {
+  position: absolute;
+  margin-top: -28px;
+  right: -20px;
+  width: 24px;
+  height: 30px;
+  background: url("~/assets/images/gps_pin.png");
+  background-size: cover;
+}
+
+.gpsPinLink:hover + .gpsCoords {
+  display: block;
+}
+
+.gpsCoords {
+  display: none;
+  position: absolute;
+  right: 4px;
+  margin-top: -25px;
+  background: #fff;
+  box-shadow: 0 0 6px 0 #000;
+  color: #000;
+  white-space: nowrap;
+  padding: 6px 6px 3px 6px;
+  text-shadow: none;
+  border-bottom: 4px #4A6CBA solid;
+}
+.gpsCoords:hover {
+  display: block;
+}
+.gpsCoords a {
+  color: black;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 1px;
+  text-decoration-color: #666;
+  text-underline-offset: 4px;
 }
 
 /*# sourceMappingURL=Header.css.map */

@@ -1,2 +1,49 @@
+@use './partials/mixins' as *;
+@use './partials/variables' as *;
+
 @use './partials/global';
 @use '../components/Header/Header.scss';
+@use '../components/Sidebar/Sidebar.scss';
+@use '../components/PostCard/PostCard.scss';
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+}
+
+.app-wrapper {
+    margin-top: -4.25rem;
+
+    @include tablet {
+        margin-top: -6.0625rem;
+    }
+}
+
+.content {
+    margin-top: 300px;
+    padding: 0 10px;
+
+    @include min-window {
+        padding: 0 50px;
+    }
+
+    @include desktop {
+        display: flex;
+        justify-content: center;
+    } 
+}
+
+.right-column {
+    width: 100%;
+    display: block;
+    @include desktop {
+        max-width: 600px;
+        margin-left: 10px;
+        width: 65%;
+    }
+}

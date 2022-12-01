@@ -1,0 +1,17 @@
+@use 'typography' as *;
+
+// breakpoints
+$min-window-breakpoint: 500px;
+$tablet-breakpoint: 768px;
+$desktop-breakpoint: 992px;
+
+// colors
+$background: #eee;
+$background-secondary: #666;
+$text: #fff;
+$link: #00bbff;
+$link-secondary: yellow;
+$header: #506982;
+
+// fonts
+$sans: 'PGM Sans';

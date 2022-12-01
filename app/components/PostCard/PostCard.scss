@@ -1,0 +1,269 @@
+@use '../../styles/partials/variables' as *;
+
+.postcard {
+    display: inline-block;
+    width: 100%;
+
+    &__time {
+        background: $background;
+        position: relative;
+        color: #979997;
+        font-size: 13px;
+        border: 1px solid #979997;
+        width: 100%;
+        padding: 12px;
+        box-sizing: border-box;
+        border-radius: 4px 4px 0px 0px;
+        display: inline-block;
+
+        &__option {
+            display: inline-flex;
+            background: #fff;
+            border: 1px #979997 solid;
+            border-right: 1px #777777 solid;
+            border-bottom: 2px #777777 solid;
+            border-radius: 4px;
+            position: absolute;
+            z-index: 99;
+            top: 4px;
+            right: 4px;
+            height: 30px;
+            width: 30px;
+            justify-content: center;
+            align-items: center;
+            transition: 0.25s;
+            cursor: pointer;
+            &:hover {
+                box-shadow: 0 0 0 3px #ccc;
+            }
+            &__chevron {
+                margin-top: 1.4rem;
+                transform: rotate(180deg);
+                font-size: 3.5rem;
+            }
+        }
+    
+        &__link {
+            color: #666;
+            text-decoration: none;
+
+            &:hover {
+                border-bottom: 1px dashed #666;
+            }
+        
+            &--unlink {
+                font-size: 14px;
+                color: black;
+                font-weight: bold;
+                text-align: center;
+                & a {
+                    color: #000;
+                    text-decoration: none;
+                    &:hover {
+                        text-decoration: underline;
+                        text-decoration-style: dashed;
+                        text-decoration-thickness: 1px;
+                        text-decoration-color: #666;
+                        text-underline-offset: 4px;
+                    }
+                }
+            }
+        
+        }
+        &__onThisDay {
+            position: absolute;
+            display: inline-block;
+            margin-left: 12px;
+            background: #fff;
+            color: #4A6CBA;
+            padding: 2px 6px 4px 6px;
+            margin-top: -5px;
+            margin-bottom: -4px;
+            border: 2px #4A6CBA solid;
+            border-radius: 4px;
+        }
+    
+    }
+
+    &__content {
+        position: relative;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #979997;
+        border-bottom-right-radius: 4px;
+        border-bottom-left-radius: 4px;
+        box-sizing: border-box;
+        margin-top: -1px;
+        text-align: left;
+        margin-bottom: 10px;
+        line-height: 1.5em;
+
+        &__modal {
+            position: absolute;
+            background: #fff;
+            display: inline-block;
+            border: 1px solid #979997;
+            border-radius: 4px;
+            right: 4px;
+            margin-top: -12px;
+            width: 200px;
+            text-align: center;
+            padding: 10px 0px;
+            z-index: 2;
+        
+            &--button {
+
+                &__edit {
+                    margin-right: 0px;
+                    border-radius: 4px 0 0 4px;
+                    transition: 0.25s;
+                }
+
+                &__delete {
+                    margin-left: 2px;
+                    border-radius: 0 4px 4px 0;
+                    transition: 0.25s;
+                }
+
+                &__update {
+                    float: right;
+                }
+
+                &__cancel {
+                    background: rgb(168, 23, 23)!important;
+                    float: right;
+                }
+
+                &__edit:hover,&__delete:hover,&__update:hover,&__cancel:hover {
+                    opacity: 0.7;
+                }
+            }
+        }
+
+        &__media {
+            position: relative;
+            display: flex;
+            flex-direction:column;
+            align-items: stretch;
+            justify-content: center;
+            white-space: nowrap;
+            min-width: 0; 
+            overflow: hidden;
+            background: #666;
+
+            &__slider {
+                margin: 0;
+                width: 100%;
+                transition: 0.5s;
+                margin-bottom: -8px;
+
+                &__delete {
+                    position: relative;
+                    display: inline-block;
+                    
+                    &--x {
+                        position: absolute;
+                        width: 30px;
+                        height: 30px;
+                        border-radius: 100%;
+                        margin-left: 10px;
+                        background: #fff;
+                        opacity: 0.8;
+                        cursor: pointer;
+                        transform: rotate(45deg);
+                        color: #000;
+                        font-weight: 900;
+                        font-size: 46px;
+                        padding: 3px;
+                    }
+                }
+            }
+
+            &__slide--left, &__slide--right {
+                position: absolute;
+                width: 30px;
+                height: 30px;
+                border-radius: 100%;
+                top: calc(50% - 15px);
+                background: #fff url('~/assets/images/chevron.png') no-repeat;
+                background-position: 10px 5px;
+                opacity: 0.8;
+                cursor: pointer;
+                left: 10px;
+                z-index: 2;
+                transform: rotate(180deg);
+            }
+
+            &__slide--right {
+                left: auto;
+                right: 10px;
+                transform: rotate(0deg);
+            }
+
+            &__img {
+                width: 100%;
+                height: 100%;
+                vertical-align: top;
+            }
+
+            &__dots {
+                // width: 100%;
+                // display: flex;
+                // flex-direction: row;
+                // align-items: center;
+                // flex-wrap: wrap;
+                // align-content: center;
+                position: relative;
+                padding: 0;
+                margin: 0;
+                margin-top: -25px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                &__dot {
+                    width: 10px;
+                    height: 10px;
+                    border: 2px #fff solid;
+                    border-radius: 100%;
+                    margin: 10px 2px;
+                    box-shadow: 0 0 3px 0 #000;
+                    &--active {
+                        width: 10px;
+                        height: 10px;
+                        background: #4A6CBA;
+                        border-radius: 100%;
+                        margin: 10px 2px;
+                        box-shadow: 0 0 3px 0 #000;
+                    }
+                }
+            }
+        }
+
+        &__text {
+            padding: 12px;
+            border-bottom: 1px #ccc solid;
+            white-space: pre-wrap;
+            word-wrap:break-word;
+            & a {
+                color: #333;
+                text-decoration-style: dotted;
+                text-decoration-thickness: 1px;
+                text-decoration-color: #4a6cba;
+                text-underline-offset: 4px;
+                &:hover {
+                    color: #4a6cba;
+                }
+            }
+        }
+
+        &__meta {
+            min-height: 4px;
+            background: #eee;
+            padding: 4px;
+        }
+    }
+}
+
+.lexical__paragraph {
+    margin: 0;
+}
