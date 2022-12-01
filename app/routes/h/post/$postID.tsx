@@ -2,7 +2,6 @@ import { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
-//const ObjectID = require('mongodb').ObjectID;
 
 export const loader: LoaderFunction = async ({params}) => {
   const { postID = "" } = params;

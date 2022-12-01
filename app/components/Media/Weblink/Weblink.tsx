@@ -1,30 +1,31 @@
-import { LoaderFunction } from "@remix-run/node";
-import { useActionData } from "@remix-run/react";
-import { PostCard } from "../../../components/PostCard/PostCard";
-import { clientPromise } from "../../../lib/mongodb";
 import axios from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 const SERVER_URI = 'https://api.mccullo.ug/';
 
 export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
-    
-    // const [scrapeData, getScrapeData] = useState({});
 
-    // async function grabData() {
-    //     const res = await axios.get(`${SERVER_URI}media/scrape/${encodeURIComponent("music.youtube.com/watch?v=_C5jzm6Y3wE")}`);
-    //     await res.data.map((ogTag:any) => {
-    //         let keyName = Object.getOwnPropertyNames(ogTag)[0];
-    //         getScrapeData(prev => {
-    //             return {...prev,[keyName]:ogTag[keyName]}
-    //         })
-    //     })
-    // }
+    let scrapeURL = src;
+    scrapeURL = scrapeURL.replace("http://","");
+    scrapeURL = scrapeURL.replace("https://","");
 
-    // grabData();
+    const [scrapeData, getScrapeData] = useState<any>({});
+
+    async function grabData() {
+        const res = await axios.get(`${SERVER_URI}media/scrape/${encodeURIComponent(scrapeURL)}`);
+        await res.data.map((ogTag:any) => {
+            let keyName = Object.getOwnPropertyNames(ogTag)[0];
+            getScrapeData((prev:any) => {
+                return {...prev,[keyName]:ogTag[keyName]}
+            });
+        })
+    }
+
+    useEffect(() => {
+        grabData();
+    },[]);
 
     return (    
-        <>
-        {/* <a href={scrapeData['og:url']} className="postcard__content__media__slider__weblink__anchor" target="_blank" rel="noopener noreferrer">
+        <a href={scrapeData['og:url']} className="postcard__content__media__slider__weblink__anchor" target="_blank" rel="noopener noreferrer">
             {
             scrapeData['og:url']?.includes("youtube.com")?
             <div className="postcard__content__media__slider__weblink__video-container">
@@ -39,7 +40,6 @@ export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
                 <div className="postcard__content__media__slider__weblink__container__title">{scrapeData['og:title']}</div>
                 <div className="postcard__content__media__slider__weblink__container__desc">{scrapeData['og:description']?.replaceAll("&hellip;","...")}</div>
             </div>
-        </a> */}
-        </>
+        </a>
     );
 }
