@@ -8,12 +8,12 @@ import {
   ScrollRestoration
 } from "@remix-run/react";
 
-import { clientPromise } from "./lib/mongodb";
+import { clientPromise } from "~/lib/mongodb";
 const ObjectId = require('mongodb').ObjectId;
 
-import { Posts, SiteData } from './common/types';
-import { Header } from "./components/Header/Header";
-import { Sidebar } from './components/Sidebar/Sidebar';
+import { Posts, SiteData } from '~/common/types';
+import { Header } from "~/components/Header/Header";
+import { Sidebar } from '~/components/Sidebar/Sidebar';
 
 import styles from "~/styles/App.css";
 
@@ -46,6 +46,7 @@ export default function App() {
         <div className="content">
           <Sidebar />
           <div className="right-column">
+            <button onClick={()=>{console.log("ok")}}>CLICK ME BITCH</button>
             <Outlet />
             <ScrollRestoration />
             <Scripts />

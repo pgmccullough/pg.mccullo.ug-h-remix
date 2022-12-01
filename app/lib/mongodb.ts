@@ -17,4 +17,3 @@ client = new MongoClient(uri)
 clientPromise = client.connect()
 
 export { clientPromise };
-

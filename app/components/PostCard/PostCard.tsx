@@ -20,9 +20,19 @@ export const PostCard: React.FC<{ post:any }> = ({ post }) => {
     ]
 
     const gallerySlide = (dir:"left"|"right") => {
-        dir==="left"
-            ?setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
-            :setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
+        console.log("sexxxxy");
+        // dir==="left"
+        //     ?setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
+        //     :setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
+        if(dir==="left") {
+            console.log("CLICK L!")
+            galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide-1)*galWid.current.offsetWidth)+"px";
+            setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
+        } else {
+            console.log("CLICK R!")
+            galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide+1)*galWid.current.offsetWidth)+"px";
+            setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
+        }
     }
 
     const galSlide = useRef<any>();
@@ -33,9 +43,9 @@ export const PostCard: React.FC<{ post:any }> = ({ post }) => {
         itemLength: Object.keys(post.media).map(key => post.media[key]?.length).reduce((a, b) => a + b, 0)
     })
 
-    useEffect(() => {
-        galSlide.current.style.marginLeft = "-"+(mediaSlides.currentSlide*galWid.current.offsetWidth)+"px";
-    },[mediaSlides])
+    // useEffect(() => {
+    //     galSlide.current.style.marginLeft = "-"+(mediaSlides.currentSlide*galWid.current.offsetWidth)+"px";
+    // },[mediaSlides])
 
     return(
         <article className="postcard" key={post._id}>
@@ -51,15 +61,15 @@ export const PostCard: React.FC<{ post:any }> = ({ post }) => {
                             mediaSlides.currentSlide!==0
                                 ?<div 
                                     className="postcard__content__media__slide--left"
-                                    onClick={()=>gallerySlide("left")}
+                                    onClick={()=>{gallerySlide("left")}}
                                 />
                                 :""
                         }
                         {
                             mediaSlides.itemLength>1&&mediaSlides.currentSlide<mediaSlides.itemLength-1
                                 ?<div 
-                                    className="postcard__content__media__slide--right" 
-                                    onClick={()=>gallerySlide("right")}
+                                    className="postcard__content__media__slide--right shuk" 
+                                    onClick={()=>{gallerySlide("right");console.log("DA FUK RIGHT")}}
                                 />
                                 :""
                         }

@@ -12,7 +12,6 @@ export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
 
     async function grabData() {
         const res = await axios.get(`${SERVER_URI}media/scrape/${encodeURIComponent("music.youtube.com/watch?v=_C5jzm6Y3wE")}`);
-        console.log("DIED!",res.data[0]);
         await res.data.map((ogTag:any) => {
             let keyName = Object.getOwnPropertyNames(ogTag)[0];
             getScrapeData(prev => {
@@ -25,7 +24,6 @@ export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
 
     return (    
         <>
-        {console.log("FUDGY",scrapeData)}
         {/* <a href={scrapeData['og:url']} className="postcard__content__media__slider__weblink__anchor" target="_blank" rel="noopener noreferrer">
             {
             scrapeData['og:url']?.includes("youtube.com")?

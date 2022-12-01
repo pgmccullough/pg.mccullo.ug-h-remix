@@ -5,7 +5,6 @@ import { stampToTime } from '../../functions/functions';
 
 export const Header: React.FC<{}> = () => {
     const { siteData } = useLoaderData();
-    console.log(siteData);
     return (
         <header className="header">
             <div className="header__cover">

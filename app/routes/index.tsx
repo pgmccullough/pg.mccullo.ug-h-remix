@@ -1,7 +1,7 @@
 import { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { PostCard } from "../components/PostCard/PostCard";
-import { clientPromise } from "../lib/mongodb";
+import { PostCard } from "~/components/PostCard/PostCard";
+import { clientPromise } from "~/lib/mongodb";
 
 export const loader: LoaderFunction = async () => {
   const client = await clientPromise;
