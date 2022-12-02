@@ -1,36 +1,14 @@
-import axios from "axios";
 import { useEffect, useState } from "react"
 import { GitHubLogo } from "~/assets/svgs/GitHubLogo";
 import { GoogleLogo } from "~/assets/svgs/GoogleLogo";
 
-export const SignInModal: React.FC<{registerOrLoginInit:1|2}> = ({registerOrLoginInit }) => {
+export const SignInModal: React.FC<{actionData:any,registerOrLoginInit:1|2}> = ({ actionData, registerOrLoginInit }) => {
   const [loginError, setLoginError] = useState(null);
   const [regVisibility, setRegVisibility] = useState(true);
   const [registerOrLogin, setRegisterOrLogin] = useState(registerOrLoginInit);
 
   const cancelLogin = () => {
     setRegVisibility(!regVisibility);
-  }
-
-  const registerSubmit = (e:any) => {
-    e.preventDefault();
-    console.log("register submit");
-  }
-
-  const login = (e:any) => {
-    e.preventDefault();
-    // axios.post('https://api.mccullo.ug/user/login', {
-      axios.post('http://localhost:8080/user/login', {
-      username: e.target.username.value,
-      password: e.target.password.value
-    })
-    .then(response => {
-      const { sessionToken, user } = response.data;
-      localStorage.setItem("sessionToken",JSON.stringify({sessionToken,user}))
-    })
-    .catch(error => {
-      setLoginError(error.response.data);
-    })
   }
 
   const toggleRegisterOrLogin = () => {
@@ -66,7 +44,7 @@ export const SignInModal: React.FC<{registerOrLoginInit:1|2}> = ({registerOrLogi
                         <div className="register__card__body__or">or</div>
                         {registerOrLogin===1?
                         <>
-                        <form className="register__card__body__signup" onSubmit={registerSubmit}>
+                        <form className="register__card__body__signup" method="post">
                             <input type="text" name="user_name" placeholder="User name" className="register__card__body__input" />
                             <input type="text" name="first_name" placeholder="First name" className="register__card__body__input" />
                             <input type="text" name="last_name" placeholder="Last name" className="register__card__body__input" />
@@ -80,7 +58,7 @@ export const SignInModal: React.FC<{registerOrLoginInit:1|2}> = ({registerOrLogi
                         </>
                         :
                         <>
-                        <form className="register__card__body__signup" onSubmit={login}>
+                        <form className="register__card__body__signup" method="post">
                             <input type="text" name="username" placeholder="User name" className="register__card__body__input" />
                             <input type="password" name="password" placeholder="Password" className="register__card__body__input" />
                             {loginError?<div className="register__card__body__signup__error">{loginError}</div>:<div className="register__card__body__signup__error"></div>}
