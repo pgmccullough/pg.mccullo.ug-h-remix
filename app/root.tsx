@@ -7,7 +7,7 @@ import {
   Scripts,
   ScrollRestoration
 } from "@remix-run/react";
-
+import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
 
 import { Posts, SiteData } from '~/common/types';
@@ -26,11 +26,12 @@ export const meta: MetaFunction = () => ({
   viewport: "width=device-width,initial-scale=1",
 });
 
-export const loader: LoaderFunction = async () => {
+export const loader: LoaderFunction = async ({ request }) => {
+  const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");
   const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();
-  return { siteData:{...siteData[0]}};
+  return {user, siteData:{...siteData[0]}};
 }
 
 export default function App() {

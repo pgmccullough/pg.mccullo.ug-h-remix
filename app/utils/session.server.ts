@@ -57,12 +57,8 @@ export async function getUser(request: Request) {
     .collection('myUsers')
     .find({ _id : new ObjectId(userId) })
     .toArray();
-    // const user = await db.user.findUnique({
-    //   where: { id: userId },
-    //   select: { id: true, username: true },
-    // });
-    user.id = userId
-    return user;
+    const {user_name, role} = user;
+    return {user_name, role};
   } catch {
     throw logout(request);
   }
@@ -105,7 +101,6 @@ export async function login({
 }: any) {
   const client = await clientPromise;
   const db = client.db("user_posts");
-
   const [user] = await db
   .collection('myUsers')
   .find({ user_name : username })

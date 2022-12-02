@@ -4,7 +4,7 @@ import { SiteData } from '../../common/types';
 import { stampToTime } from '../../functions/functions';
 
 export const Header: React.FC<{}> = () => {
-    const { siteData } = useLoaderData();
+    const { user, siteData } = useLoaderData();
     return (
         <header className="header">
             <div className="header__cover">
@@ -59,7 +59,7 @@ export const Header: React.FC<{}> = () => {
                 </div>
             </div>
             <div className="header__bar">
-                {siteData?.site_name}
+                {user?.role==="administrator"?"lexical":siteData.site_name}
             </div>
             <Link to="/h/">
                 <div 
