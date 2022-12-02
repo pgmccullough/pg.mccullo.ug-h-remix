@@ -12,7 +12,7 @@ if (!sessionSecret) {
 }
 const storage = createCookieSessionStorage({
     cookie: {
-        name: "RJ_session",
+        name: "sessionToken",
         secure: process.env.NODE_ENV === "production",
         secrets: [sessionSecret],
         sameSite: "lax",
@@ -23,7 +23,7 @@ const storage = createCookieSessionStorage({
 });
 export async function createUserSession(
     userId: string,
-    redirectTo: string
+    redirectTo: any
 ) {
     const session = await storage.getSession();
     session.set("userId", userId);
@@ -33,6 +33,7 @@ export async function createUserSession(
         },
     });
 }
+
 function getUserSession(request: Request) {
     return storage.getSession(request.headers.get("Cookie"));
 }
@@ -60,6 +61,7 @@ export async function getUser(request: Request) {
     //   where: { id: userId },
     //   select: { id: true, username: true },
     // });
+    user.id = userId
     return user;
   } catch {
     throw logout(request);
@@ -114,7 +116,7 @@ export async function login({
     user.password
   );
   if (!isCorrectPassword) return null;
-  return { id: user._id, username: user.user_name };
+  return { id: user._id.toString(), username: user.user_name };
 }
 
 export async function logout(request: Request) {
