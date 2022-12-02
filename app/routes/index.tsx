@@ -1,3 +1,3 @@
-export default function Index() {
- return(<></>)
-}
+import { redirect } from "@remix-run/node"
+
+export const loader = () => redirect('/h')
