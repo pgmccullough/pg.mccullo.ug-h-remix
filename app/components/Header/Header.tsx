@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLoaderData } from "@remix-run/react";
 import { SiteData } from '../../common/types';
 import { stampToTime } from '../../functions/functions';
+import { UploadBox } from '../UploadBox/UploadBox';
 
 export const Header: React.FC<{}> = () => {
     const { user, siteData } = useLoaderData();
@@ -59,7 +60,7 @@ export const Header: React.FC<{}> = () => {
                 </div>
             </div>
             <div className="header__bar">
-                {user?.role==="administrator"?"lexical":siteData.site_name}
+                {user?.role==="administrator"?<UploadBox />:siteData.site_name}
             </div>
             <Link to="/h/">
                 <div 

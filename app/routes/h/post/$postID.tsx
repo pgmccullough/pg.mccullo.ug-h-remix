@@ -12,10 +12,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   let post;
   if(user?.role!=="administrator") {
     [post] = await db.collection("myPosts").find({ privacy : "Public", _id: new ObjectId(postID) }).toArray();
-    console.log(post,"for non admin");
   } else {
     [post] = await db.collection("myPosts").find({ _id: new ObjectId(postID) }).toArray();
-    console.log(post,"for admin");
   }
   if(!post) post = {error: 1}
   return post;

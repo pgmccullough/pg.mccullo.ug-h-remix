@@ -5,3 +5,18 @@ body {
     background: #eee url('~/assets/images/bgPattern.png');
     font-family: $sans,sans-serif;
 }
+
+button {
+    color: #fff;
+    background: #4A6CBA;
+    font: 14px $sans;
+    margin: 0 8px;
+    border: 0;
+    border-radius: 4px;
+    padding-top: 4px;
+    box-sizing: border-box;
+    height: 20px;
+    display: inline-flex;
+    align-items: bottom;
+    cursor: pointer;
+}
