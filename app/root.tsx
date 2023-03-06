@@ -5,8 +5,12 @@ import {
   Meta,
   Outlet,
   Scripts,
-  ScrollRestoration
+  ScrollRestoration,
+  useLoaderData,
+  useLocation
 } from "@remix-run/react";
+import { useEffect } from "react";
+import * as gtag from "~/utils/gtags.client";
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
 
@@ -32,10 +36,19 @@ export const loader: LoaderFunction = async ({ request }) => {
   const db = client.db("user_posts");
   const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();
   const emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
-  return {emails, user, siteData:{...siteData[0]}};
+  return {emails, gaTrackingId: "G-48Y17ZTWTK", user, siteData:{...siteData[0]}};
 }
 
 export default function App() {
+  const location = useLocation();
+  const { gaTrackingId } = useLoaderData<typeof loader>();
+  
+  useEffect(() => {
+    if (gaTrackingId?.length) {
+      gtag.pageview(location.pathname, gaTrackingId);
+    }
+  }, [location, gaTrackingId]);
+
   return (
     <html lang="en">
       <head>
@@ -43,6 +56,28 @@ export default function App() {
         <Links />
       </head>
       <body>
+      {process.env.NODE_ENV === "development" || !gaTrackingId ? null : (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`}
+            />
+            <script
+              async
+              id="gtag-init"
+              dangerouslySetInnerHTML={{
+                __html: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaTrackingId}', {
+                  page_path: window.location.pathname,
+                });
+              `,
+              }}
+            />
+          </>
+        )}
         <Header />
         <div className="content">
           <Sidebar />
