@@ -15,7 +15,22 @@ export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
         await res.data.map((ogTag:any) => {
             let keyName = Object.getOwnPropertyNames(ogTag)[0];
             getScrapeData((prev:any) => {
-                return {...prev,[keyName]:ogTag[keyName]}
+              if(keyName==="og:description") {
+                let trimDesc = ogTag[keyName];
+                if(trimDesc.length > 300) {
+                  let commaTrimDesc = trimDesc.slice(0,300).split(", ");
+                  commaTrimDesc.pop();
+                  commaTrimDesc = commaTrimDesc.join(", ").trim();
+                  let periodTrimDesc = trimDesc.slice(0,300).split(". ");
+                  periodTrimDesc.pop();
+                  periodTrimDesc = periodTrimDesc.join(", ").trim();
+                  trimDesc = commaTrimDesc.length > periodTrimDesc.length 
+                    ? commaTrimDesc+"..."
+                    : periodTrimDesc+".";
+                }
+                return {...prev,[keyName]:trimDesc}
+              }
+              return {...prev,[keyName]:ogTag[keyName]}
             });
         })
     }

@@ -31,7 +31,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   const client = await clientPromise;
   const db = client.db("user_posts");
   const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();
-  return {user, siteData:{...siteData[0]}};
+  const emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
+  return {emails, user, siteData:{...siteData[0]}};
 }
 
 export default function App() {

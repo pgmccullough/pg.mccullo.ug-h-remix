@@ -1,0 +1,193 @@
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ThinItalic.ttf") format("truetype");
+  font-weight: 100;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ExtraLightItalic.ttf") format("truetype");
+  font-weight: 200;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-SemiBoldItalic.ttf") format("truetype");
+  font-weight: 600;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
+#sidebar {
+  width: 100%;
+  display: block;
+  margin-right: 10px;
+}
+@media (min-width: 992px) {
+  #sidebar {
+    max-width: 550px;
+    width: 35%;
+    display: inline-block;
+  }
+}
+
+.sidebar-buttons {
+  position: absolute;
+  top: 5px;
+  right: 0px;
+}
+
+.sidebar-button {
+  display: inline-flex;
+  background: #fff;
+  border: 1px #979997 solid;
+  border-right: 1px #777777 solid;
+  border-bottom: 2px #777777 solid;
+  border-radius: 4px;
+  z-index: 99;
+  margin-right: 5px;
+  height: 30px;
+  width: 30px;
+  justify-content: center;
+  align-items: center;
+  transition: 0.25s;
+  cursor: pointer;
+}
+.sidebar-button:hover {
+  box-shadow: 0 0 0 3px #ccc;
+}
+.sidebar-button--collapse:after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 18px;
+  border-top: 3px #666 solid;
+}
+.sidebar-button--expand:after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 18px;
+  border: 3px #666 solid;
+}
+.sidebar-button--hide:before, .sidebar-button--hide:after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 18px;
+  background: #666;
+}
+.sidebar-button--hide:before {
+  transform: rotate(45deg);
+}
+.sidebar-button--hide:after {
+  transform: rotate(-45deg);
+}
+
+.app-button {
+  user-select: none;
+  background: #4A6CBA;
+  color: #fff;
+  display: inline-block;
+  padding: 6px 32px 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.app-button-chevron {
+  font-size: 2.5rem;
+  margin-left: 6px;
+  position: absolute;
+  margin-top: -25px;
+  transform: rotate(180deg);
+}
+.app-button-chevron--expanded {
+  margin-top: 0px;
+  transform: rotate(0deg);
+}
+
+.hidden-app-list {
+  display: none;
+  background: white;
+  border: 1px solid #979997;
+  margin: -6px 0 0.75rem;
+  border-radius: 4px;
+}
+.hidden-app-list li {
+  list-style-type: none;
+  padding: 0.375rem;
+  cursor: pointer;
+  border-bottom: 1px #ccc solid;
+}
+.hidden-app-list li:hover {
+  background: #eee;
+}
+.hidden-app-list--expanded {
+  display: block;
+}
+
+/*# sourceMappingURL=Sidebar.css.map */

@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useLoaderData } from "@remix-run/react";
 import { SiteData } from '../../common/types';
+import { Email } from '~/adminApps/Email/Email';
 
 export const Sidebar: React.FC<{}> = () => {
-    const { siteData } = useLoaderData();
+    const { user, siteData } = useLoaderData();
     return (
         <div id="sidebar">
             <article className="postcard--left">
@@ -19,6 +20,7 @@ export const Sidebar: React.FC<{}> = () => {
                     </div>
                 </div>
             </article>
+            {user?.role==="administrator"?<Email />:"verbotten"}
         </div>
     )
 }

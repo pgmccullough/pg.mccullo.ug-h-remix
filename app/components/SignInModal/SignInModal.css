@@ -1,0 +1,239 @@
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ThinItalic.ttf") format("truetype");
+  font-weight: 100;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-ExtraLightItalic.ttf") format("truetype");
+  font-weight: 200;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-LightItalic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-MediumItalic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-SemiBoldItalic.ttf") format("truetype");
+  font-weight: 600;
+  font-style: italic;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "PGM Sans";
+  src: url("~/assets/fonts/sans/JosefinSans-BoldItalic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+}
+.register__background {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100vh;
+  background: #333;
+  opacity: 0.3;
+  z-index: 100;
+}
+.register__card {
+  position: fixed;
+  width: 90%;
+  max-width: 600px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+}
+.register__card__button {
+  display: inline-flex;
+  background: #fff;
+  border: 1px #979997 solid;
+  border-right: 1px #777777 solid;
+  border-bottom: 2px #777777 solid;
+  border-radius: 4px;
+  position: absolute;
+  z-index: 102;
+  top: 6px;
+  right: 6px;
+  height: 30px;
+  width: 30px;
+  justify-content: center;
+  align-items: center;
+  transition: 0.25s;
+  cursor: pointer;
+}
+.register__card__button:hover {
+  box-shadow: 0 0 0 3px #ccc;
+}
+.register__card__button__x {
+  transform: rotate(45deg);
+  font-size: 2.5rem;
+}
+.register__card__head {
+  position: relative;
+  color: #000;
+  background: #eee;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  border: 1px solid #979997;
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  border-radius: 4px 4px 0px 0px;
+  display: inline-block;
+}
+.register__card__body {
+  position: relative;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #979997;
+  border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 4px;
+  box-sizing: border-box;
+  margin-top: -1px;
+  text-align: left;
+  margin-bottom: 10px;
+  line-height: 1.5em;
+  padding-top: 20px;
+}
+.register__card__body__or {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.register__card__body__or:before {
+  content: "";
+  position: relative;
+  width: calc(40% - 20px);
+  height: 1px;
+  background: #777777;
+  margin-right: 10px;
+}
+.register__card__body__or:after {
+  content: "";
+  position: relative;
+  width: calc(40% - 20px);
+  height: 1px;
+  background: #777777;
+  margin-left: 10px;
+}
+.register__card__body__apis {
+  display: flex;
+}
+.register__card__body__apis__button {
+  text-decoration: none;
+  color: #000;
+  display: flex;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  width: calc(50% - 20px);
+  border: 1px #979997 solid;
+  border-right: 1px #777777 solid;
+  border-bottom: 2px #777777 solid;
+  border-radius: 4px;
+  margin: 5px 10px 20px 10px;
+  transition: 0.25s;
+  cursor: pointer;
+}
+.register__card__body__apis__button:hover {
+  box-shadow: 0 0 0 3px #ccc;
+}
+.register__card__body__apis__button__item {
+  margin: 5px 4px;
+  margin-bottom: -4px;
+}
+.register__card__body__input {
+  font-family: "PGM Sans", sans-serif;
+  font-size: 16px;
+  border: 0;
+  text-align: center;
+  border-bottom: 3px #4A6CBA solid;
+  border-radius: 3px;
+  margin: 5px 0;
+  width: 80%;
+  margin-left: 10%;
+}
+@media (min-width: 768px) {
+  .register__card__body__input {
+    width: calc(50% - 20px);
+    margin: 5px 10px;
+  }
+}
+.register__card__body__button {
+  position: relative;
+  display: block;
+  margin: auto;
+  margin-top: 20px;
+}
+.register__card__body__login {
+  padding: 15px 0;
+  width: 100%;
+  text-align: center;
+}
+.register__card__body__signup__error {
+  text-align: center;
+  color: #be0d0d;
+}
+
+/*# sourceMappingURL=SignInModal.css.map */

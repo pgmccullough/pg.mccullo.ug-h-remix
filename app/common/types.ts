@@ -81,3 +81,31 @@ export interface SiteData {
       timestamp: number
   }
 }
+
+export interface EmailInterface {
+  _id: String,
+  FromName: String,
+  MessageStream: String,
+  From: String,
+  FromFull: {Email: String, Name: String, MailboxHash: String},
+  To: String,
+  ToFull: [],
+  Cc: String,
+  CcFull: [],
+  Bcc: String,
+  BccFull: [],
+  OriginalRecipient: String,
+  Subject: String,
+  MessageID: String,
+  ReplyTo: String,
+  MailboxHash: String,
+  Date: String,
+  TextBody: string,
+  HtmlBody: string,
+  StrippedTextReply: String,
+  Tag: String,
+  Headers: [],
+  Attachments: [],
+  unread: String,
+  created: String
+}
