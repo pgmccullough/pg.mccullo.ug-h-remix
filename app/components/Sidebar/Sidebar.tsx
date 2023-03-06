@@ -20,7 +20,7 @@ export const Sidebar: React.FC<{}> = () => {
                     </div>
                 </div>
             </article>
-            {user?.role==="administrator"?<Email />:"verbotten"}
+            {user?.role==="administrator"?<Email />:""}
         </div>
     )
 }
