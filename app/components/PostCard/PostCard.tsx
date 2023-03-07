@@ -43,6 +43,7 @@ export const PostCard: React.FC<{ post:any }> = ({ post }) => {
                 <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
                     <time dateTime={post.created}>{stampToTime(post.created)}</time>
                 </Link>
+                {new Date().getFullYear()!==new Date(post.created*1000).getFullYear()?<div className="postcard__time__onThisDay">{(new Date().getFullYear())-(new Date(post.created*1000).getFullYear())} years ago</div>:""}
             </div>
             <div className="postcard__content">
                 <div className="postcard__content__media" ref={galWid}>

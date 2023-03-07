@@ -149,7 +149,9 @@
 }
 
 .app-button {
-  user-select: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
   background: #4A6CBA;
   color: #fff;
   display: inline-block;
@@ -188,6 +190,4 @@
 }
 .hidden-app-list--expanded {
   display: block;
-}
-
-/*# sourceMappingURL=Sidebar.css.map */
+}/*# sourceMappingURL=Sidebar.css.map */

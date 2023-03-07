@@ -97,7 +97,8 @@
   left: 50%;
   top: 0%;
   transform: translate(-50%, 0%);
-  object-fit: cover;
+  -o-object-fit: cover;
+     object-fit: cover;
 }
 .header__bar {
   position: absolute;
@@ -198,6 +199,4 @@
   text-decoration-thickness: 1px;
   text-decoration-color: #666;
   text-underline-offset: 4px;
-}
-
-/*# sourceMappingURL=Header.css.map */
+}/*# sourceMappingURL=Header.css.map */

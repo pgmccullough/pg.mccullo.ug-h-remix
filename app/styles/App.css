@@ -118,7 +118,8 @@ button {
   left: 50%;
   top: 0%;
   transform: translate(-50%, 0%);
-  object-fit: cover;
+  -o-object-fit: cover;
+     object-fit: cover;
 }
 .header__bar {
   position: absolute;
@@ -288,7 +289,9 @@ button {
 }
 
 .app-button {
-  user-select: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
   background: #4A6CBA;
   color: #fff;
   display: inline-block;
@@ -1024,7 +1027,9 @@ button {
   top: 10px;
   left: 12px;
   font-size: 16px;
-  user-select: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
   display: inline-block;
   pointer-events: none;
 }
@@ -1085,4 +1090,11 @@ body {
   }
 }
 
-/*# sourceMappingURL=App.css.map */
+.onThisDay__label {
+  background: #4A6CBA;
+  color: #fff;
+  display: inline-block;
+  padding: 6px 12px 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}/*# sourceMappingURL=App.css.map */
