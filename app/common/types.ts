@@ -106,6 +106,6 @@ export interface EmailInterface {
   Tag: String,
   Headers: [],
   Attachments: [],
-  unread: String,
+  unread: Number,
   created: String
 }

@@ -1,14 +1,26 @@
-import { Link } from 'react-router-dom';
 import { useLoaderData } from "@remix-run/react";
 import { Snippet } from './Snippet';
+import { IndEmail } from './IndEmail';
 import { EmailInterface } from '~/common/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export const Email: React.FC<{}> = () => {
 
-  const [emailBlock, setEmailBlock] = useState<{view: String, emails: EmailInterface[], activeEmailId: String}>({view: "inbox", emails: [], activeEmailId: ""});
+  const emailScroll = useRef<any>(null);
+
+  const [ emailBlock, setEmailBlock ] = useState<{view: String, emails: EmailInterface[], activeEmailId: String}>({view: "inbox", emails: [], activeEmailId: ""});
+  const [ storeScroll, setStoreScroll ] = useState(0);
 
   const { emails } = useLoaderData();
+
+  useEffect(() => {
+    if(emailBlock.view==="inbox") {
+      emailScroll.current?.scrollTo(0,storeScroll);
+    } else {
+      if(emailScroll.current?.scrollTop!==0) setStoreScroll(emailScroll.current?.scrollTop)
+      emailScroll.current?.scrollTo(0,0);
+    }
+  },[emailBlock, emailScroll, storeScroll, setStoreScroll])
 
   useEffect(() => {
     if(emailBlock.activeEmailId) {
@@ -17,7 +29,7 @@ export const Email: React.FC<{}> = () => {
     } else {
       setEmailBlock({...emailBlock, emails: emails})
     }
-  }, [emailBlock]);
+  }, []);
   
   return (
     <article className="postcard--left">
@@ -29,7 +41,7 @@ export const Email: React.FC<{}> = () => {
       <div className="postcard__content">
         <div className="postcard__content__media"></div>
         <div className="postcard__content__text">
-          <div className="email">
+          <div className="email" ref={emailScroll}>
             {emailBlock.view==="inbox"
               ?emailBlock.emails.map((email:any) =>
                 <div key={email._id}>
@@ -41,10 +53,12 @@ export const Email: React.FC<{}> = () => {
                 </div>
               )
               :emailBlock.view==="email"
-                ?<div className=""
-                  dangerouslySetInnerHTML={
-                    {__html: emailBlock.emails[0].HtmlBody || emailBlock.emails[0].TextBody}
-                  }
+                ?<IndEmail 
+                  emailBlock={emailBlock}
+                  emailScroll={emailScroll}
+                  setEmailBlock={setEmailBlock}
+                  setStoreScroll={setStoreScroll}
+                  storeScroll={storeScroll}
                 />
                 :""
             }
