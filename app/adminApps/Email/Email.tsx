@@ -1,4 +1,5 @@
 import { useLoaderData } from "@remix-run/react";
+import { ActionBar } from './ActionBar';
 import { Snippet } from './Snippet';
 import { IndEmail } from './IndEmail';
 import { EmailInterface } from '~/common/types';
@@ -42,6 +43,10 @@ export const Email: React.FC<{}> = () => {
         <div className="postcard__content__media"></div>
         <div className="postcard__content__text">
           <div className="email" ref={emailScroll}>
+            <ActionBar 
+              emailBlock={emailBlock}
+              setEmailBlock={setEmailBlock}
+            />
             {emailBlock.view==="inbox"
               ?emailBlock.emails.map((email:any) =>
                 <div key={email._id}>
@@ -55,10 +60,7 @@ export const Email: React.FC<{}> = () => {
               :emailBlock.view==="email"
                 ?<IndEmail 
                   emailBlock={emailBlock}
-                  emailScroll={emailScroll}
                   setEmailBlock={setEmailBlock}
-                  setStoreScroll={setStoreScroll}
-                  storeScroll={storeScroll}
                 />
                 :""
             }

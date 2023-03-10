@@ -1,9 +1,33 @@
 .email {
+  position: relative;
   margin-left: -12px;
   margin-top: -12px;
   max-height: 400px;
   overflow-x: hidden;
   width: calc(100% + 24px);
+  &__actions {
+    position: sticky;
+    display: flex;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    min-height: 1.5rem;
+    background: #ccc;
+    border-bottom: 1px #333 solid;
+    box-shadow: 0 0 6px 0 #000;
+    padding-top: 1px;
+    & button {
+      margin: 0 0.25rem;
+    }
+    & form {
+      display: flex;
+      padding: 0;
+      margin: 0;
+      & input {
+        display: none;
+      }
+    }
+  }
 }
 
 .snippet {

@@ -118,8 +118,7 @@ button {
   left: 50%;
   top: 0%;
   transform: translate(-50%, 0%);
-  -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
 }
 .header__bar {
   position: absolute;
@@ -289,9 +288,7 @@ button {
 }
 
 .app-button {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  user-select: none;
   background: #4A6CBA;
   color: #fff;
   display: inline-block;
@@ -568,11 +565,35 @@ button {
 }
 
 .email {
+  position: relative;
   margin-left: -12px;
   margin-top: -12px;
   max-height: 400px;
   overflow-x: hidden;
   width: calc(100% + 24px);
+}
+.email__actions {
+  position: sticky;
+  display: flex;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  min-height: 1.5rem;
+  background: #ccc;
+  border-bottom: 1px #333 solid;
+  box-shadow: 0 0 6px 0 #000;
+  padding-top: 1px;
+}
+.email__actions button {
+  margin: 0 0.25rem;
+}
+.email__actions form {
+  display: flex;
+  padding: 0;
+  margin: 0;
+}
+.email__actions form input {
+  display: none;
 }
 
 .snippet {
@@ -1027,9 +1048,7 @@ button {
   top: 10px;
   left: 12px;
   font-size: 16px;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  user-select: none;
   display: inline-block;
   pointer-events: none;
 }
@@ -1097,4 +1116,6 @@ body {
   padding: 6px 12px 4px 12px;
   border-radius: 4px;
   margin-bottom: 6px;
-}/*# sourceMappingURL=App.css.map */
+}
+
+/*# sourceMappingURL=App.css.map */
