@@ -1,3 +1,5 @@
+@use '../../styles/partials/variables' as *;
+
 .email {
   position: relative;
   margin-left: -12px;
@@ -26,6 +28,52 @@
       & input {
         display: none;
       }
+    }
+  }
+  &__composer-head {
+    position: sticky;
+    top: 1.5rem;
+  }
+  &__input {
+    width: 100%;
+    margin: 0;
+    display: flex;
+    border-bottom: 1px #eee solid;
+    & label {
+      background: #ccc;
+      width: 4rem;
+    }
+    & input {
+      border: 0;
+      width: 100%;
+      font-family:'PGM Sans', 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+  }
+  &__formatter {
+    width: 100%;
+    background: #eee;
+  }
+  &__format-button {
+    background: #ccc;
+    margin: 1px;
+    border: 1px #666 solid;
+    &--bold {
+      font-weight: 700;
+    }
+    &--italic {
+      font-style: italic;
+    }
+    &--underline {
+      text-decoration: underline;
+    }
+    &--strikethrough {
+      text-decoration: line-through;
+    }
+    &--code {
+      font-family: 'Courier New', Courier, monospace;
+    }
+    &--active {
+      border-bottom: 2px #333 solid;
     }
   }
 }

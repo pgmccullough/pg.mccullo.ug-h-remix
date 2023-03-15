@@ -1,8 +1,8 @@
 import { useFetcher } from "@remix-run/react";
 
 export const ActionBar: React.FC<{
-  emailBlock: any, setEmailBlock: any 
-}> = ({ emailBlock, setEmailBlock }) => {
+  emailBlock: any, emailForm: any, setEmailBlock: any 
+}> = ({ emailBlock, emailForm, setEmailBlock }) => {
 
   const fetcher = useFetcher();
 
@@ -13,10 +13,33 @@ export const ActionBar: React.FC<{
     setEmailBlock({...ebClone, view: "inbox", activeEmailId: ""})
   };
 
+  const compose = (composeType:"new"|"reply"|"replyAll"|"forward"|"", id: string|null) => {
+    setEmailBlock({...emailBlock, view: "compose", composeType, activeEmailId: id})
+  } 
+
   return (
     <div className="email__actions"><>
       {
-        emailBlock.activeEmailId
+        emailBlock.view==="compose"
+        ?<>
+          <button 
+              onClick={() => 
+              setEmailBlock({...emailBlock, view: "inbox", activeEmailId: ""})
+            }>BACK
+          </button>
+          <fetcher.Form 
+              method="post"
+              action={`/api/email/send?index`}
+            >
+              <input type="hidden" name="Bcc" value={emailForm.bcc} />
+              <input type="hidden" name="Cc" value={emailForm.cc} />
+              <input type="hidden" name="HtmlBody" value={emailForm.content} />
+              <input type="hidden" name="Subject" value={emailForm.subject} />
+              <input type="hidden" name="To" value={emailForm.to} />
+            <button>SEND</button>
+          </fetcher.Form>
+        </>
+        :emailBlock.activeEmailId
           ?<>
             <button 
               onClick={() => 
@@ -30,11 +53,11 @@ export const ActionBar: React.FC<{
               <input type="hidden" name="deleteEmailId" value={emailBlock.activeEmailId} />
               <button type="submit">DELETE</button>
             </fetcher.Form>
-            <button>REPLY</button>
-            <button>REPLY ALL</button>
-            <button>FORWARD</button>
+            <button onClick={() => compose("reply",emailBlock.activeEmailId)}>REPLY</button>
+            <button onClick={() => compose("replyAll",emailBlock.activeEmailId)}>REPLY ALL</button>
+            <button onClick={() => compose("forward",emailBlock.activeEmailId)}>FORWARD</button>
           </>
-          :<button>NEW</button>
+          :<button onClick={() => compose("new",null)}>NEW</button>
       }
       {
         fetcher.data?.deleteEmailId

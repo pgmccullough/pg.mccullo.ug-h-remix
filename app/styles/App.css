@@ -595,6 +595,52 @@ button {
 .email__actions form input {
   display: none;
 }
+.email__composer-head {
+  position: sticky;
+  top: 1.5rem;
+}
+.email__input {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  border-bottom: 1px #eee solid;
+}
+.email__input label {
+  background: #ccc;
+  width: 4rem;
+}
+.email__input input {
+  border: 0;
+  width: 100%;
+  font-family: "PGM Sans", "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+.email__formatter {
+  width: 100%;
+  background: #eee;
+}
+.email__format-button {
+  background: #ccc;
+  margin: 1px;
+  border: 1px #666 solid;
+}
+.email__format-button--bold {
+  font-weight: 700;
+}
+.email__format-button--italic {
+  font-style: italic;
+}
+.email__format-button--underline {
+  text-decoration: underline;
+}
+.email__format-button--strikethrough {
+  text-decoration: line-through;
+}
+.email__format-button--code {
+  font-family: "Courier New", Courier, monospace;
+}
+.email__format-button--active {
+  border-bottom: 2px #333 solid;
+}
 
 .snippet {
   border-bottom: 1px #666 solid;

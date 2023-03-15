@@ -2,15 +2,40 @@ import { useLoaderData } from "@remix-run/react";
 import { ActionBar } from './ActionBar';
 import { Snippet } from './Snippet';
 import { IndEmail } from './IndEmail';
+import { Composer } from './Composer';
 import { EmailInterface } from '~/common/types';
 import { useEffect, useRef, useState } from 'react';
 
 export const Email: React.FC<{}> = () => {
 
+  const emailBodyRef = useRef<any>(null);
   const emailScroll = useRef<any>(null);
 
-  const [ emailBlock, setEmailBlock ] = useState<{view: String, emails: EmailInterface[], activeEmailId: String}>({view: "inbox", emails: [], activeEmailId: ""});
+  const [ emailBlock, setEmailBlock ] = useState<{view: String, composeType:"new"|"reply"|"replyAll"|"forward"|"", emails: EmailInterface[], activeEmailId: String}>({view: "inbox", composeType:"", emails: [], activeEmailId: ""});
   const [ storeScroll, setStoreScroll ] = useState(0);
+
+  const curEmailBackup = {From: "", CcFull: [], Date: "", FromName:"", HtmlBody: "", TextBody: "", Subject: ""}
+  const curEmail = emailBlock?.emails.find((email:any) => email._id===emailBlock.activeEmailId)||curEmailBackup;
+  let subject = curEmail?.Subject?.trim();
+  if(emailBlock.composeType==="reply"||emailBlock.composeType==="replyAll") {
+    subject = "Re: "+subject;
+  }
+  if(emailBlock.composeType==="forward") {
+    subject = "Fwd: "+subject;
+  }
+
+  const [ emailForm, setEmailForm ] = useState(
+    {
+      to: emailBlock.composeType==="reply"||emailBlock.composeType==="replyAll"
+        ?curEmail.From||""
+        :"",
+      cc: curEmail.CcFull.length
+        ?curEmail.CcFull.join(";")
+        :"",
+      bcc:"",
+      subject
+    }
+  );
 
   const { emails } = useLoaderData();
 
@@ -45,6 +70,7 @@ export const Email: React.FC<{}> = () => {
           <div className="email" ref={emailScroll}>
             <ActionBar 
               emailBlock={emailBlock}
+              emailForm={emailForm}
               setEmailBlock={setEmailBlock}
             />
             {emailBlock.view==="inbox"
@@ -62,7 +88,16 @@ export const Email: React.FC<{}> = () => {
                   emailBlock={emailBlock}
                   setEmailBlock={setEmailBlock}
                 />
-                :""
+                :emailBlock.view==="compose"
+                  ?<Composer 
+                    curEmail={curEmail}
+                    emailBlock={emailBlock}
+                    emailBodyRef={emailBodyRef}
+                    emailForm={emailForm}
+                    setEmailBlock={setEmailBlock}
+                    setEmailForm={setEmailForm}
+                  />
+                  :""
             }
           </div>
         </div>
