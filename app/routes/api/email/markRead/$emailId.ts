@@ -7,18 +7,18 @@ export const action = async ({ request }: ActionArgs) => {
   const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");
-  const deleteEmailId = (await request.formData()).get("deleteEmailId")?.toString();
+  const readEmailId = (await request.formData()).get("readEmailId")?.toString();
   let response;
   if(user?.role==="administrator") {
     try{
-      response = await db.collection('myEmails').deleteOne({_id : new ObjectId(deleteEmailId)});
+      response = await db.collection('myEmails').updateOne({_id : new ObjectId(readEmailId)},{$set: {unread:0,Headers:[]}});
     } catch (err) {
       response = false;
     }
   }
-  return { response, deleteEmailId };
+  return { response, readEmailId };
 }
 
-export default function deleteEmail() {
+export default function markReadEmail() {
   return 400;
 }

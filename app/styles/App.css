@@ -565,11 +565,81 @@ button {
 }
 
 .email {
+  position: relative;
   margin-left: -12px;
   margin-top: -12px;
   max-height: 400px;
   overflow-x: hidden;
   width: calc(100% + 24px);
+}
+.email__actions {
+  position: sticky;
+  display: flex;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  min-height: 1.5rem;
+  background: #ccc;
+  border-bottom: 1px #333 solid;
+  box-shadow: 0 0 6px 0 #000;
+  padding-top: 1px;
+}
+.email__actions button {
+  margin: 0 0.25rem;
+}
+.email__actions form {
+  display: flex;
+  padding: 0;
+  margin: 0;
+}
+.email__actions form input {
+  display: none;
+}
+.email__composer-head {
+  position: sticky;
+  top: 1.5rem;
+}
+.email__input {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  border-bottom: 1px #eee solid;
+}
+.email__input label {
+  background: #ccc;
+  width: 4rem;
+}
+.email__input input {
+  border: 0;
+  width: 100%;
+  font-family: "PGM Sans", "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+.email__formatter {
+  width: 100%;
+  background: #eee;
+}
+.email__format-button {
+  background: #ccc;
+  margin: 1px;
+  border: 1px #666 solid;
+}
+.email__format-button--bold {
+  font-weight: 700;
+}
+.email__format-button--italic {
+  font-style: italic;
+}
+.email__format-button--underline {
+  text-decoration: underline;
+}
+.email__format-button--strikethrough {
+  text-decoration: line-through;
+}
+.email__format-button--code {
+  font-family: "Courier New", Courier, monospace;
+}
+.email__format-button--active {
+  border-bottom: 2px #333 solid;
 }
 
 .snippet {

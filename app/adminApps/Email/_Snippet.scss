@@ -1,9 +1,81 @@
+@use '../../styles/partials/variables' as *;
+
 .email {
+  position: relative;
   margin-left: -12px;
   margin-top: -12px;
   max-height: 400px;
   overflow-x: hidden;
   width: calc(100% + 24px);
+  &__actions {
+    position: sticky;
+    display: flex;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    min-height: 1.5rem;
+    background: #ccc;
+    border-bottom: 1px #333 solid;
+    box-shadow: 0 0 6px 0 #000;
+    padding-top: 1px;
+    & button {
+      margin: 0 0.25rem;
+    }
+    & form {
+      display: flex;
+      padding: 0;
+      margin: 0;
+      & input {
+        display: none;
+      }
+    }
+  }
+  &__composer-head {
+    position: sticky;
+    top: 1.5rem;
+  }
+  &__input {
+    width: 100%;
+    margin: 0;
+    display: flex;
+    border-bottom: 1px #eee solid;
+    & label {
+      background: #ccc;
+      width: 4rem;
+    }
+    & input {
+      border: 0;
+      width: 100%;
+      font-family:'PGM Sans', 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    }
+  }
+  &__formatter {
+    width: 100%;
+    background: #eee;
+  }
+  &__format-button {
+    background: #ccc;
+    margin: 1px;
+    border: 1px #666 solid;
+    &--bold {
+      font-weight: 700;
+    }
+    &--italic {
+      font-style: italic;
+    }
+    &--underline {
+      text-decoration: underline;
+    }
+    &--strikethrough {
+      text-decoration: line-through;
+    }
+    &--code {
+      font-family: 'Courier New', Courier, monospace;
+    }
+    &--active {
+      border-bottom: 2px #333 solid;
+    }
+  }
 }
 
 .snippet {
