@@ -1,7 +1,7 @@
 {
   "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx", "app/components/UploadBox/UploadBox.jsx", "app/components/UploadBox/UploadBox.jsx"],
   "compilerOptions": {
-    "lib": ["DOM", "DOM.Iterable", "ES2019"],
+    "lib": ["DOM", "DOM.Iterable", "ES2019", "ES2021.String"],
     "isolatedModules": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",

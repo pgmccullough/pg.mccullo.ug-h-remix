@@ -83,7 +83,7 @@ export interface SiteData {
 }
 
 export interface EmailInterface {
-  _id: String,
+  _id: string,
   FromName: String,
   MessageStream: String,
   From: String,

@@ -1,14 +1,15 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect } from "react";
+import { EmailInterface } from '~/common/types';
 
-export const IndEmail: React.FC<{ emailBlock: any, setEmailBlock: any }> = ({ emailBlock, setEmailBlock }) => {
+export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const fetcher = useFetcher();
 
   useEffect(() => {
     fetcher.submit(
-      { readEmailId: emailBlock.activeEmailId },
-      { method: "post", action: `/api/email/markRead/${emailBlock.activeEmailId}` }
+      { readEmailId: email._id },
+      { method: "post", action: `/api/email/markRead/${email._id}` }
     );
   },[]);
 
@@ -21,14 +22,14 @@ export const IndEmail: React.FC<{ emailBlock: any, setEmailBlock: any }> = ({ em
 
   return (
     <>
-    {emailBlock.emails.find((res:any) => res._id===emailBlock.activeEmailId).HtmlBody?.replace(/(<style[\w\W]+style>)/g, "").replace(/(<([^>]+)>)/gi, "").replace(/\s/g, '').replaceAll("&nbsp;","")
-      ?<div dangerouslySetInnerHTML={{__html: attToImg(emailBlock.emails.find((res:any) => res._id===emailBlock.activeEmailId).HtmlBody.replace(/(<style[\w\W]+style>)/g, ""),emailBlock.emails.find((res:any) => res._id===emailBlock.activeEmailId).Attachments)}} />
-      :<div dangerouslySetInnerHTML={{__html: emailBlock.emails.find((res:any) => res._id===emailBlock.activeEmailId).TextBody}} />
+    {email.HtmlBody?.replace(/(<style[\w\W]+style>)/g, "").replace(/(<([^>]+)>)/gi, "").replace(/\s/g, '').replaceAll("&nbsp;","")
+      ?<div dangerouslySetInnerHTML={{__html: attToImg(email.HtmlBody.replace(/(<style[\w\W]+style>)/g, ""),email.Attachments)}} />
+      :<div dangerouslySetInnerHTML={{__html: email.TextBody}} />
     }
 
     <div
       dangerouslySetInnerHTML={
-        {__html: emailBlock.emails.find((res:any) => res._id===emailBlock.activeEmailId).HtmlBody.replace(/(<style[\w\W]+style>)/g, "") || emailBlock.emails.find((res:any) => res._id===emailBlock.activeEmailId).TextBody}
+        {__html: email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "") || email.TextBody}
       }
     />
     </>

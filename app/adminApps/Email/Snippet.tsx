@@ -1,13 +1,20 @@
 import { EmailInterface } from '~/common/types';
 
-export const Snippet: React.FC<{ email: any, emailBlock: {view: String, emails: EmailInterface[], activeEmailId: String}, setEmailBlock: any }> = ({ email, emailBlock, setEmailBlock }) => {
+export const Snippet: React.FC<{ 
+    alterEmailArray: any,
+    email: EmailInterface, 
+    emailArray: EmailInterface[],
+    setCurrentEmail: any
+}> = ({ alterEmailArray, email, emailArray, setCurrentEmail }) => {
   
   const markRead = () => {
-    emailBlock.emails.map(itEmail => {
+    let newEmailArr:EmailInterface[] = [];
+    emailArray.forEach(itEmail => {
       itEmail._id === email._id?itEmail.unread=0:"";
-      return itEmail;
+      newEmailArr.push(itEmail);
     })
-    setEmailBlock({...emailBlock, view: "email", activeEmailId: email._id})
+    alterEmailArray(newEmailArr);
+    setCurrentEmail({ view: "email", composeType: null, id: email._id });
   }
   
   return (

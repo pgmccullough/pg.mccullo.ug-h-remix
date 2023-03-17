@@ -6,7 +6,7 @@ import { clientPromise } from "~/lib/mongodb";
 
 export const action = async ({ request }: ActionArgs) => {
   const user = await getUser(request);
-  let response = null;
+  let newEmail = null;
   const emailFormData = await request.formData();
   if(user?.role==="administrator") {
     if(!process.env.POSTMARK_TOKEN) return {response: "Postmark token required."};
@@ -19,7 +19,7 @@ export const action = async ({ request }: ActionArgs) => {
     }
     const emailClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
     const genEmail = await emailClient.sendEmail(outgoingEmail)
-    const newEmail = {
+    newEmail = {
       created: Date.now(),
       MessageStream: "outbound",
       To: outgoingEmail.To,
@@ -32,11 +32,7 @@ export const action = async ({ request }: ActionArgs) => {
       HtmlBody: outgoingEmail.HtmlBody,
       Opened: 0
     };
-    response = await db.collection('myEmails').insertOne(newEmail);
+    newEmail = await db.collection('myEmails').insertOne(newEmail);
   }
-  return { response };
-}
-
-export default function send() {
-  return 400;
+  return { newEmail };
 }

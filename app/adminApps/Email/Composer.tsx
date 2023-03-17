@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { EmailInterface } from '~/common/types';
 
-export const Composer: React.FC<{ curEmail: any, emailBlock: any, emailBodyRef: any, emailForm: any, setEmailBlock: any, setEmailForm: any }> = ({ curEmail, emailBlock, emailBodyRef, emailForm, setEmailBlock, setEmailForm }) => {
+export const Composer: React.FC<{ 
+  editNewEmail: any, email: EmailInterface, emailBodyRef: any, newEmail: any
+}> = ({ editNewEmail, email, emailBodyRef, newEmail }) => {
 
   const [ formatButton, toggleFormatButton ] = useState({bold: false, italic: false, underline: false, strikethrough: false, code: false})
-
+  
   return (
     <>
       <div className="email__composer-head">
@@ -13,8 +16,8 @@ export const Composer: React.FC<{ curEmail: any, emailBlock: any, emailBodyRef: 
             type="text"
             id="email__input--to"
             name="to"
-            onChange={(e) => setEmailForm({...emailForm, [e.target.name]:e.target.value})}
-            value={emailForm.to}
+            onChange={(e) => editNewEmail({...newEmail, [e.target.name]:e.target.value})}
+            value={newEmail.to}
           />
         </div>
         <div className="email__input">
@@ -23,8 +26,8 @@ export const Composer: React.FC<{ curEmail: any, emailBlock: any, emailBodyRef: 
             type="text" 
             id="email__input--cc"
             name="cc"
-            onChange={(e) => setEmailForm({...emailForm, [e.target.name]:e.target.value})}
-            value={emailForm.cc}
+            onChange={(e) => editNewEmail({...newEmail, [e.target.name]:e.target.value})}
+            value={newEmail.cc}
           />
         </div>
         <div className="email__input">
@@ -33,8 +36,8 @@ export const Composer: React.FC<{ curEmail: any, emailBlock: any, emailBodyRef: 
             type="text"
             id="email__input--bcc"
             name="bcc"
-            onChange={(e) => setEmailForm({...emailForm, [e.target.name]:e.target.value})}
-            value={emailForm.bcc}
+            onChange={(e) => editNewEmail({...newEmail, [e.target.name]:e.target.value})}
+            value={newEmail.bcc}
           />
         </div>
         <div className="email__input">
@@ -43,8 +46,8 @@ export const Composer: React.FC<{ curEmail: any, emailBlock: any, emailBodyRef: 
             type="text"
             id="email__input--subject"
             name="subject"
-            onChange={(e) => setEmailForm({...emailForm, [e.target.name]:e.target.value})}
-            value={emailForm.subject}
+            onChange={(e) => editNewEmail({...newEmail, [e.target.name]:e.target.value})}
+            value={newEmail.subject}
           />
         </div>
         <div className="email__formatter">
@@ -74,19 +77,19 @@ export const Composer: React.FC<{ curEmail: any, emailBlock: any, emailBodyRef: 
       <div 
         className="email__body"
         contentEditable={true}
-        onKeyDown={() => setEmailForm({...emailForm, content: emailBodyRef.current.innerHTML})}
+        onKeyUp={() => editNewEmail({...newEmail, body: emailBodyRef.current.innerHTML})}
         ref={ emailBodyRef }
       >
         <br /><br />
-        {curEmail.FromName||curEmail.Subject||curEmail.Date
+        {email.FromName||email.Subject||email.Date
           ?<>
             <hr />
-            <b>From:</b> {curEmail.FromName?curEmail.FromName+" <"+curEmail.From+">":curEmail.From}<br />
-            <b>Sent: </b><br />
-            <b>To: </b> { curEmail.Date} <br />
-            <b>Subject:</b> { curEmail?.Subject||"" } <br />
-            <p dangerouslySetInnerHTML={{__html: curEmail.HtmlBody||curEmail.TextBody}} />
-            </>
+              <b>From:</b> { email.FromName?email.FromName+" <"+email.From+">":email.From}<br />
+              <b>Sent: </b> { email.Date } <br />
+              <b>To: </b> { email.To } <br />
+              <b>Subject:</b> { email?.Subject||"" } <br />
+              <p dangerouslySetInnerHTML={{__html: email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email.TextBody}} />
+          </>
           :""}
       </div>
     </>

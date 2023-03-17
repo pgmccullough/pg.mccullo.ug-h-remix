@@ -8,54 +8,29 @@ import { useEffect, useRef, useState } from 'react';
 
 export const Email: React.FC<{}> = () => {
 
+  const { emails } = useLoaderData();
+
   const emailBodyRef = useRef<any>(null);
   const emailScroll = useRef<any>(null);
 
-  const [ emailBlock, setEmailBlock ] = useState<{view: String, composeType:"new"|"reply"|"replyAll"|"forward"|"", emails: EmailInterface[], activeEmailId: String}>({view: "inbox", composeType:"", emails: [], activeEmailId: ""});
-  const [ storeScroll, setStoreScroll ] = useState(0);
-
-  const curEmailBackup = {From: "", CcFull: [], Date: "", FromName:"", HtmlBody: "", TextBody: "", Subject: ""}
-  const curEmail = emailBlock?.emails.find((email:any) => email._id===emailBlock.activeEmailId)||curEmailBackup;
-  let subject = curEmail?.Subject?.trim();
-  if(emailBlock.composeType==="reply"||emailBlock.composeType==="replyAll") {
-    subject = "Re: "+subject;
-  }
-  if(emailBlock.composeType==="forward") {
-    subject = "Fwd: "+subject;
-  }
-
-  const [ emailForm, setEmailForm ] = useState(
-    {
-      to: emailBlock.composeType==="reply"||emailBlock.composeType==="replyAll"
-        ?curEmail.From||""
-        :"",
-      cc: curEmail.CcFull.length
-        ?curEmail.CcFull.join(";")
-        :"",
-      bcc:"",
-      subject
-    }
-  );
-
-  const { emails } = useLoaderData();
+  const [ storeScroll, setStoreScroll ] = useState<Number>(0);
+  const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
+  const [ newEmail, editNewEmail ] = useState<
+    {to: string, cc: string, bcc: string, subject: string, body: string}
+  >({to: "", cc: "", bcc:"", subject: "", body: ""});
+  const [ currentEmail, setCurrentEmail ] = useState<
+    {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null}
+  >({view: "inbox", composeType: null, id: null})
 
   useEffect(() => {
-    if(emailBlock.view==="inbox") {
+    if(currentEmail.view==="inbox") {
       emailScroll.current?.scrollTo(0,storeScroll);
     } else {
       if(emailScroll.current?.scrollTop!==0) setStoreScroll(emailScroll.current?.scrollTop)
       emailScroll.current?.scrollTo(0,0);
     }
-  },[emailBlock, emailScroll, storeScroll, setStoreScroll])
-
-  useEffect(() => {
-    if(emailBlock.activeEmailId) {
-      const emailById = emailBlock.emails.filter((indEmail) => indEmail._id===emailBlock.activeEmailId)
-      setEmailBlock({...emailBlock, emails: emailById})
-    } else {
-      setEmailBlock({...emailBlock, emails: emails})
-    }
-  }, []);
+  // },[currentEmail, emailScroll, storeScroll, setStoreScroll])
+  },[currentEmail, storeScroll, setStoreScroll])
   
   return (
     <article className="postcard--left">
@@ -69,33 +44,34 @@ export const Email: React.FC<{}> = () => {
         <div className="postcard__content__text">
           <div className="email" ref={emailScroll}>
             <ActionBar 
-              emailBlock={emailBlock}
-              emailForm={emailForm}
-              setEmailBlock={setEmailBlock}
+              alterEmailArray={alterEmailArray}
+              currentEmail={currentEmail}
+              editNewEmail={editNewEmail}
+              emailArray={emailArray}
+              newEmail={newEmail}
+              setCurrentEmail={setCurrentEmail}
             />
-            {emailBlock.view==="inbox"
-              ?emailBlock.emails.map((email:any) =>
+            {currentEmail.view==="inbox"
+              ?emailArray.map((email:any) =>
                 <div key={email._id}>
                   <Snippet 
+                    alterEmailArray={alterEmailArray}
                     email={email}
-                    emailBlock={emailBlock}
-                    setEmailBlock={setEmailBlock}
+                    emailArray={emailArray}
+                    setCurrentEmail={setCurrentEmail}
                   />
                 </div>
               )
-              :emailBlock.view==="email"
+              :currentEmail.view==="email"
                 ?<IndEmail 
-                  emailBlock={emailBlock}
-                  setEmailBlock={setEmailBlock}
+                  email={emailArray.find((res:any) => res._id===currentEmail.id)!}
                 />
-                :emailBlock.view==="compose"
+                :currentEmail.view==="compose"
                   ?<Composer 
-                    curEmail={curEmail}
-                    emailBlock={emailBlock}
+                    editNewEmail={editNewEmail}
+                    email={emailArray.find((res:any) => res._id===currentEmail.id)!}
                     emailBodyRef={emailBodyRef}
-                    emailForm={emailForm}
-                    setEmailBlock={setEmailBlock}
-                    setEmailForm={setEmailForm}
+                    newEmail={newEmail}
                   />
                   :""
             }
