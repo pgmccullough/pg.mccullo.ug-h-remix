@@ -1,3 +1,8 @@
+export interface User {
+  user_name: string,
+  role: string
+}
+
 export interface Post {
   _id: string,
   content: string,
@@ -10,12 +15,13 @@ export interface Post {
   lastEdited: number,
   media: {
       audio: any,
+      directory?: string,
       files: any,
       images: any,
       links: any,
       videos: any
   }
-  privacy: string
+  privacy: "Public"|"Followers"|"Friends"|"Self"|"Save Media"
 }
 
 export interface Posts extends Array<Post>{}
@@ -36,10 +42,10 @@ export interface dateForm {
 }
 
 export interface niceDay {
-  year: String,
-  month: String,
-  niceMonth: String,
-  date: String,
+  year: string,
+  month: string,
+  niceMonth: string,
+  date: string,
   full: Date
 }
 

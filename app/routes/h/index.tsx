@@ -1,10 +1,12 @@
 import { LoaderFunction } from "@remix-run/node";
 import { useLoaderData, useParams } from "@remix-run/react";
+import { useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from '~/components/Sidebar/Sidebar';
 import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise } from "~/lib/mongodb";
+import { Post } from "~/common/types";
 
 import styles from "~/styles/App.css";
 
@@ -49,6 +51,10 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Index() {
   const { onThisDay, posts } = useLoaderData();
+  const [ editState, setEditState ] = useState<{
+    isOn: boolean, id: string|null
+  }>({ isOn: false, id: null })
+
   return (
     <>
       <Header />
@@ -56,15 +62,19 @@ export default function Index() {
         <Sidebar />
         <div className="right-column">
           {onThisDay.length?<div className="onThisDay__label">On this Day</div>:""}
-          {onThisDay?.map((thisDay:any, i:number) =>
+          {onThisDay?.map((thisDay: Post) =>
               <PostCard 
-                key={thisDay._id} 
+                key={thisDay._id}
+                editState={editState}
+                setEditState={setEditState}
                 post={thisDay}
               />
           )}
-          {posts?.map((post:any) =>
+          {posts?.map((post: Post) =>
             <PostCard 
-              key={post._id} 
+              key={post._id}
+              editState={editState}
+              setEditState={setEditState}
               post={post}
             />
           )}

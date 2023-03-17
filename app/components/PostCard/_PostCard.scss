@@ -4,6 +4,14 @@
     display: inline-block;
     width: 100%;
 
+  &--hidden {
+    display: none;
+  }
+
+    &__privacy {
+      margin-right: 2rem;
+    }
+
     &__time {
         background: $background;
         position: relative;
@@ -14,7 +22,8 @@
         padding: 12px;
         box-sizing: border-box;
         border-radius: 4px 4px 0px 0px;
-        display: inline-block;
+        display: flex;
+        justify-content: space-between;
 
         &__option {
             display: inline-flex;
@@ -71,9 +80,8 @@
         
         }
         &__onThisDay {
-            position: absolute;
-            display: inline-block;
             margin-left: 12px;
+            margin-right: 2rem;
             background: #fff;
             color: #4A6CBA;
             padding: 2px 6px 4px 6px;
@@ -109,7 +117,16 @@
             width: 200px;
             text-align: center;
             padding: 10px 0px;
-            z-index: 2;
+            z-index: 98;
+
+            &__background {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100vw;
+              height: 100vh;
+              z-index: 97;
+            }
         
             &--button {
 

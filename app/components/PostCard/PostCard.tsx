@@ -1,3 +1,4 @@
+import { useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { stampToTime } from '../../functions/functions';
@@ -6,46 +7,125 @@ import { File } from '../Media/File/File';
 import { Image } from '../Media/Image/Image';
 import { Video } from '../Media/Video/Video';
 import { Weblink } from '../Media/Weblink/Weblink';
+import { Post } from '~/common/types';
 
-export const PostCard: React.FC<{ post:any }> = ({ post }) => {
+export const PostCard: React.FC<{
+  editState: any, setEditState: any, post: any
+}> = ({ editState, setEditState, post }) => {
 
-    delete post.media.directory;
+  const { user } = useLoaderData();
 
-    const mediaComponents = [
-        {db_prop: "audio", component: Audio},
-        {db_prop: "files", component: File},
-        {db_prop: "images", component: Image},
-        {db_prop: "links", component: Weblink},
-        {db_prop: "videos", component: Video},
-    ]
+  delete post.media.directory;
 
-    const gallerySlide = (dir:"left"|"right") => {
-        if(dir==="left") {
-            galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide-1)*galWid.current.offsetWidth)+"px";
-            setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
-        } else {
-            galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide+1)*galWid.current.offsetWidth)+"px";
-            setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
-        }
-    }
+  const mediaComponents = [
+      {db_prop: "audio", component: Audio},
+      {db_prop: "files", component: File},
+      {db_prop: "images", component: Image},
+      {db_prop: "links", component: Weblink},
+      {db_prop: "videos", component: Video},
+  ]
 
-    const galSlide = useRef<any>();
-    const galWid = useRef<any>();
+  const gallerySlide = (dir:"left"|"right") => {
+      if(dir==="left") {
+          galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide-1)*galWid.current.offsetWidth)+"px";
+          setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
+      } else {
+          galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide+1)*galWid.current.offsetWidth)+"px";
+          setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
+      }
+  }
 
-    const [mediaSlides, setMediaSlides] = useState({
-        currentSlide: 0,
-        itemLength: Object.keys(post.media).map(key => post.media[key]?.length).reduce((a, b) => a + b, 0)
-    })
+  const galSlide = useRef<any>();
+  const galWid = useRef<any>();
+
+  const [mediaSlides, setMediaSlides] = useState({
+      currentSlide: 0,
+      itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0)
+  })
+
+  const [ editMode, setEditMode ] = useState(false);
+  const [ hiddenPost, setHiddenPost ] = useState(false);
+
+  const editPostCard = () => {
+    setEditMode(true);
+  }
+
+  const deletePostCard = () => {
+    setHiddenPost(true);
+  }
 
     return(
-        <article className="postcard" key={post._id}>
+        <article 
+          className={`postcard${hiddenPost? "--hidden":""}`}
+          key={post._id}
+        >
             <div className="postcard__time">
                 <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
                     <time dateTime={post.created}>{stampToTime(post.created)}</time>
                 </Link>
-                {new Date().getFullYear()!==new Date(post.created*1000).getFullYear()?<div className="postcard__time__onThisDay">{(new Date().getFullYear())-(new Date(post.created*1000).getFullYear())} years ago</div>:""}
+                <div style={{display: "flex"}}>
+                  {user?.role==="administrator"
+                    ?<div className="postcard__privacy">{post.privacy}</div>
+                    :""
+                  }
+                  {new Date().getFullYear()!==new Date(post.created*1000).getFullYear()?<div className="postcard__time__onThisDay">{(new Date().getFullYear())-(new Date(post.created*1000).getFullYear())} years ago</div>:""}
+                  {user?.role==="administrator"
+                    ?<div 
+                      className="postcard__time__option"
+                      onClick={() => {
+                        setEditMode(false);
+                        setEditState((prev: any) => 
+                          prev.id===post._id
+                            ?{ isOn: !editState.isOn, id: post._id }
+                            :{ isOn: true, id: post._id }
+                          )
+                        }
+                      }
+                    >
+                      <p className="postcard__time__option__chevron">^</p>
+                    </div>
+                    :""
+                  }
+                </div>
+                
             </div>
             <div className="postcard__content">
+              {editState.isOn&&editState.id===post._id
+                ?editMode
+                  ?<>
+                    <div 
+                      className="postcard__content__modal__background"
+                      onClick={() => {
+                        setEditMode(false);
+                        setEditState({ isOn: false, id: null })
+                      }}
+                    />
+                    <div className="postcard__content__modal">
+                      <div>Post Options</div>
+                    </div>
+                  </>
+                  :<>
+                  <div 
+                    className="postcard__content__modal__background"
+                    onClick={() => {
+                      setEditMode(false);
+                      setEditState({ isOn: false, id: null })
+                    }}
+                  />
+                  <div className="postcard__content__modal">
+                    <div>Post Options</div>
+                    <button 
+                        className="postcard__content__modal--button__edit"
+                        onClick={editPostCard}
+                    >EDIT</button>
+                    <button 
+                        className="postcard__content__modal--button__delete" 
+                        onClick={deletePostCard}
+                    >DELETE</button>
+                  </div>
+                </>
+                :""
+              }
                 <div className="postcard__content__media" ref={galWid}>
                     <figure className="postcard__content__media__slider" ref={galSlide}>
                         {
