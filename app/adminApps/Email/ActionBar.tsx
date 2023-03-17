@@ -19,9 +19,9 @@ export const ActionBar: React.FC<{
 
   const removeEmailFromState = (id: string) => {
     fetcher.data = "";
-    let ebClone = { ...emailArray };
+    let ebClone = [ ...emailArray ];
     ebClone = ebClone.filter((email:any) => email._id!==id);
-    alterEmailArray({ ...ebClone });
+    alterEmailArray(ebClone);
     setCurrentEmail({ view: "inbox", composeType: null, id: null });
   };
 
