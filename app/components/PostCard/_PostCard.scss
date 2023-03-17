@@ -4,10 +4,6 @@
     display: inline-block;
     width: 100%;
 
-  &--hidden {
-    display: none;
-  }
-
     &__privacy {
       margin-right: 2rem;
     }
@@ -113,11 +109,30 @@
             border: 1px solid #979997;
             border-radius: 4px;
             right: 4px;
-            margin-top: -12px;
+            margin-top: 4px;
             width: 200px;
             text-align: center;
             padding: 10px 0px;
             z-index: 98;
+
+            &::before {
+              position: absolute;
+              content: "";
+              border-bottom: 10px #979997 solid;
+              border-left: 10px transparent solid;
+              border-right: 10px transparent solid;
+              top: -10px;
+              right: 4px;
+            }
+            &::after {
+              position: absolute;
+              content: "";
+              border-bottom: 9px #fff solid;
+              border-left: 9px transparent solid;
+              border-right: 9px transparent solid;
+              top: -9px;
+              right: 5px;
+            }
 
             &__background {
               position: fixed;

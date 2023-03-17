@@ -1,5 +1,5 @@
-import { useLoaderData } from "@remix-run/react";
-import { useEffect, useRef, useState } from 'react';
+import { useFetcher, useLoaderData } from "@remix-run/react";
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { stampToTime } from '../../functions/functions';
 import { Audio } from '../Media/Audio/Audio';
@@ -14,160 +14,212 @@ export const PostCard: React.FC<{
 }> = ({ editState, setEditState, post }) => {
 
   const { user } = useLoaderData();
+  const fetcher = useFetcher();
 
   delete post.media.directory;
 
   const mediaComponents = [
-      {db_prop: "audio", component: Audio},
-      {db_prop: "files", component: File},
-      {db_prop: "images", component: Image},
-      {db_prop: "links", component: Weblink},
-      {db_prop: "videos", component: Video},
+    {db_prop: "audio", component: Audio},
+    {db_prop: "files", component: File},
+    {db_prop: "images", component: Image},
+    {db_prop: "links", component: Weblink},
+    {db_prop: "videos", component: Video},
+  ]
+
+  const privacyOptions = [
+    "Public",
+    "Followers",
+    "Friends",
+    "Self",
+    "Save Media"
   ]
 
   const gallerySlide = (dir:"left"|"right") => {
-      if(dir==="left") {
-          galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide-1)*galWid.current.offsetWidth)+"px";
-          setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
-      } else {
-          galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide+1)*galWid.current.offsetWidth)+"px";
-          setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
-      }
+    if(dir==="left") {
+      galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide-1)*galWid.current.offsetWidth)+"px";
+      setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
+    } else {
+      galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide+1)*galWid.current.offsetWidth)+"px";
+      setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
+    }
   }
 
   const galSlide = useRef<any>();
   const galWid = useRef<any>();
 
   const [mediaSlides, setMediaSlides] = useState({
-      currentSlide: 0,
-      itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0)
+    currentSlide: 0,
+    itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0)
   })
 
   const [ editMode, setEditMode ] = useState(false);
-  const [ hiddenPost, setHiddenPost ] = useState(false);
 
   const editPostCard = () => {
     setEditMode(true);
   }
 
   const deletePostCard = () => {
-    setHiddenPost(true);
+    fetcher.data.postDeleted = null;
   }
 
-    return(
-        <article 
-          className={`postcard${hiddenPost? "--hidden":""}`}
-          key={post._id}
-        >
-            <div className="postcard__time">
-                <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
-                    <time dateTime={post.created}>{stampToTime(post.created)}</time>
-                </Link>
-                <div style={{display: "flex"}}>
-                  {user?.role==="administrator"
-                    ?<div className="postcard__privacy">{post.privacy}</div>
-                    :""
-                  }
-                  {new Date().getFullYear()!==new Date(post.created*1000).getFullYear()?<div className="postcard__time__onThisDay">{(new Date().getFullYear())-(new Date(post.created*1000).getFullYear())} years ago</div>:""}
-                  {user?.role==="administrator"
-                    ?<div 
-                      className="postcard__time__option"
-                      onClick={() => {
-                        setEditMode(false);
-                        setEditState((prev: any) => 
-                          prev.id===post._id
-                            ?{ isOn: !editState.isOn, id: post._id }
-                            :{ isOn: true, id: post._id }
-                          )
-                        }
-                      }
-                    >
-                      <p className="postcard__time__option__chevron">^</p>
-                    </div>
-                    :""
-                  }
-                </div>
-                
-            </div>
-            <div className="postcard__content">
-              {editState.isOn&&editState.id===post._id
-                ?editMode
-                  ?<>
-                    <div 
-                      className="postcard__content__modal__background"
-                      onClick={() => {
-                        setEditMode(false);
-                        setEditState({ isOn: false, id: null })
-                      }}
-                    />
-                    <div className="postcard__content__modal">
-                      <div>Post Options</div>
-                    </div>
-                  </>
-                  :<>
-                  <div 
-                    className="postcard__content__modal__background"
-                    onClick={() => {
-                      setEditMode(false);
-                      setEditState({ isOn: false, id: null })
-                    }}
-                  />
-                  <div className="postcard__content__modal">
-                    <div>Post Options</div>
-                    <button 
-                        className="postcard__content__modal--button__edit"
-                        onClick={editPostCard}
-                    >EDIT</button>
-                    <button 
-                        className="postcard__content__modal--button__delete" 
-                        onClick={deletePostCard}
-                    >DELETE</button>
-                  </div>
-                </>
-                :""
+  const postUpdatedCleanUp = () => {
+    setEditMode(false);
+    setEditState({ isOn: false, id: null });
+    fetcher.data.privacyUpdated = null;
+  }
+
+  return(
+    <article 
+      className="postcard"
+      key={post._id}
+    >
+      <div className="postcard__time">
+        <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
+          <time dateTime={post.created}>{stampToTime(post.created)}</time>
+        </Link>
+        <div style={{display: "flex"}}>
+          {user?.role==="administrator"
+            ?<div className="postcard__privacy">{post.privacy}</div>
+            :""
+          }
+          {new Date().getFullYear()!==new Date(post.created*1000).getFullYear()?<div className="postcard__time__onThisDay">{(new Date().getFullYear())-(new Date(post.created*1000).getFullYear())} years ago</div>:""}
+          {user?.role==="administrator"
+            ?<div 
+              className="postcard__time__option"
+              onClick={() => {
+                setEditMode(false);
+                setEditState((prev: any) => 
+                  prev.id===post._id
+                    ?{ isOn: !editState.isOn, id: post._id }
+                    :{ isOn: true, id: post._id }
+                  )
+                }
               }
-                <div className="postcard__content__media" ref={galWid}>
-                    <figure className="postcard__content__media__slider" ref={galSlide}>
-                        {
-                            mediaSlides.currentSlide!==0
-                                ?<div 
-                                    className="postcard__content__media__slide--left"
-                                    onClick={()=>{gallerySlide("left")}}
-                                />
-                                :""
-                        }
-                        {
-                            mediaSlides.itemLength>1&&mediaSlides.currentSlide<mediaSlides.itemLength-1
-                                ?<div 
-                                    className="postcard__content__media__slide--right shuk" 
-                                    onClick={()=>{gallerySlide("right")}}
-                                />
-                                :""
-                        }
-                        {
-                            Object.keys(post.media).map(key => {
-                                const DynamicComponent = mediaComponents.find(match => match.db_prop === key);
-                                return(
-                                    Array.isArray(post.media[key])&&DynamicComponent
-                                        ?post.media[key].map((item:string) =>
-                                            <DynamicComponent.component
-                                                key={item} 
-                                                src={item} 
-                                                alt=""
-                                            />
-                                        )
-                                        :null
-                                )
-                            })
-                        }
-                    </figure>                                                           
-                </div>
-                <div className="postcard__content__text">
-                    <p dangerouslySetInnerHTML={{__html: post.content}} />
-                </div>
-                <div className="postcard__content__meta">
-                </div>
+            >
+              <p className="postcard__time__option__chevron">^</p>
             </div>
-        </article>
-    )
+            :""
+          }
+        </div>
+          
+      </div>
+      <div className="postcard__content">
+        {editState.isOn&&editState.id===post._id
+          ?editMode
+            ?<>
+              <div 
+                className="postcard__content__modal__background"
+                onClick={() => {
+                  setEditMode(false);
+                  setEditState({ isOn: false, id: null })
+                }}
+              />
+              <div className="postcard__content__modal">
+                <div>Post Options</div>
+                <fetcher.Form 
+                  method="post"
+                  action={`/api/post/update/${post._id}`}
+                >
+                  <select name="privacy">
+                    {privacyOptions.map((privacy:string) =>
+                      <option selected={
+                        privacy===post.privacy
+                          ?true
+                          :false
+                      }>
+                        {privacy}
+                      </option>
+                    )
+                    }
+                  </select>
+                  <button>SAVE</button>
+                </fetcher.Form>
+                <>
+                {fetcher.data?.privacyUpdated
+                  ?postUpdatedCleanUp()
+                  :""
+                }
+                </>
+              </div>
+            </>
+            :<>
+            <div 
+              className="postcard__content__modal__background"
+              onClick={() => {
+                setEditMode(false);
+                setEditState({ isOn: false, id: null })
+              }}
+            />
+            <div className="postcard__content__modal">
+              <div>Post Options</div>
+              <button 
+                className="postcard__content__modal--button__edit"
+                onClick={editPostCard}
+              >EDIT</button>
+              <fetcher.Form 
+                method="post"
+                action={`/api/post/delete/${post._id}`}
+                style={{display: "inline"}}
+              >
+                <button 
+                  className="postcard__content__modal--button__delete" 
+                >DELETE</button>
+              </fetcher.Form>
+              <>
+                {fetcher.data?.postDeleted
+                  ?deletePostCard()
+                  :""
+                }
+              </>
+            </div>
+          </>
+          :""
+        }
+          <div className="postcard__content__media" ref={galWid}>
+            <figure className="postcard__content__media__slider" ref={galSlide}>
+              {
+                mediaSlides.currentSlide!==0
+                  ?<div 
+                    className="postcard__content__media__slide--left"
+                    onClick={()=>{gallerySlide("left")}}
+                  />
+                  :""
+              }
+              {
+                mediaSlides.itemLength>1&&mediaSlides.currentSlide<mediaSlides.itemLength-1
+                  ?<div 
+                    className="postcard__content__media__slide--right shuk" 
+                    onClick={()=>{gallerySlide("right")}}
+                  />
+                  :""
+              }
+              {
+                Object.keys(post.media).map(key => {
+                  const DynamicComponent = mediaComponents.find(match => match.db_prop === key);
+                  return(
+                    Array.isArray(post.media[key])&&DynamicComponent
+                      ?post.media[key].map((item:string) =>
+                        <DynamicComponent.component
+                          key={item} 
+                          src={item} 
+                          alt=""
+                        />
+                      )
+                      :null
+                  )
+                })
+              }
+            </figure>                                                           
+          </div>
+          {post.content.replace(/(<([^>]+)>)/gi, "")
+            ?<div className="postcard__content__text">
+              <p dangerouslySetInnerHTML={{__html: post.content}} />
+            </div>
+            :""
+          }
+          <div className="postcard__content__meta">
+          </div>
+      </div>
+    </article>
+  )
 }
