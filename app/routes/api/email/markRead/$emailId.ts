@@ -18,7 +18,3 @@ export const action = async ({ request }: ActionArgs) => {
   }
   return { response, readEmailId };
 }
-
-export default function markReadEmail() {
-  return 400;
-}

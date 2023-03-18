@@ -172,6 +172,28 @@
             }
         }
 
+        &__headerOptionH1 {
+          background: #eee;
+          font-weight: 700;
+          padding: 0.3rem 0;
+          border-bottom: 1px #666 solid;
+        }
+
+        &__headerOptionUL {
+          margin: 0.65rem 0;
+          padding: 0;
+        }
+
+        &__headerOption {
+          list-style: none;
+          transition: 0.25s;
+          padding: 0.4rem 0;
+          cursor: pointer;
+          &:hover {
+            background: #eee;
+          }
+        }
+
         &__media {
             position: relative;
             display: flex;
