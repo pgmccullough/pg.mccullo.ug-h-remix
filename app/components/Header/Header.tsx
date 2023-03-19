@@ -51,19 +51,25 @@ export const Header: React.FC<{}> = () => {
     }
   }
 
-  const handleProfileChange = (e:any) => {
-    if(profileImageInput.current) {
-      const s3Path = "images_user_cover_"; // can't pass slashes so '_' is replaced in s3.server.ts
+  const s3Upload = (s3Path:string, fileRef:React.RefObject<HTMLInputElement>) => {
+    if(fileRef.current&&fileRef.current.files?.length) {
+      s3Path = s3Path.replaceAll("/","_"); // can't pass slashes so '_' is replaced in s3.server.ts
       const dataTransfer = new DataTransfer();
-      const profileImg = e.target.files[0];
+      const profileImg = fileRef.current.files[0];
       const imgExtension = profileImg.name.split(".").at(-1);
       const newFileName = s3Path + uuidv4() + "." + imgExtension;
       const blob = profileImg.slice(0, profileImg.size, profileImg.type); 
       const newFile = new File([blob], newFileName, {type: profileImg.type});
       dataTransfer.items.add(newFile);
-      profileImageInput.current.files = dataTransfer.files;
+      fileRef.current.files = dataTransfer.files;
+      return true;
     }
-    if(profileImageSubmit.current) {
+    return false;
+  }
+
+  const handleProfileChange = () => {    
+    const fileRenamed:boolean = s3Upload("images/user/cover/", profileImageInput)
+    if( fileRenamed && profileImageSubmit.current ) {
       profileImageSubmit.current.click();
     }
   }
@@ -86,7 +92,12 @@ export const Header: React.FC<{}> = () => {
         <button ref={profileImageSubmit}></button>
       </fetcher.Form>
       <div className="header__cover">
-        <img src={siteData?.cover_image?.image} width="100%" alt={siteData?.site_name} />  
+        <img src={siteData?.cover_image?.image} width="100%" alt={siteData?.site_name} />
+          {
+            fetcher.data?.imgSrc
+            ?<h1>{fetcher.data.imgSrc} WAS UPLOADED</h1>
+            :""
+          }
         <div className="header__text">
           {user?.role==="administrator"
             ?<h1 
