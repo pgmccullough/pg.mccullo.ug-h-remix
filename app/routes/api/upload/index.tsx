@@ -10,7 +10,7 @@ import { s3UploadHandler } from "~/utils/s3.server";
 
 export const action = async ({ request }: ActionArgs) => {
   const uploadHandler: UploadHandler = composeUploadHandlers(
-    s3UploadHandler,
+    (e) => s3UploadHandler(e),
     createMemoryUploadHandler()
   );
   const formData = await parseMultipartFormData(request, uploadHandler);
@@ -20,7 +20,6 @@ export const action = async ({ request }: ActionArgs) => {
       errorMsg: "Something went wrong while uploading",
     });
   }
-  console.log(imgSrc);
   return json({
     imgSrc,
   });

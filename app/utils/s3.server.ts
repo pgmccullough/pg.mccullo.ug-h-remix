@@ -44,12 +44,11 @@ export async function uploadStreamToS3(data: any, filename: string) {
 export const s3UploadHandler: UploadHandler = async ({
   name,
   filename,
-  data,
+  data
 }) => {
   if (name !== "img") {
     return undefined;
   }
-  const uploadedFileLocation = await uploadStreamToS3(data, "images/user/cover/aaa.jpg");
-  //const uploadedFileLocation = await uploadStreamToS3(data, filename!);
+  const uploadedFileLocation = await uploadStreamToS3(data, filename?.replaceAll("_","/")!);
   return uploadedFileLocation;
 };

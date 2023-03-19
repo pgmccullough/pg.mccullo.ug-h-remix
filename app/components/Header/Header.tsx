@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { SiteData } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
 import { UploadBox } from '../UploadBox/UploadBox';
+import { v4 as uuidv4 } from 'uuid';
 
 export const Header: React.FC<{}> = () => {
     
@@ -51,6 +52,17 @@ export const Header: React.FC<{}> = () => {
   }
 
   const handleProfileChange = (e:any) => {
+    if(profileImageInput.current) {
+      const s3Path = "images_user_cover_"; // can't pass slashes so '_' is replaced in s3.server.ts
+      const dataTransfer = new DataTransfer();
+      const profileImg = e.target.files[0];
+      const imgExtension = profileImg.name.split(".").at(-1);
+      const newFileName = s3Path + uuidv4() + "." + imgExtension;
+      const blob = profileImg.slice(0, profileImg.size, profileImg.type); 
+      const newFile = new File([blob], newFileName, {type: profileImg.type});
+      dataTransfer.items.add(newFile);
+      profileImageInput.current.files = dataTransfer.files;
+    }
     if(profileImageSubmit.current) {
       profileImageSubmit.current.click();
     }
