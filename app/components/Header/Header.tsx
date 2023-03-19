@@ -1,34 +1,35 @@
 import { Link } from 'react-router-dom';
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { Form, useFetcher, useLoaderData } from "@remix-run/react";
 import { useRef, useState } from 'react';
-import { SiteData } from '../../common/types';
-import { stampToTime } from '../../functions/functions';
+import { SiteData } from '~/common/types';
+import { stampToTime } from '~/functions/functions';
 import { UploadBox } from '../UploadBox/UploadBox';
 
 export const Header: React.FC<{}> = () => {
     
   const fetcher = useFetcher();
-  const { user, siteData } = useLoaderData();
-
+  const { user, siteData } = useLoaderData<{
+    user: {user_name: string,role: string},
+    siteData: SiteData
+  }>();
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
   const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData.watchword.word });
   const watchWordRef = useRef<HTMLDivElement>(null);
+  const profileImageSubmit = useRef<HTMLButtonElement>(null);
+  const profileImageInput = useRef<HTMLInputElement>(null);
 
   const uploadProfileImg = () => {
 
   }
 
   const uploadStoryImg = () => {
-
+    if(profileImageInput.current) profileImageInput.current.click();
   }
 
   const blurWatchWord = () => {
     if(watchWordRef.current) {
       watchWordRef.current.contentEditable = "false";
-      //console.log("THIS IS WHERE WE SEND REQUEST TO DB TO UPDATE WORD TO "+watchWordActive.watchword);
       if(watchWordActive.watchword) {
-        console.log(siteData);
-        console.log("arr proof ",siteData.past_watchwords)
         fetcher.submit(
           { watchword: watchWordActive.watchword, 
             siteData: JSON.stringify(siteData)
@@ -49,8 +50,29 @@ export const Header: React.FC<{}> = () => {
     }
   }
 
+  const handleProfileChange = (e:any) => {
+    if(profileImageSubmit.current) {
+      profileImageSubmit.current.click();
+    }
+  }
+
   return (
     <header className="header">
+      <fetcher.Form 
+        method="post" 
+        action="/api/upload?index" 
+        encType="multipart/form-data"
+        style={{display: "none"}}
+      >
+        <input 
+          type="file"
+          name="img" 
+          accept="image/*"
+          onChange={handleProfileChange}
+          ref={profileImageInput}
+        />
+        <button ref={profileImageSubmit}></button>
+      </fetcher.Form>
       <div className="header__cover">
         <img src={siteData?.cover_image?.image} width="100%" alt={siteData?.site_name} />  
         <div className="header__text">
