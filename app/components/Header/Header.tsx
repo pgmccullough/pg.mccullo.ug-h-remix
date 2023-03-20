@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Form, useFetcher, useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useRef, useState } from 'react';
 import { SiteData } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
@@ -16,15 +16,12 @@ export const Header: React.FC<{}> = () => {
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
   const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData.watchword.word });
   const watchWordRef = useRef<HTMLDivElement>(null);
-  const profileImageSubmit = useRef<HTMLButtonElement>(null);
-  const profileImageInput = useRef<HTMLInputElement>(null);
-
-  const uploadProfileImg = () => {
-
-  }
+  const storyImageSubmit = useRef<HTMLButtonElement>(null);
+  const storyImageInput = useRef<HTMLInputElement>(null);
+  const storyImage = useRef<HTMLImageElement>(null)
 
   const uploadStoryImg = () => {
-    if(profileImageInput.current) profileImageInput.current.click();
+    if(storyImageInput.current) storyImageInput.current.click();
   }
 
   const blurWatchWord = () => {
@@ -62,16 +59,33 @@ export const Header: React.FC<{}> = () => {
       const newFile = new File([blob], newFileName, {type: profileImg.type});
       dataTransfer.items.add(newFile);
       fileRef.current.files = dataTransfer.files;
-      return true;
+      return newFile;
     }
     return false;
   }
 
-  const handleProfileChange = () => {    
-    const fileRenamed:boolean = s3Upload("images/user/cover/", profileImageInput)
-    if( fileRenamed && profileImageSubmit.current ) {
-      profileImageSubmit.current.click();
+  const handleProfileChange = () => {
+
+    const fileRenamed:Blob|false = s3Upload("images/user/cover/", storyImageInput)
+    if( fileRenamed && storyImageSubmit.current && storyImage.current ) {
+      const reader = new FileReader();
+      reader.readAsDataURL(fileRenamed);
+      reader.onload = function(e:any) {
+          storyImage.current!.src = e.target!.result;
+      }
+      storyImageSubmit.current.click();
     }
+  }
+
+  if(fetcher.data?.imgSrc) {
+    const imgName = fetcher.data.imgSrc.split("/").slice(4);
+    if(imgName[2]==="cover") {
+      console.log("send story img "+fetcher.data.imgSrc+" to database");
+    }
+    if(imgName[2]==="profile") {
+      console.log("send prof img "+fetcher.data.imgSrc+" to database");
+    }
+    fetcher.data.imgSrc = "";
   }
 
   return (
@@ -87,12 +101,17 @@ export const Header: React.FC<{}> = () => {
           name="img" 
           accept="image/*"
           onChange={handleProfileChange}
-          ref={profileImageInput}
+          ref={storyImageInput}
         />
-        <button ref={profileImageSubmit}></button>
+        <button ref={storyImageSubmit}></button>
       </fetcher.Form>
       <div className="header__cover">
-        <img src={siteData?.cover_image?.image} width="100%" alt={siteData?.site_name} />
+        <img 
+          src={siteData?.cover_image?.image} 
+          width="100%" 
+          alt={siteData?.site_name}
+          ref={storyImage}
+        />
           {
             fetcher.data?.imgSrc
             ?<h1>{fetcher.data.imgSrc} WAS UPLOADED</h1>
@@ -183,7 +202,6 @@ export const Header: React.FC<{}> = () => {
               <ul className="postcard__content__headerOptionUL">
                 <li 
                   className="postcard__content__headerOption"
-                  onClick={uploadProfileImg}
                 >Upload Profile Image</li>
                 <li 
                   className="postcard__content__headerOption"
