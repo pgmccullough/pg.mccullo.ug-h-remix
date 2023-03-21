@@ -14,7 +14,7 @@ const {
 if (
   !(S3_KEY && S3_SECRET && S3_REGION && S3_BUCKET)
 ) {
-  throw new Error(`Storage is missing required configuration.`);
+  throw new Error(`S3 is missing required configuration.`);
 }
 
 const uploadStream = ({ Key }: Pick<AWS.S3.Types.PutObjectRequest, "Key">) => {
