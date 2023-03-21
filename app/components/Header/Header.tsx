@@ -17,12 +17,21 @@ export const Header: React.FC<{}> = () => {
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
   const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData.watchword.word });
   const watchWordRef = useRef<HTMLDivElement>(null);
+
   const storyImageSubmit = useRef<HTMLButtonElement>(null);
   const storyImageInput = useRef<HTMLInputElement>(null);
-  const storyImage = useRef<HTMLImageElement>(null)
+  const storyImage = useRef<HTMLImageElement>(null);
+
+  const profileImageSubmit = useRef<HTMLButtonElement>(null);
+  const profileImageInput = useRef<HTMLInputElement>(null);
+  const profileImage = useRef<HTMLImageElement>(null)
 
   const uploadStoryImg = () => {
     if(storyImageInput.current) storyImageInput.current.click();
+  }
+
+  const uploadProfileImg = () => {
+    if(profileImageInput.current) profileImageInput.current.click();
   }
 
   const blurWatchWord = () => {
@@ -78,6 +87,19 @@ export const Header: React.FC<{}> = () => {
     }
   }
 
+  const handleProfileChange = () => {
+    const fileRenamed:Blob|false = s3Upload("images/user/profile/", profileImageInput)
+    if( fileRenamed && profileImageSubmit.current && profileImage.current ) {
+      const reader = new FileReader();
+      reader.readAsDataURL(fileRenamed);
+      reader.onload = function(e:any) {
+        profileImage.current!.style.backgroundImage = `url(${e.target!.result})`;
+      }
+      profileImageSubmit.current.click();
+      toggleInEdit(false);
+    }
+  }
+
   const gpsFromImg = async(img:string) => {
     const { latitude, longitude } = await getGPS(img)||{latitude: null, longitude: null};
     return { latitude, longitude };
@@ -95,6 +117,20 @@ export const Header: React.FC<{}> = () => {
             siteData: JSON.stringify(siteData)
           },
           { method: "post", action: "/api/siteData/storyImage?index" }
+        );
+        fetcher.data.imgSrc = "";
+      });
+    }
+    else if(imgName[2]==="profile") {
+      const permaName = "https://api.mccullo.ug/media/"+imgName.join("/");
+      gpsFromImg(permaName).then(({ latitude, longitude }) => {
+        fetcher.submit(
+          {
+            gps: JSON.stringify({ latitude, longitude }),
+            image: permaName,
+            siteData: JSON.stringify(siteData)
+          },
+          { method: "post", action: "/api/siteData/profileImage?index" }
         );
         fetcher.data.imgSrc = "";
       });
@@ -118,6 +154,23 @@ export const Header: React.FC<{}> = () => {
         />
         <button ref={storyImageSubmit}></button>
       </fetcher.Form>
+
+      <fetcher.Form 
+        method="post" 
+        action="/api/upload?index" 
+        encType="multipart/form-data"
+        style={{display: "none"}}
+      >
+        <input 
+          type="file"
+          name="img" 
+          accept="image/*"
+          onChange={handleProfileChange}
+          ref={profileImageInput}
+        />
+        <button ref={profileImageSubmit}></button>
+      </fetcher.Form>
+
       <div className="header__cover">
         <img 
           src={siteData?.cover_image?.image} 
@@ -125,11 +178,6 @@ export const Header: React.FC<{}> = () => {
           alt={siteData?.site_name}
           ref={storyImage}
         />
-          {
-            fetcher.data?.imgSrc
-            ?<h1>{fetcher.data.imgSrc} WAS UPLOADED</h1>
-            :""
-          }
         <div className="header__text">
           {user?.role==="administrator"
             ?<h1 
@@ -223,6 +271,7 @@ export const Header: React.FC<{}> = () => {
               <ul className="postcard__content__headerOptionUL">
                 <li 
                   className="postcard__content__headerOption"
+                  onClick={uploadProfileImg}
                 >Upload Profile Image</li>
                 <li 
                   className="postcard__content__headerOption"
@@ -244,7 +293,10 @@ export const Header: React.FC<{}> = () => {
       <Link to="/h/">
         <div 
           className="header__profile" 
-          style={{backgroundImage: `url('${siteData?.profile_image?.image}')`}}
+          style={{
+            backgroundImage: `url('${siteData?.profile_image?.image}')`
+          }}
+          ref={profileImage}
         />
       </Link>
     </header>
