@@ -5,6 +5,7 @@ import { SiteData } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
 import { UploadBox } from '../UploadBox/UploadBox';
 import { v4 as uuidv4 } from 'uuid';
+import { gps as getGPS } from 'exifr';
 
 export const Header: React.FC<{}> = () => {
     
@@ -53,12 +54,12 @@ export const Header: React.FC<{}> = () => {
       s3Path = s3Path.replaceAll("/","_"); // can't pass slashes so '_' is replaced in s3.server.ts
       const dataTransfer = new DataTransfer();
       const profileImg = fileRef.current.files[0];
+      const blob = profileImg.slice(0, profileImg.size, profileImg.type); 
       const imgExtension = profileImg.name.split(".").at(-1);
       const newFileName = s3Path + uuidv4() + "." + imgExtension;
-      const blob = profileImg.slice(0, profileImg.size, profileImg.type); 
       const newFile = new File([blob], newFileName, {type: profileImg.type});
       dataTransfer.items.add(newFile);
-      fileRef.current.files = dataTransfer.files;
+      fileRef.current!.files = dataTransfer.files;
       return newFile;
     }
     return false;
@@ -77,19 +78,27 @@ export const Header: React.FC<{}> = () => {
     }
   }
 
+  const gpsFromImg = async(img:string) => {
+    const { latitude, longitude } = await getGPS(img)||{latitude: null, longitude: null};
+    return { latitude, longitude };
+  }
+
   if(fetcher.data?.imgSrc) {
     const imgName = fetcher.data.imgSrc.split("/").slice(4);
     if(imgName[2]==="cover") {
       const permaName = "https://api.mccullo.ug/media/"+imgName.join("/");
-      fetcher.submit(
-        {
-          image: permaName,
-          siteData: JSON.stringify(siteData)
-        },
-        { method: "post", action: "/api/siteData/storyImage?index" }
-      );
+      gpsFromImg(permaName).then(({ latitude, longitude }) => {
+        fetcher.submit(
+          {
+            gps: JSON.stringify({ latitude, longitude }),
+            image: permaName,
+            siteData: JSON.stringify(siteData)
+          },
+          { method: "post", action: "/api/siteData/storyImage?index" }
+        );
+        fetcher.data.imgSrc = "";
+      });
     }
-    fetcher.data.imgSrc = "";
   }
 
   return (
@@ -141,44 +150,52 @@ export const Header: React.FC<{}> = () => {
           {siteData&&siteData.cover_image?
           <div className="header__p">
             cover: {stampToTime(siteData?.cover_image?.timestamp/1000)}
-            <a 
-              className="gpsPinLink" 
-              href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps?.lat},${siteData?.cover_image?.gps?.long}`} 
-              rel="noreferrer"
-              target="_BLANK"
-            >
-              <div className="gpsPin" />
-            </a>
-            <div className="gpsCoords">
-              <a 
-                  href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps?.lat},${siteData?.cover_image?.gps?.long}`}
+            {siteData?.cover_image?.gps?.lat
+              ?<>
+                <a 
+                  className="gpsPinLink" 
+                  href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps?.lat},${siteData?.cover_image?.gps?.long}`} 
                   rel="noreferrer"
                   target="_BLANK"
-              >
-                  {siteData?.cover_image?.gps?.string}
-              </a>
-            </div>
+                >
+                  <div className="gpsPin" />
+                </a>
+                <div className="gpsCoords">
+                  <a 
+                      href={`https://www.google.com/maps/search/${siteData?.cover_image?.gps?.lat},${siteData?.cover_image?.gps?.long}`}
+                      rel="noreferrer"
+                      target="_BLANK"
+                  >
+                      {siteData?.cover_image?.gps?.string}
+                  </a>
+                </div>
+              </>
+              :""}
           </div>
           :""}
           {siteData&&siteData.profile_image?
           <div className="header__p">profile: {stampToTime(siteData?.profile_image?.timestamp/1000)}
-            <a 
-              className="gpsPinLink" 
-              href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps?.lat},${siteData?.profile_image?.gps?.long}`} 
-              rel="noreferrer"
-              target="_BLANK"
-            >
-              <div className="gpsPin" />
-            </a>
-            <div className="gpsCoords">
-              <a 
-                href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps?.lat},${siteData?.profile_image?.gps?.long}`} 
-                rel="noreferrer"
-                target="_BLANK"
-              >
-                {siteData?.profile_image?.gps?.string}
-              </a>
-            </div>
+            {siteData?.profile_image?.gps?.lat
+              ?<>
+                <a 
+                  className="gpsPinLink" 
+                  href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps?.lat},${siteData?.profile_image?.gps?.long}`} 
+                  rel="noreferrer"
+                  target="_BLANK"
+                >
+                  <div className="gpsPin" />
+                </a>
+                <div className="gpsCoords">
+                  <a 
+                    href={`https://www.google.com/maps/search/${siteData?.profile_image?.gps?.lat},${siteData?.profile_image?.gps?.long}`} 
+                    rel="noreferrer"
+                    target="_BLANK"
+                  >
+                    {siteData?.profile_image?.gps?.string}
+                  </a>
+                </div>
+              </>
+              :""}
           </div>
           :""}
         </div>
