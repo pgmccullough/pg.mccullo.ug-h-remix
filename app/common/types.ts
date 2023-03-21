@@ -69,8 +69,17 @@ export interface SiteData {
           "string": string
       },
       "timestamp": number,
-      "image": string
+      "image": string // format: https://api.mccullo.ug/media/images/user/cover/8680f5a0-bbd5-11ed-9cfb-7ffb3c1a9f61_1678076127738.jpg
   },
+  past_cover_images:{
+    "gps":{
+        "lat": string,
+        "long": string,
+        "string": string
+    },
+    "timestamp": number,
+    "image": string // format: https://api.mccullo.ug/media/images/user/cover/8680f5a0-bbd5-11ed-9cfb-7ffb3c1a9f61_1678076127738.jpg
+  }[],
   profile_image:{
       "gps":{
           "lat": string,

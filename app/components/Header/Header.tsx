@@ -64,8 +64,7 @@ export const Header: React.FC<{}> = () => {
     return false;
   }
 
-  const handleProfileChange = () => {
-
+  const handleStoryChange = () => {
     const fileRenamed:Blob|false = s3Upload("images/user/cover/", storyImageInput)
     if( fileRenamed && storyImageSubmit.current && storyImage.current ) {
       const reader = new FileReader();
@@ -74,16 +73,21 @@ export const Header: React.FC<{}> = () => {
           storyImage.current!.src = e.target!.result;
       }
       storyImageSubmit.current.click();
+      toggleInEdit(false);
     }
   }
 
   if(fetcher.data?.imgSrc) {
     const imgName = fetcher.data.imgSrc.split("/").slice(4);
     if(imgName[2]==="cover") {
-      console.log("send story img "+fetcher.data.imgSrc+" to database");
-    }
-    if(imgName[2]==="profile") {
-      console.log("send prof img "+fetcher.data.imgSrc+" to database");
+      const permaName = "https://api.mccullo.ug/media/"+imgName.join("/");
+      fetcher.submit(
+        {
+          image: permaName,
+          siteData: JSON.stringify(siteData)
+        },
+        { method: "post", action: "/api/siteData/storyImage?index" }
+      );
     }
     fetcher.data.imgSrc = "";
   }
@@ -100,7 +104,7 @@ export const Header: React.FC<{}> = () => {
           type="file"
           name="img" 
           accept="image/*"
-          onChange={handleProfileChange}
+          onChange={handleStoryChange}
           ref={storyImageInput}
         />
         <button ref={storyImageSubmit}></button>
