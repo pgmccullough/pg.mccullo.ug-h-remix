@@ -10,7 +10,7 @@ import { s3UploadHandler } from "~/utils/s3.server";
 
 export const action = async ({ request }: ActionArgs) => {
   const uploadHandler: UploadHandler = composeUploadHandlers(
-    (e) => s3UploadHandler(e),
+    s3UploadHandler,
     createMemoryUploadHandler()
   );
   const formData = await parseMultipartFormData(request, uploadHandler);

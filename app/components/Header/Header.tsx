@@ -105,7 +105,7 @@ export const Header: React.FC<{}> = () => {
     return { latitude, longitude };
   }
 
-  if(fetcher.data?.imgSrc) {
+  if(fetcher.data?.imgSrc?.length) {
     const imgName = fetcher.data.imgSrc.split("/").slice(4);
     if(imgName[2]==="cover") {
       const permaName = "https://api.mccullo.ug/media/"+imgName.join("/");
