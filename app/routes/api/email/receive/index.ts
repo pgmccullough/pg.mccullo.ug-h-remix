@@ -1,13 +1,18 @@
 import type { ActionArgs, ActionFunction } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { clientPromise } from "~/lib/mongodb";
+import { HeadersFunction } from "remix";
 import AWS from "aws-sdk";
+
+export const headers: HeadersFunction = () => {
+  return { "Access-Control-Allow-Origin": "*" };
+};
 
 export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
   const postData = await request.json();
-  const reqBody:any = json({ postData });
-  const { OriginalRecipient } = await reqBody;
+  const reqBody:any = postData;
+  const { OriginalRecipient } = reqBody;
   console.log("reqBody dump: ",reqBody);
   console.log("CHECK FOR POST: ",request.method);
   console.log("CHECK FOR ENV: ",process.env.POSTMARK_INBOUND_ADDRESS," RECIP: ",OriginalRecipient);
@@ -54,7 +59,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
     s3.upload(params);
   }
   
-  const newEmail = {...await reqBody,unread:1,created:Date.now()};
+  const newEmail = {...reqBody,unread:1,created:Date.now()};
   newEmail.Attachments?.forEach((attach:any) => {
     uploadAttachment(attach.Content,attach.Name,attach.ContentType,attach.ContentID);
     delete attach.Content;
