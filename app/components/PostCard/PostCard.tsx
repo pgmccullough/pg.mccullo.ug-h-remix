@@ -104,7 +104,7 @@ export const PostCard: React.FC<{
           
       </div>
       <div className="postcard__content">
-        {editState.isOn&&editState.id===post._id
+        {editState?.isOn&&editState?.id===post._id
           ?editMode
             ?<>
               <div 
