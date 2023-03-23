@@ -1,10 +1,13 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { EmailInterface } from '~/common/types';
 
 export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const fetcher = useFetcher();
+
+  const [attachments, setAttachments] = useState<any>([]);
+  const [cleanEmail, setCleanEmail] = useState<any>(email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email.TextBody);
 
   useEffect(() => {
     fetcher.submit(
@@ -15,23 +18,34 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const attToImg = (body:any,atts:any) => {
     atts?.map((att:any) => {
-      body = body.replace(`cid:${att.ContentID}`,`https://api.mccullo.ug/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`);
+      setAttachments((prev:any) =>
+        [...prev,{ file: `https://pg.mccullo.ug/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`, name:att.Name }]
+      );
+      body = body.replace(`cid:${att.ContentID}`,`https://pg.mccullo.ug/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`);
     })
     return body;
   };
 
+  useEffect(() => {
+    setAttachments([]);
+    setCleanEmail(attToImg(email.HtmlBody.replace(/(<style[\w\W]+style>)/g, ""),email.Attachments) || attToImg(email.TextBody,email.Attachments));
+  },[])
+
   return (
     <>
-    {email.HtmlBody?.replace(/(<style[\w\W]+style>)/g, "").replace(/(<([^>]+)>)/gi, "").replace(/\s/g, '').replaceAll("&nbsp;","")
-      ?<div dangerouslySetInnerHTML={{__html: attToImg(email.HtmlBody.replace(/(<style[\w\W]+style>)/g, ""),email.Attachments)}} />
-      :<div dangerouslySetInnerHTML={{__html: email.TextBody}} />
-    }
-
-    <div
-      dangerouslySetInnerHTML={
-        {__html: email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "") || email.TextBody}
+      {attachments.length
+        ?attachments.map((dl:any) =>
+          <>
+            <a href={dl.file}>{dl.name}</a>
+          </>
+        )
+        :""
       }
-    />
+      <div
+        dangerouslySetInnerHTML={
+          {__html: cleanEmail}
+        }
+      />
     </>
   )
 }
