@@ -7,7 +7,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
   const postData = await request.json();
   const reqBody:any = json({ postData });
-  const { OriginalRecipient } = reqBody;
+  const { OriginalRecipient } = await reqBody;
   console.log("reqBody dump: ",reqBody);
   console.log("CHECK FOR POST: ",request.method);
   console.log("CHECK FOR ENV: ",process.env.POSTMARK_INBOUND_ADDRESS," RECIP: ",OriginalRecipient);
@@ -54,7 +54,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
     s3.upload(params);
   }
   
-  const newEmail = {...reqBody,unread:1,created:Date.now()};
+  const newEmail = {...await reqBody,unread:1,created:Date.now()};
   newEmail.Attachments?.forEach((attach:any) => {
     uploadAttachment(attach.Content,attach.Name,attach.ContentType,attach.ContentID);
     delete attach.Content;
