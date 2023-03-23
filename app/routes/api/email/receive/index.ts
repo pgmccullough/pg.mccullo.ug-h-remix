@@ -1,20 +1,12 @@
 import type { ActionArgs, ActionFunction } from "@remix-run/node";
 import { clientPromise } from "~/lib/mongodb";
-import { HeadersFunction } from "remix";
 import AWS from "aws-sdk";
-
-// export const headers: HeadersFunction = () => {
-//   return { "Access-Control-Allow-Origin": "*" };
-// };
 
 export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
   const postData = await request.json();
   const reqBody:any = postData;
   const { OriginalRecipient } = reqBody;
-  console.log("reqBody dump: ",reqBody);
-  console.log("CHECK FOR POST: ",request.method);
-  console.log("CHECK FOR ENV: ",process.env.POSTMARK_INBOUND_ADDRESS," RECIP: ",OriginalRecipient);
 
   if(request.method!=="POST"
     ||OriginalRecipient!==process.env.POSTMARK_INBOUND_ADDRESS
@@ -49,13 +41,19 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
     const contentNameBits:String[] = contentName.split(".");
     const contentExt = contentNameBits.at(-1);
     const params = {
-      Bucket: process.env.AWS_BUCKET_NAME!,
+      Bucket: S3_BUCKET!,
       Key: `images/emailAttachments/${contentID}.${contentExt}`,
       Body: base64Data,
       ContentEncoding: 'base64',
       ContentType: contentType
     }
-    s3.upload(params);
+    s3.upload(params, (err:any, data:any) => {
+      if (err) {
+        console.log("Email Attachment Error", err);
+      } if (data) {
+        console.log("Email Attachment Upload Success", data.Location);
+      }
+    });
   }
   
   const newEmail = {...reqBody,unread:1,created:Date.now()};
