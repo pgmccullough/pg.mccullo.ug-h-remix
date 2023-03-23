@@ -8,6 +8,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
   const postData = await request.json();
   const reqBody:any = json({ postData });
   const { OriginalRecipient } = reqBody;
+  console.log("reqBody dump: ",reqBody);
   console.log("CHECK FOR POST: ",request.method);
   console.log("CHECK FOR ENV: ",process.env.POSTMARK_INBOUND_ADDRESS," RECIP: ",OriginalRecipient);
 
