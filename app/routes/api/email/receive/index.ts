@@ -1,12 +1,11 @@
 import type { ActionArgs, ActionFunction } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { clientPromise } from "~/lib/mongodb";
 import { HeadersFunction } from "remix";
 import AWS from "aws-sdk";
 
-export const headers: HeadersFunction = () => {
-  return { "Access-Control-Allow-Origin": "*" };
-};
+// export const headers: HeadersFunction = () => {
+//   return { "Access-Control-Allow-Origin": "*" };
+// };
 
 export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
