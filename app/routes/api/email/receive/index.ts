@@ -52,7 +52,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
   }
   
   const newEmail = {...reqBody,unread:1,created:Date.now()};
-  newEmail.Attachments.forEach((attach:any) => {
+  newEmail.Attachments?.forEach((attach:any) => {
     uploadAttachment(attach.Content,attach.Name,attach.ContentType,attach.ContentID);
     delete attach.Content;
   })
