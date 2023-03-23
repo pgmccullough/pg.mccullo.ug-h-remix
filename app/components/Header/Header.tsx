@@ -108,7 +108,7 @@ export const Header: React.FC<{}> = () => {
   if(fetcher.data?.imgSrc?.length) {
     const imgName = fetcher.data.imgSrc.split("/").slice(4);
     if(imgName[2]==="cover") {
-      const permaName = "https://api.mccullo.ug/media/"+imgName.join("/");
+      const permaName = "/api/media/images/"+imgName.join("/");
       gpsFromImg(permaName).then(({ latitude, longitude }) => {
         fetcher.submit(
           {
@@ -122,7 +122,7 @@ export const Header: React.FC<{}> = () => {
       });
     }
     else if(imgName[2]==="profile") {
-      const permaName = "https://api.mccullo.ug/media/"+imgName.join("/");
+      const permaName = "/api/media/images/"+imgName.join("/");
       gpsFromImg(permaName).then(({ latitude, longitude }) => {
         fetcher.submit(
           {
