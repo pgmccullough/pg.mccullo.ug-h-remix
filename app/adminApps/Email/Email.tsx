@@ -1,4 +1,4 @@
-import { useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import { ActionBar } from './ActionBar';
 import { Snippet } from './Snippet';
 import { IndEmail } from './IndEmail';
@@ -9,13 +9,14 @@ import { useEffect, useRef, useState } from 'react';
 export const Email: React.FC<{}> = () => {
 
   const { emails } = useLoaderData();
+  const fetcher = useFetcher();
 
   const emailBodyRef = useRef<any>(null);
   const emailScroll = useRef<any>(null);
 
   const scrollerBottom = useRef<any>(null);
   const previousVisibility = useRef<any>(true);
-  const [ emailCount, setEmailCount ] = useState(25);
+  const [ emailCount, setEmailCount ] = useState(0);
   const [ loadMoreInView, setLoadMoreInView ] = useState(false);
   const [ storeScroll, setStoreScroll ] = useState<Number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
@@ -41,9 +42,10 @@ export const Email: React.FC<{}> = () => {
     const observer = new IntersectionObserver(cb, options);
     if(scrollerBottom.current) observer.observe(scrollerBottom.current);
     if( !previousVisibility.current && loadMoreInView ) {
-      //fetcher that returns next 25 emails
-      //on return, alterEmailArray([...emailArray, fetcherReturn])
-      console.log("Increase email count to "+(emailCount+25));
+      fetcher.submit(
+        { loadOffset: (emailCount+25).toString() },
+        { method: "post", action: `/api/email/fetch?index` }
+      );
       setEmailCount(emailCount+25);
     }
     previousVisibility.current = loadMoreInView;
@@ -59,9 +61,21 @@ export const Email: React.FC<{}> = () => {
       if(emailScroll.current?.scrollTop!==0) setStoreScroll(emailScroll.current?.scrollTop)
       emailScroll.current?.scrollTo(0,0);
     }
-  // },[currentEmail, emailScroll, storeScroll, setStoreScroll])
   },[currentEmail, storeScroll, setStoreScroll])
   
+  const extendEmails = (newEmails: EmailInterface[]) => {
+    newEmails.forEach((newEmail: EmailInterface) => {
+      emails.push(newEmail);
+    })
+    fetcher.data.additionalEmails = null;
+  }
+
+  {
+    fetcher.data?.additionalEmails
+      ?extendEmails(fetcher.data.additionalEmails)
+      :""
+  }
+
   return (
     <article className="postcard--left">
       <div className="postcard__time">
