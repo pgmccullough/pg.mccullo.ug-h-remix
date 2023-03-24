@@ -13,6 +13,10 @@ export const Email: React.FC<{}> = () => {
   const emailBodyRef = useRef<any>(null);
   const emailScroll = useRef<any>(null);
 
+  const scrollerBottom = useRef<any>(null);
+  const previousVisibility = useRef<any>(true);
+  const [ emailCount, setEmailCount ] = useState(25);
+  const [ loadMoreInView, setLoadMoreInView ] = useState(false);
   const [ storeScroll, setStoreScroll ] = useState<Number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
   const [ newEmail, editNewEmail ] = useState<
@@ -21,6 +25,32 @@ export const Email: React.FC<{}> = () => {
   const [ currentEmail, setCurrentEmail ] = useState<
     {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null}
   >({view: "inbox", composeType: null, id: null})
+
+  const cb = (entries:any) => {
+    const [ entry ] = entries;
+    setLoadMoreInView(entry.isIntersecting);
+  }
+
+  const options = {
+    root: null,
+    rootMargin: "0px",
+    threshold: 0.1,
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(cb, options);
+    if(scrollerBottom.current) observer.observe(scrollerBottom.current);
+    if( !previousVisibility.current && loadMoreInView ) {
+      //fetcher that returns next 25 emails
+      //on return, alterEmailArray([...emailArray, fetcherReturn])
+      console.log("Increase email count to "+(emailCount+25));
+      setEmailCount(emailCount+25);
+    }
+    previousVisibility.current = loadMoreInView;
+    return () => {
+      if(scrollerBottom.current) observer.unobserve(scrollerBottom.current);
+    }
+  },[scrollerBottom, options])
 
   useEffect(() => {
     if(currentEmail.view==="inbox") {
@@ -52,16 +82,19 @@ export const Email: React.FC<{}> = () => {
               setCurrentEmail={setCurrentEmail}
             />
             {currentEmail.view==="inbox"
-              ?emailArray.map((email:any) =>
-                <div key={email._id}>
-                  <Snippet 
-                    alterEmailArray={alterEmailArray}
-                    email={email}
-                    emailArray={emailArray}
-                    setCurrentEmail={setCurrentEmail}
-                  />
-                </div>
-              )
+              ?<>
+                {emailArray.map((email:any) =>
+                  <div key={email._id}>
+                    <Snippet 
+                      alterEmailArray={alterEmailArray}
+                      email={email}
+                      emailArray={emailArray}
+                      setCurrentEmail={setCurrentEmail}
+                    />
+                  </div>
+                )}
+                <div ref={scrollerBottom}>&nbsp;</div>
+              </>
               :currentEmail.view==="email"
                 ?<IndEmail 
                   email={emailArray.find((res:any) => res._id===currentEmail.id)!}

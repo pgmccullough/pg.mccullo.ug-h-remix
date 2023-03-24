@@ -1,6 +1,6 @@
 import { LoaderFunction } from "@remix-run/node";
-import { useLoaderData, useParams } from "@remix-run/react";
-import { useState } from "react";
+import { useLoaderData } from "@remix-run/react";
+import { useEffect, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from '~/components/Sidebar/Sidebar';
@@ -51,9 +51,40 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Index() {
   const { onThisDay, posts } = useLoaderData();
+
+  const scrollerBottom = useRef<any>(null);
+  const previousVisibility = useRef<any>(true);
+
   const [ editState, setEditState ] = useState<{
     isOn: boolean, id: string|null
   }>({ isOn: false, id: null })
+
+  const [ postCount, setPostCount ] = useState(25);
+  const [ loadMoreInView, setLoadMoreInView ] = useState(false);
+
+  const cb = (entries:any) => {
+    const [ entry ] = entries;
+    setLoadMoreInView(entry.isIntersecting);
+  }
+
+  const options = {
+    root: null,
+    rootMargin: "0px",
+    threshold: 0.1,
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(cb, options);
+    if(scrollerBottom.current) observer.observe(scrollerBottom.current);
+    if(!previousVisibility.current&&loadMoreInView) {
+      //fetcher 
+      setPostCount(postCount+25);
+    }
+    previousVisibility.current = loadMoreInView;
+    return () => {
+      if(scrollerBottom.current) observer.unobserve(scrollerBottom.current);
+    }
+  },[scrollerBottom, options])
 
   return (
     <>
@@ -78,6 +109,8 @@ export default function Index() {
               post={post}
             />
           )}
+          <div style={{position: "fixed",right:"0px",bottom:"0px",background: "red"}}>CAN SEE THE THING? {loadMoreInView} and count is {postCount}</div>
+          <div ref={scrollerBottom}>&nbsp;</div>
         </div>
       </div>
     </>

@@ -9,7 +9,9 @@
     "dev:remix": "remix watch",
     "postinstall": "remix setup node",
     "sass": "sass --watch app/:app/",
-    "start": "cross-env NODE_ENV=production node ./server.js"
+    "start": "cross-env NODE_ENV=production node ./server.js",
+    "delete_branch": "func() { git checkout main && git branch -d $1 && git push origin -d $1; }; func",
+    "create_branch": "func() { git checkout -b $1 && git push -u origin $1; }; func"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.294.0",

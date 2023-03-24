@@ -5,11 +5,11 @@ import { clientPromise, ObjectId } from "~/lib/mongodb";
 
 export const action = async ({ request }: ActionArgs) => {
   const user = await getUser(request);
-  const client = await clientPromise;
-  const db = client.db("user_posts");
   const deleteEmailId = (await request.formData()).get("deleteEmailId")?.toString();
   let response;
   if(user?.role==="administrator") {
+    const client = await clientPromise;
+    const db = client.db("user_posts");
     try{
       response = await db.collection('myEmails').deleteOne({_id : new ObjectId(deleteEmailId)});
     } catch (err) {

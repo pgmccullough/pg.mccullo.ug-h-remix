@@ -1,3 +1,5 @@
-export default function Index() {
-  return "Hi I guess?";
+import { Outlet } from "remix"
+
+export default () => {
+  return <Outlet />
 }
