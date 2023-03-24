@@ -1,5 +1,5 @@
 import { LoaderFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
@@ -51,6 +51,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Index() {
   const { onThisDay, posts } = useLoaderData();
+  const fetcher = useFetcher();
 
   const scrollerBottom = useRef<any>(null);
   const previousVisibility = useRef<any>(true);
@@ -59,7 +60,8 @@ export default function Index() {
     isOn: boolean, id: string|null
   }>({ isOn: false, id: null })
 
-  const [ postCount, setPostCount ] = useState(25);
+  const [ postArray, alterPostArray ] = useState<Post[]>(posts);
+  const [ postCount, setPostCount ] = useState<number>(0);
   const [ loadMoreInView, setLoadMoreInView ] = useState(false);
 
   const cb = (entries:any) => {
@@ -77,7 +79,10 @@ export default function Index() {
     const observer = new IntersectionObserver(cb, options);
     if(scrollerBottom.current) observer.observe(scrollerBottom.current);
     if(!previousVisibility.current&&loadMoreInView) {
-      //fetcher 
+      fetcher.submit(
+        { loadOffset: (postCount+25).toString() },
+        { method: "post", action: `/api/post/fetch?index` }
+      );
       setPostCount(postCount+25);
     }
     previousVisibility.current = loadMoreInView;
@@ -85,6 +90,14 @@ export default function Index() {
       if(scrollerBottom.current) observer.unobserve(scrollerBottom.current);
     }
   },[scrollerBottom, options])
+
+  useEffect(() => {
+    if(fetcher.data?.additionalPosts) {
+      let newPosts:Post[] = [...fetcher.data.additionalPosts];
+      alterPostArray(prev=>[...prev,...newPosts]);
+      fetcher.data.additionalPosts = null;
+    }
+  }, [fetcher]);
 
   return (
     <>
@@ -101,7 +114,7 @@ export default function Index() {
                 post={thisDay}
               />
           )}
-          {posts?.map((post: Post) =>
+          {postArray?.map((post: Post) =>
             <PostCard 
               key={post._id}
               editState={editState}
