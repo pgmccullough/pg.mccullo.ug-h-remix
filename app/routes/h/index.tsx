@@ -109,7 +109,6 @@ export default function Index() {
               post={post}
             />
           )}
-          <div style={{position: "fixed",right:"0px",bottom:"0px",background: "red"}}>CAN SEE THE THING? {loadMoreInView} and count is {postCount}</div>
           <div ref={scrollerBottom}>&nbsp;</div>
         </div>
       </div>
