@@ -1,12 +1,14 @@
 import type { LoaderArgs, LoaderFunction } from '@remix-run/node';
 import { createReadableStreamFromReadable } from '@remix-run/node';
+import { getUser } from "~/utils/session.server";
 import AWS from "aws-sdk";
 
-export const loader: LoaderFunction = async ({ params }: LoaderArgs) => {
+export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) => {
+
+  const user = await getUser(request);
 
   const {
     S3_BUCKET,
-    S3_REGION,
     S3_KEY,
     S3_SECRET,
   } = process.env;
@@ -18,6 +20,12 @@ export const loader: LoaderFunction = async ({ params }: LoaderArgs) => {
 
   const {filePath,['*']:rest} = params;
   const fullPath = rest?`${filePath}/${rest}`:filePath;
+
+  if(fullPath?.split("/").includes("emailAttachments")&&!(user?.role==="administrator")) {
+    throw new Response("Unauthorized", {
+      status: 401
+    });
+  }
 
   const s3params = {
     Bucket: S3_BUCKET!,
