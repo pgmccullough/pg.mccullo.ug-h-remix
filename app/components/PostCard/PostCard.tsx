@@ -211,7 +211,7 @@ export const PostCard: React.FC<{
               }
             </figure>                                                           
           </div>
-          {post.content.replace(/(<([^>]+)>)/gi, "")
+          {post.content?.replace(/(<([^>]+)>)/gi, "")
             ?<div className="postcard__content__text">
               <p dangerouslySetInnerHTML={{__html: post.content}} />
             </div>
