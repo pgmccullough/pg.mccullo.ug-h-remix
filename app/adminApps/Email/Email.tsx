@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export const Email: React.FC<{}> = () => {
 
-  const { emails } = useLoaderData();
+  let { emails } = useLoaderData();  
   const fetcher = useFetcher();
 
   const emailBodyRef = useRef<any>(null);
@@ -62,69 +62,66 @@ export const Email: React.FC<{}> = () => {
       emailScroll.current?.scrollTo(0,0);
     }
   },[currentEmail, storeScroll, setStoreScroll])
-  
-  const extendEmails = (newEmails: EmailInterface[]) => {
-    newEmails.forEach((newEmail: EmailInterface) => {
-      emails.push(newEmail);
-    })
-    fetcher.data.additionalEmails = null;
-  }
 
-  {
-    fetcher.data?.additionalEmails
-      ?extendEmails(fetcher.data.additionalEmails)
-      :""
-  }
+  useEffect(() => {
+    if(fetcher.data?.additionalEmails) {
+      let newEmails:EmailInterface[] = [...fetcher.data.additionalEmails];
+      alterEmailArray(prev=>[...prev,...newEmails]);
+      fetcher.data.additionalEmails = null;
+    }
+  }, [fetcher]);
 
   return (
-    <article className="postcard--left">
-      <div className="postcard__time">
-        <div className="postcard__time__link--unlink">
-          Email
-        </div>
-      </div>
-      <div className="postcard__content">
-        <div className="postcard__content__media"></div>
-        <div className="postcard__content__text">
-          <div className="email" ref={emailScroll}>
-            <ActionBar 
-              alterEmailArray={alterEmailArray}
-              currentEmail={currentEmail}
-              editNewEmail={editNewEmail}
-              emailArray={emailArray}
-              newEmail={newEmail}
-              setCurrentEmail={setCurrentEmail}
-            />
-            {currentEmail.view==="inbox"
-              ?<>
-                {emailArray.map((email:any) =>
-                  <div key={email._id}>
-                    <Snippet 
-                      alterEmailArray={alterEmailArray}
-                      email={email}
-                      emailArray={emailArray}
-                      setCurrentEmail={setCurrentEmail}
-                    />
-                  </div>
-                )}
-                <div ref={scrollerBottom}>&nbsp;</div>
-              </>
-              :currentEmail.view==="email"
-                ?<IndEmail 
-                  email={emailArray.find((res:any) => res._id===currentEmail.id)!}
-                />
-                :currentEmail.view==="compose"
-                  ?<Composer 
-                    editNewEmail={editNewEmail}
-                    email={emailArray.find((res:any) => res._id===currentEmail.id)!}
-                    emailBodyRef={emailBodyRef}
-                    newEmail={newEmail}
-                  />
-                  :""
-            }
+    <>
+      <article className="postcard--left">
+        <div className="postcard__time">
+          <div className="postcard__time__link--unlink">
+            Email
           </div>
         </div>
-      </div>
-    </article>
+        <div className="postcard__content">
+          <div className="postcard__content__media"></div>
+          <div className="postcard__content__text">
+            <div className="email" ref={emailScroll}>
+              <ActionBar 
+                alterEmailArray={alterEmailArray}
+                currentEmail={currentEmail}
+                editNewEmail={editNewEmail}
+                emailArray={emailArray}
+                newEmail={newEmail}
+                setCurrentEmail={setCurrentEmail}
+              />
+              {currentEmail.view==="inbox"
+                ?<>
+                  {emailArray.map((email:any) =>
+                    <div key={email._id}>
+                      <Snippet 
+                        alterEmailArray={alterEmailArray}
+                        email={email}
+                        emailArray={emailArray}
+                        setCurrentEmail={setCurrentEmail}
+                      />
+                    </div>
+                  )}
+                  <div ref={scrollerBottom}>&nbsp;</div>
+                </>
+                :currentEmail.view==="email"
+                  ?<IndEmail 
+                    email={emailArray.find((res:any) => res._id===currentEmail.id)!}
+                  />
+                  :currentEmail.view==="compose"
+                    ?<Composer 
+                      editNewEmail={editNewEmail}
+                      email={emailArray.find((res:any) => res._id===currentEmail.id)!}
+                      emailBodyRef={emailBodyRef}
+                      newEmail={newEmail}
+                    />
+                    :""
+              }
+            </div>
+          </div>
+        </div>
+      </article>
+    </>
   )
 }
