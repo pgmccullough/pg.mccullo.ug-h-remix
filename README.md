@@ -1,51 +1,9 @@
-# Welcome to Remix!
+# pg.mccullo.ug/h/ (Remixed)
 
-- [Remix Docs](https://remix.run/docs)
+Hey, this is my attempt at refactoring my old SPA site into a fullstack Remix App. It still has a couple of spots relying on the REST API, but I'm working to gradually transition those into resource routes.
 
-## Development
+For site visitors, the site is pretty straightforward: little social-media-esque "postcards" that display content in descending chronological order, with infinite scrolling loading more and more... I transferred my old Facebook and Instagram posts into the MongoDB servicing the site, so it goes back quite a way, and one of the few things that kept me from deleting my FB account were the "on this day" posts, so I integrated that functionality as well.
 
-Start the Remix development asset server and the Express server by running:
+Otherwise, for me as the administrator, this site provides a custom email client (thanks Postmark App!), and an ability to easily add and edit content via the forward-facing GUI, which is fun.
 
-```sh
-npm run dev
-```
-
-This starts your app in development mode, which will purge the server require cache when Remix rebuilds assets so you don't need a process manager restarting the express server.
-
-## Deployment
-
-First, build your app for production:
-
-```sh
-npm run build
-```
-
-Then run the app in production mode:
-
-```sh
-npm start
-```
-
-Now you'll need to pick a host to deploy it to.
-
-### DIY
-
-If you're familiar with deploying express applications you should be right at home just make sure to deploy the output of `remix build`
-
-- `build/`
-- `public/build/`
-
-### Using a Template
-
-When you ran `npx create-remix@latest` there were a few choices for hosting. You can run that again to create a new project, then copy over your `app/` folder to the new project that's pre-configured for your target server.
-
-```sh
-cd ..
-# create a new project, and pick a pre-configured host
-npx create-remix@latest
-cd my-new-remix-app
-# remove the new project's app (not the old one!)
-rm -rf app
-# copy your app over
-cp -R ../my-old-remix-app/app app
-```
+Constant work in progress, always grateful for feedback. Feel free to copy/steal as much of this as you like. I'm sure whomever I stole it from won't mind.
