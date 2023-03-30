@@ -2,12 +2,14 @@ import { useFetcher } from "@remix-run/react";
 
 export const ActionBar: React.FC<{
   alterEmailArray: any,
+  checkedSnippets: string[],
   currentEmail: {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null},
   editNewEmail: any,
   emailArray: any[],
   newEmail: {to: string, cc: string, bcc: string, subject: string, body: string},
+  setCheckedSnippets: any,
   setCurrentEmail: any
-}> = ({ alterEmailArray, currentEmail, editNewEmail, emailArray, newEmail, setCurrentEmail }) => {
+}> = ({ alterEmailArray, checkedSnippets, currentEmail, editNewEmail, emailArray, newEmail, setCheckedSnippets, setCurrentEmail }) => {
 
   const fetcher = useFetcher();
 
@@ -24,6 +26,43 @@ export const ActionBar: React.FC<{
     alterEmailArray(ebClone);
     setCurrentEmail({ view: "inbox", composeType: null, id: null });
   };
+
+  const multiDelete = () => {
+    fetcher.submit(
+      { deleteEmails: JSON.stringify(checkedSnippets) },
+      { method: "post", action: `/api/email/delete?index` }
+    );
+  }
+  
+  const onMultiDelSuccess = () => {
+    if(fetcher.data.delEmParsedArray.length) {
+      let ebClone = [ ...emailArray ];
+      ebClone = ebClone.filter((email:any) => !fetcher.data.delEmParsedArray.includes(email._id));
+      alterEmailArray(ebClone);
+    }
+    setCheckedSnippets([]);
+    delete fetcher.data.multiDeleteEmails;
+    delete fetcher.data.delEmParsedArray;
+    // fetch x additional emails where x = delEmParsedArray.length ?
+  }
+
+  const onMultiMarkReadSuccess = () => {
+    if(fetcher.data.markEmParsedArray.length) {
+      let ebClone = [ ...emailArray ];
+      ebClone.forEach((email:any) => fetcher.data.markEmParsedArray.includes(email._id)?email.unread=0:"");
+      alterEmailArray(ebClone);
+    }
+    setCheckedSnippets([]);
+    delete fetcher.data.multiMarkReadEmails;
+    delete fetcher.data.markEmParsedArray;
+  }
+
+  const multiMarkRead = () => {
+    fetcher.submit(
+      { readEmails: JSON.stringify(checkedSnippets) },
+      { method: "post", action: `/api/email/markRead?index` }
+    );
+  }
 
   const compose = (composeType:"new"|"reply"|"replyAll"|"forward"|"", id: string|null) => {
     setCurrentEmail({ view: "compose", composeType, id });
@@ -89,7 +128,12 @@ export const ActionBar: React.FC<{
             <button onClick={() => compose("replyAll",currentEmail.id)}>REPLY ALL</button>
             <button onClick={() => compose("forward",currentEmail.id)}>FORWARD</button>
           </>
-          :<button onClick={() => compose("new",null)}>NEW</button>
+          :checkedSnippets.length
+            ?<>
+              <button onClick={multiDelete}>DELETE</button>
+              <button onClick={multiMarkRead}>MARK READ</button>
+            </>
+            :<button onClick={() => compose("new",null)}>NEW</button>
       }
       {
         fetcher.data?.deleteEmailId
@@ -98,8 +142,18 @@ export const ActionBar: React.FC<{
       }
       {
         fetcher.data?.newEmail
-        ?sendAndCleanup()
-        :""
+          ?sendAndCleanup()
+          :""
+      }
+      {
+        fetcher.data?.multiDeleteEmails
+          ?onMultiDelSuccess()
+          :""
+      }
+      {
+        fetcher.data?.multiMarkReadEmails
+          ?onMultiMarkReadSuccess()
+          :""
       }
     </></div>
   )

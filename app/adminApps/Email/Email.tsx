@@ -18,6 +18,7 @@ export const Email: React.FC<{}> = () => {
   const previousVisibility = useRef<any>(true);
   const [ emailCount, setEmailCount ] = useState(0);
   const [ loadMoreInView, setLoadMoreInView ] = useState(false);
+  const [ checkedSnippets, setCheckedSnippets ] = useState<string[]>([]);
   const [ storeScroll, setStoreScroll ] = useState<Number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
   const [ newEmail, editNewEmail ] = useState<
@@ -85,10 +86,12 @@ export const Email: React.FC<{}> = () => {
             <div className="email" ref={emailScroll}>
               <ActionBar 
                 alterEmailArray={alterEmailArray}
+                checkedSnippets={checkedSnippets}
                 currentEmail={currentEmail}
                 editNewEmail={editNewEmail}
                 emailArray={emailArray}
                 newEmail={newEmail}
+                setCheckedSnippets={setCheckedSnippets}
                 setCurrentEmail={setCurrentEmail}
               />
               {currentEmail.view==="inbox"
@@ -97,9 +100,11 @@ export const Email: React.FC<{}> = () => {
                     <div key={email._id}>
                       <Snippet 
                         alterEmailArray={alterEmailArray}
+                        checkedSnippets={checkedSnippets}
                         email={email}
                         emailArray={emailArray}
                         setCurrentEmail={setCurrentEmail}
+                        setCheckedSnippets={setCheckedSnippets}
                       />
                     </div>
                   )}

@@ -89,8 +89,13 @@
   &:hover {
     background: #ccc;
   }
+  &__check {
+    width: 30px;
+    display: flex;
+    align-items: center;
+  }
   &__from, &__date {
-    width: 25%
+    width: calc(22.5% - 15px);
   }
   &__subject {
     width: 50%;

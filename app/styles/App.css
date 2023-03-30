@@ -703,8 +703,13 @@ button {
 .snippet:hover {
   background: #ccc;
 }
+.snippet__check {
+  width: 30px;
+  display: flex;
+  align-items: center;
+}
 .snippet__from, .snippet__date {
-  width: 25%;
+  width: calc(22.5% - 15px);
 }
 .snippet__subject {
   width: 50%;
