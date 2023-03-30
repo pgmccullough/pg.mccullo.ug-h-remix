@@ -114,6 +114,7 @@ export interface EmailInterface {
   MessageID: String,
   ReplyTo: String,
   MailboxHash: String,
+  Opened: String,
   Date: String,
   TextBody: string,
   HtmlBody: string,

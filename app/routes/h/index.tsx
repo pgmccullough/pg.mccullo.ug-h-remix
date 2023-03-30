@@ -5,8 +5,9 @@ import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from '~/components/Sidebar/Sidebar';
 import { PostCard } from "~/components/PostCard/PostCard";
-import { clientPromise } from "~/lib/mongodb";
-import { Post } from "~/common/types";
+import { clientPromise, ObjectId } from "~/lib/mongodb";
+import * as postmark from "postmark"
+import type { Post } from "~/common/types";
 
 import styles from "~/styles/App.css";
 
@@ -20,7 +21,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   const db = client.db("user_posts");
   const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();  
   let posts;
-  let emails = {};
+  let emails: any[] = [];
+  let sentEmails: any[] = [];
 
   /* On This Day Calculations */
   let onThisDay;
@@ -42,11 +44,30 @@ export const loader: LoaderFunction = async ({ request }) => {
     onThisDay = await db.collection('myPosts').find({$or: mongoOrArray, privacy : "Public"}).sort({created:-1}).toArray();
     posts = await db.collection("myPosts").find({ privacy : "Public" }).sort({created:-1}).limit(25).toArray();
   } else {
-    emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
     onThisDay = await db.collection('myPosts').find({$or: mongoOrArray}).sort({created:-1}).toArray();
     posts = await db.collection("myPosts").find({}).sort({created:-1}).limit(25).toArray();
+    emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
+    sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
+    if(!process.env.POSTMARK_TOKEN) return {response: "Postmark token required."};
+    const emailClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
+    sentEmails.forEach((sentEmail:any) => {
+      if(sentEmail.MessageId&&!sentEmail.Opened) {
+        emailClient.getOutboundMessageDetails(sentEmail.MessageId)
+          .then((sentDetails:any) => {
+            const wasOpened = sentDetails.MessageEvents.find((msgEvent:any) => msgEvent.Type==="Opened");
+            if(wasOpened) {
+              sentEmail.Opened = wasOpened.ReceivedAt;
+              db.collection('myEmails').updateOne({_id: sentEmail._id},{$set:{Opened: wasOpened.ReceivedAt}});
+            }
+          })
+          .catch((error:any) => {
+            console.error("Unable to store sent email time to database.",error);
+          })
+      }
+    }) 
   }
-  return { onThisDay, posts, emails, siteData:{...siteData[0]}, user };
+  
+  return { onThisDay, posts, emails, sentEmails, siteData:{...siteData[0]}, user };
 }
 
 export default function Index() {

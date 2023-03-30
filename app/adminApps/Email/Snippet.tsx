@@ -3,11 +3,12 @@ import { EmailInterface } from '~/common/types';
 export const Snippet: React.FC<{ 
     alterEmailArray: any,
     checkedSnippets: string[],
+    currentEmail: any,
     email: EmailInterface, 
     emailArray: EmailInterface[],
     setCheckedSnippets: any,
     setCurrentEmail: any
-}> = ({ alterEmailArray, checkedSnippets, email, emailArray, setCheckedSnippets, setCurrentEmail }) => {
+}> = ({ alterEmailArray, checkedSnippets, currentEmail, email, emailArray, setCheckedSnippets, setCurrentEmail }) => {
   
   const markRead = () => {
     let newEmailArr:EmailInterface[] = [];
@@ -28,10 +29,23 @@ export const Snippet: React.FC<{
           :[...prev,email._id]
         )
       }>
-        <input type="checkbox" checked={!!checkedSnippets.find((match:string)=>match===email._id)} />
+        <input 
+          type="checkbox"
+          checked={!!checkedSnippets.find((match:string)=>match===email._id)}
+          onChange={() =>
+            setCheckedSnippets((prev:any) =>
+              prev.includes(email._id)
+              ?[...prev.filter((checked:string)=>checked!==email._id)]
+              :[...prev,email._id]
+            )
+          }
+        />
       </div>
       <div className="snippet__from" onClick={markRead}>
-        { email.FromName || email.From }
+        { currentEmail.view==="inbox"
+          ?email.FromName || email.From
+          :email.To
+        }
       </div>
         {email.Attachments?.length>0
           ?<div style={{fontSize:"30px"}} onClick={markRead}>
@@ -44,6 +58,10 @@ export const Snippet: React.FC<{
       <div className="snippet__date" onClick={markRead}>
         {email.Date}
       </div>
+      {email.Opened
+        ?<>!!{email.Opened}!!</>
+        :<></>
+      }
     </div>
   )
 }

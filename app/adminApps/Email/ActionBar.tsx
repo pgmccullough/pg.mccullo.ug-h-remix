@@ -27,6 +27,14 @@ export const ActionBar: React.FC<{
     setCurrentEmail({ view: "inbox", composeType: null, id: null });
   };
 
+  const toggleMailbox = (e:React.ChangeEvent<HTMLSelectElement>) => {
+    setCurrentEmail({ 
+      view: e.target.value==="SENT"?"outbox":"inbox",
+      composeType: null,
+      id: null
+    })
+  }
+
   const multiDelete = () => {
     fetcher.submit(
       { deleteEmails: JSON.stringify(checkedSnippets) },
@@ -133,7 +141,13 @@ export const ActionBar: React.FC<{
               <button onClick={multiDelete}>DELETE</button>
               <button onClick={multiMarkRead}>MARK READ</button>
             </>
-            :<button onClick={() => compose("new",null)}>NEW</button>
+            :<>
+              <button onClick={() => compose("new",null)}>NEW</button>
+              <select onChange={(e) => toggleMailbox(e)}>
+                <option>RECEIVED</option>
+                <option>SENT</option>
+              </select>
+            </>
       }
       {
         fetcher.data?.deleteEmailId

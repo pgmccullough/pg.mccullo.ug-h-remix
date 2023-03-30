@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export const Email: React.FC<{}> = () => {
 
-  let { emails } = useLoaderData();  
+  let { emails, sentEmails } = useLoaderData();  
   const fetcher = useFetcher();
 
   const emailBodyRef = useRef<any>(null);
@@ -21,6 +21,7 @@ export const Email: React.FC<{}> = () => {
   const [ checkedSnippets, setCheckedSnippets ] = useState<string[]>([]);
   const [ storeScroll, setStoreScroll ] = useState<Number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
+  const [ sentEmailArray, alterSentEmailArray ] = useState<EmailInterface[]>(sentEmails);
   const [ newEmail, editNewEmail ] = useState<
     {to: string, cc: string, bcc: string, subject: string, body: string}
   >({to: "", cc: "", bcc:"", subject: "", body: ""});
@@ -101,6 +102,7 @@ export const Email: React.FC<{}> = () => {
                       <Snippet 
                         alterEmailArray={alterEmailArray}
                         checkedSnippets={checkedSnippets}
+                        currentEmail={currentEmail}
                         email={email}
                         emailArray={emailArray}
                         setCurrentEmail={setCurrentEmail}
@@ -110,18 +112,40 @@ export const Email: React.FC<{}> = () => {
                   )}
                   <div ref={scrollerBottom}>&nbsp;</div>
                 </>
-                :currentEmail.view==="email"
-                  ?<IndEmail 
-                    email={emailArray.find((res:any) => res._id===currentEmail.id)!}
-                  />
-                  :currentEmail.view==="compose"
-                    ?<Composer 
-                      editNewEmail={editNewEmail}
-                      email={emailArray.find((res:any) => res._id===currentEmail.id)!}
-                      emailBodyRef={emailBodyRef}
-                      newEmail={newEmail}
+                :currentEmail.view==="outbox"
+                  ?<>
+                  {sentEmailArray.map((email:any) =>
+                    <div key={email._id}>
+                      <Snippet 
+                        alterEmailArray={alterSentEmailArray}
+                        checkedSnippets={checkedSnippets}
+                        currentEmail={currentEmail}
+                        email={email}
+                        emailArray={sentEmailArray}
+                        setCurrentEmail={setCurrentEmail}
+                        setCheckedSnippets={setCheckedSnippets}
+                      />
+                    </div>
+                  )}
+                  <div ref={scrollerBottom}>&nbsp;</div>
+                </>
+                  :currentEmail.view==="email"
+                    ?<IndEmail 
+                      email={
+                        (
+                          emailArray.find((res:any) => res._id===currentEmail.id)
+                        ||sentEmailArray.find((res:any) => res._id===currentEmail.id)
+                        )!
+                      }
                     />
-                    :""
+                    :currentEmail.view==="compose"
+                      ?<Composer 
+                        editNewEmail={editNewEmail}
+                        email={emailArray.find((res:any) => res._id===currentEmail.id)!}
+                        emailBodyRef={emailBodyRef}
+                        newEmail={newEmail}
+                      />
+                      :""
               }
             </div>
           </div>
