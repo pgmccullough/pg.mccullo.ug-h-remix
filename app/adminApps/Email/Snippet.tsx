@@ -1,4 +1,10 @@
 import { EmailInterface } from '~/common/types';
+import dayjs from 'dayjs';
+import 'dayjs/locale/en';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime)
+dayjs().format();
+dayjs.locale('en');
 
 export const Snippet: React.FC<{ 
     alterEmailArray: any,
@@ -56,11 +62,16 @@ export const Snippet: React.FC<{
         {email.Subject}
       </div>
       <div className="snippet__date" onClick={markRead}>
-        {email.Date}
+        {dayjs(Date.parse(email.Date)).fromNow()}
       </div>
-      {email.Opened
-        ?<>!!{email.Opened}!!</>
-        :<></>
+      {currentEmail.view==="outbox"
+        ?<div className={`snippet__status ${email.Opened?'snippet__status--opened':''}`}>
+          {email.Opened
+            ?<div className="snippet__status--opened__popup">{email.Opened}</div>
+            :<></>
+          }
+        </div>
+        :""
       }
     </div>
   )

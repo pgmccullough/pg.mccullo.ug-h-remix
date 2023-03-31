@@ -115,7 +115,7 @@ export interface EmailInterface {
   ReplyTo: String,
   MailboxHash: String,
   Opened: String,
-  Date: String,
+  Date: string,
   TextBody: string,
   HtmlBody: string,
   StrippedTextReply: String,
