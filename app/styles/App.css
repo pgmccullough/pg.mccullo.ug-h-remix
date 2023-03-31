@@ -699,6 +699,13 @@ button {
   color: #666;
   display: flex;
   font-size: 13px;
+  container-type: inline-size;
+  container-name: snippet;
+}
+@media (max-width: 450px) or ((min-width: 991px) and (max-width: 1232px)) {
+  .snippet {
+    flex-wrap: wrap;
+  }
 }
 .snippet:hover {
   background: #ccc;
@@ -708,28 +715,62 @@ button {
   display: flex;
   align-items: center;
 }
-.snippet__from, .snippet__date {
-  width: calc(22.5% - 15px);
+.snippet__from {
+  width: calc(50% - 90px);
+  align-self: center;
+}
+@container snippet (max-width: 370px) {
+  .snippet__from {
+    width: 40%;
+  }
+}
+.snippet__date {
+  width: 60px;
+  display: flex;
+  justify-content: flex-end;
+  align-self: center;
+}
+@container snippet (max-width: 370px) {
+  .snippet__date {
+    order: 1;
+    width: 49%;
+  }
+}
+.snippet__att-and-subject {
+  width: 70%;
+  padding: 0 10px;
+  align-self: center;
+}
+@container snippet (max-width: 370px) {
+  .snippet__att-and-subject {
+    order: 2;
+    flex: 0 0 100%;
+    width: 50%;
+    padding-left: 30px;
+  }
 }
 .snippet__subject {
-  width: 50%;
-  padding: 0 10px;
+  align-self: center;
 }
 .snippet__status {
   width: 16px;
   height: 16px;
   border: 1px #000 solid;
   border-radius: 100%;
+  align-self: center;
+  position: absolute;
+  right: 10px;
+  margin-top: -5px;
 }
 .snippet__status--opened {
-  background: blue;
+  background: #4A6CBA;
 }
 .snippet__status--opened__popup {
   display: none;
   position: absolute;
-  right: 46px;
+  white-space: nowrap;
+  right: 26px;
   margin-top: -3px;
-  width: 150px;
   background: #eee;
   padding: 2px 6px;
   border-radius: 4px;

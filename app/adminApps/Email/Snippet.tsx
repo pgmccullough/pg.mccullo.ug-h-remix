@@ -53,21 +53,39 @@ export const Snippet: React.FC<{
           :email.To
         }
       </div>
+      <div className="snippet__att-and-subject">
         {email.Attachments?.length>0
           ?<div style={{fontSize:"30px"}} onClick={markRead}>
             {email.Attachments.length}
           </div>
           :""}
-      <div className="snippet__subject" onClick={markRead}>
-        {email.Subject}
+        <div className="snippet__subject" onClick={markRead}>
+          {email.Subject}
+        </div>
       </div>
-      <div className="snippet__date" onClick={markRead}>
-        {dayjs(Date.parse(email.Date)).fromNow()}
+      <div 
+        className="snippet__date" 
+        onClick={markRead}
+        style={currentEmail.view==="outbox"?{marginRight: "22px",whiteSpace: "nowrap"}:{opacity:"1"}}
+      >
+        {
+        dayjs(Date.parse(email.Date)||Number(email.created)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
+          ?dayjs(Date.parse(email.Date)||Number(email.created)).format('h:mmA')
+          :dayjs(Date.parse(email.Date)||Number(email.created)).format('YYYY')===dayjs(Date.now()).format('YYYY')
+            ?dayjs(Date.parse(email.Date)||Number(email.created)).format('MMM D')
+            :dayjs(Date.parse(email.Date)||Number(email.created)).format('M/D/YY')
+        }
       </div>
       {currentEmail.view==="outbox"
         ?<div className={`snippet__status ${email.Opened?'snippet__status--opened':''}`}>
           {email.Opened
-            ?<div className="snippet__status--opened__popup">{email.Opened}</div>
+            ?<div className="snippet__status--opened__popup"><b>OPENED: </b>{
+              dayjs(Date.parse(email.Opened)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
+              ?dayjs(Date.parse(email.Opened)).format('h:mmA')
+              :dayjs(Date.parse(email.Opened)).format('YYYY')===dayjs(Date.now()).format('YYYY')
+                ?dayjs(Date.parse(email.Opened)).format('MMM D')
+                :dayjs(Date.parse(email.Opened)).format('M/D/YY')  
+            }.</div>
             :<></>
           }
         </div>
