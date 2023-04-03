@@ -80,9 +80,9 @@ export const Composer: React.FC<{
         onKeyUp={() => editNewEmail({...newEmail, body: emailBodyRef.current.innerHTML})}
         ref={ emailBodyRef }
       >
-        <br /><br />
-        {email.FromName||email.Subject||email.Date
+        {email&&(email.FromName||email.Subject||email.Date)
           ?<>
+            <br /><br />
             <hr />
               <b>From:</b> { email.FromName?email.FromName+" <"+email.From+">":email.From}<br />
               <b>Sent: </b> { email.Date } <br />

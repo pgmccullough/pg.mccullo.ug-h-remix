@@ -26,12 +26,19 @@ export const Email: React.FC<{}> = () => {
   const [ storeScroll, setStoreScroll ] = useState<Number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
   const [ sentEmailArray, alterSentEmailArray ] = useState<EmailInterface[]>(sentEmails);
+  const [ emailNotification, setEmailNotification ] = useState<{ 
+    msg: string, visibility: boolean
+  }>({ msg: "Loading", visibility: false})
   const [ newEmail, editNewEmail ] = useState<
     {to: string, cc: string, bcc: string, subject: string, body: string}
   >({to: "", cc: "", bcc:"", subject: "", body: ""});
   const [ currentEmail, setCurrentEmail ] = useState<
     {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"}
   >({view: "inbox", composeType: null, id: null, prevView: "inbox"})
+
+  const emNotif = (visibility: boolean, msg?: string) => {
+    setEmailNotification({visibility, msg: msg||"Loading"});
+  }
 
   const cbInbox = (entries:any) => {
     const [ entry ] = entries;
@@ -53,7 +60,7 @@ export const Email: React.FC<{}> = () => {
     const observer = new IntersectionObserver(cbInbox, options);
     if(scrollerBottomInbox.current) observer.observe(scrollerBottomInbox.current);
     if( !previousInboxVisibility.current && loadMoreInboxInView ) {
-      console.log("inbox infinite request");
+      emNotif(true, "Loading more received emails");
       fetcher.submit(
         { loadOffset: (inboxCount+25).toString() },
         { method: "post", action: `/api/email/fetchInbox?index` }
@@ -70,7 +77,7 @@ export const Email: React.FC<{}> = () => {
     const observer = new IntersectionObserver(cbOutbox, options);
     if(scrollerBottomOutbox.current) observer.observe(scrollerBottomOutbox.current);
     if( !previousOutboxVisibility.current && loadMoreOutboxInView ) {
-      console.log("outbox infinite request");
+      emNotif(true, "Loading more sent emails");
       fetcher.submit(
         { loadOffset: (outboxCount+25).toString() },
         { method: "post", action: `/api/email/fetchOutbox?index` }
@@ -97,11 +104,13 @@ export const Email: React.FC<{}> = () => {
       let newEmails:EmailInterface[] = [...fetcher.data.additionalInboxEmails];
       alterEmailArray(prev=>[...prev,...newEmails]);
       fetcher.data.additionalInboxEmails = null;
+      emNotif(false);
     }
     if(fetcher.data?.additionalOutboxEmails) {
       let newEmails:EmailInterface[] = [...fetcher.data.additionalOutboxEmails];
       alterSentEmailArray(prev=>[...prev,...newEmails]);
       fetcher.data.additionalOutboxEmails = null;
+      emNotif(false);
     }
   }, [fetcher]);
 
@@ -113,7 +122,9 @@ export const Email: React.FC<{}> = () => {
             Email
           </div>
         </div>
-        <div className="postcard__content">
+        <div className="postcard__content"
+          style={{overflowY: "hidden"}}
+        >
           <div className="postcard__content__media"></div>
           <div className="postcard__content__text">
             <div className="email" ref={emailScroll}>
@@ -123,6 +134,7 @@ export const Email: React.FC<{}> = () => {
                 currentEmail={currentEmail}
                 editNewEmail={editNewEmail}
                 emailArray={emailArray}
+                emNotif={emNotif}
                 newEmail={newEmail}
                 setCheckedSnippets={setCheckedSnippets}
                 setCurrentEmail={setCurrentEmail}
@@ -180,6 +192,10 @@ export const Email: React.FC<{}> = () => {
                       :""
               }
             </div>
+          </div>
+          <div className={`email__notifications ${emailNotification.visibility?"email__notifications--active":""}`}>
+            <div className="loader" />
+            { emailNotification.msg }
           </div>
         </div>
       </article>

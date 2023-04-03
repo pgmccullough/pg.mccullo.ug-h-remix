@@ -5,11 +5,12 @@ export const ActionBar: React.FC<{
   checkedSnippets: string[],
   currentEmail: {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"},
   editNewEmail: any,
+  emNotif: any,
   emailArray: any[],
   newEmail: {to: string, cc: string, bcc: string, subject: string, body: string},
   setCheckedSnippets: any,
   setCurrentEmail: any
-}> = ({ alterEmailArray, checkedSnippets, currentEmail, editNewEmail, emailArray, newEmail, setCheckedSnippets, setCurrentEmail }) => {
+}> = ({ alterEmailArray, checkedSnippets, currentEmail, editNewEmail, emailArray, emNotif, newEmail, setCheckedSnippets, setCurrentEmail }) => {
 
   const fetcher = useFetcher();
 
@@ -17,6 +18,7 @@ export const ActionBar: React.FC<{
     editNewEmail({to: "", cc: "", bcc:"", subject: "", body: ""});
     setCurrentEmail({composeType: null, view: currentEmail.prevView||"inbox", id: null});
     fetcher.data.newEmail = null;
+    emNotif(false);
   }
 
   const removeEmailFromState = (id: string) => {
@@ -25,6 +27,7 @@ export const ActionBar: React.FC<{
     ebClone = ebClone.filter((email:any) => email._id!==id);
     alterEmailArray(ebClone);
     setCurrentEmail({ view: currentEmail.prevView||"inbox", composeType: null, id: null });
+    emNotif(false);
   };
 
   const toggleMailbox = (e:React.ChangeEvent<HTMLSelectElement>) => {
@@ -36,6 +39,7 @@ export const ActionBar: React.FC<{
   }
 
   const multiDelete = () => {
+    emNotif(true, `Deleting ${checkedSnippets.length} emails`);
     fetcher.submit(
       { deleteEmails: JSON.stringify(checkedSnippets) },
       { method: "post", action: `/api/email/delete?index` }
@@ -47,6 +51,7 @@ export const ActionBar: React.FC<{
       let ebClone = [ ...emailArray ];
       ebClone = ebClone.filter((email:any) => !fetcher.data.delEmParsedArray.includes(email._id));
       alterEmailArray(ebClone);
+      emNotif(false);
     }
     setCheckedSnippets([]);
     delete fetcher.data.multiDeleteEmails;
@@ -63,9 +68,11 @@ export const ActionBar: React.FC<{
     setCheckedSnippets([]);
     delete fetcher.data.multiMarkReadEmails;
     delete fetcher.data.markEmParsedArray;
+    emNotif(false);
   }
 
   const multiMarkRead = () => {
+    emNotif(true, `Marking ${checkedSnippets.length} emails read`);
     fetcher.submit(
       { readEmails: JSON.stringify(checkedSnippets) },
       { method: "post", action: `/api/email/markRead?index` }
@@ -114,8 +121,7 @@ export const ActionBar: React.FC<{
               <input type="hidden" name="HtmlBody" value={newEmail.body} />
               <input type="hidden" name="Subject" value={newEmail.subject} />
               <input type="hidden" name="To" value={newEmail.to} />
-            <button>SEND</button>
-
+            <button onClick={() => emNotif(true, `Sending email`)}>SEND</button>
           </fetcher.Form>
         </>
         :currentEmail.id
@@ -130,7 +136,7 @@ export const ActionBar: React.FC<{
               action={`/api/email/delete/${currentEmail.id}`}
             >
               <input type="hidden" name="deleteEmailId" value={currentEmail.id} />
-              <button type="submit">DELETE</button>
+              <button type="submit" onClick={() => emNotif(true, `Deleting email`)}>DELETE</button>
             </fetcher.Form>
             <button onClick={() => compose("reply",currentEmail.id)}>REPLY</button>
             <button onClick={() => compose("replyAll",currentEmail.id)}>REPLY ALL</button>
