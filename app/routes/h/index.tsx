@@ -81,6 +81,10 @@ export default function Index() {
     isOn: boolean, id: string|null
   }>({ isOn: false, id: null })
 
+  const [ siteNotification, setsiteNotification ] = useState<{
+    msg:string,visible:boolean
+  }>({ msg: "Loading", visible: false })
+
   const [ postArray, alterPostArray ] = useState<Post[]>(posts);
   const [ postCount, setPostCount ] = useState<number>(0);
   const [ loadMoreInView, setLoadMoreInView ] = useState(false);
@@ -100,6 +104,7 @@ export default function Index() {
     const observer = new IntersectionObserver(cb, options);
     if(scrollerBottom.current) observer.observe(scrollerBottom.current);
     if(!previousVisibility.current&&loadMoreInView) {
+      setsiteNotification({ msg: "Loading more posts", visible: true });
       fetcher.submit(
         { loadOffset: (postCount+25).toString() },
         { method: "post", action: `/api/post/fetch?index` }
@@ -117,6 +122,7 @@ export default function Index() {
       let newPosts:Post[] = [...fetcher.data.additionalPosts];
       alterPostArray(prev=>[...prev,...newPosts]);
       fetcher.data.additionalPosts = null;
+      setsiteNotification({ ...siteNotification, visible: false });
     }
   }, [fetcher]);
 
@@ -145,6 +151,10 @@ export default function Index() {
           )}
           <div ref={scrollerBottom}>&nbsp;</div>
         </div>
+      </div>
+      <div className={`site-notifications ${siteNotification.visible?"site-notifications--active":""}`}>
+        <div className="loader"/>
+        {siteNotification.msg}
       </div>
     </>
   );
