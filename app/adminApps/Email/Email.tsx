@@ -14,10 +14,14 @@ export const Email: React.FC<{}> = () => {
   const emailBodyRef = useRef<any>(null);
   const emailScroll = useRef<any>(null);
 
-  const scrollerBottom = useRef<any>(null);
-  const previousVisibility = useRef<any>(true);
-  const [ emailCount, setEmailCount ] = useState(0);
-  const [ loadMoreInView, setLoadMoreInView ] = useState(false);
+  const scrollerBottomInbox = useRef<any>(null);
+  const scrollerBottomOutbox = useRef<any>(null);
+  const previousInboxVisibility = useRef<any>(true);
+  const previousOutboxVisibility = useRef<any>(true);
+  const [ inboxCount, setInboxCount ] = useState(0);
+  const [ outboxCount, setOutboxCount ] = useState(0);
+  const [ loadMoreOutboxInView, setLoadMoreOutboxInView ] = useState(false);
+  const [ loadMoreInboxInView, setLoadMoreInboxInView ] = useState(false);
   const [ checkedSnippets, setCheckedSnippets ] = useState<string[]>([]);
   const [ storeScroll, setStoreScroll ] = useState<Number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
@@ -26,12 +30,17 @@ export const Email: React.FC<{}> = () => {
     {to: string, cc: string, bcc: string, subject: string, body: string}
   >({to: "", cc: "", bcc:"", subject: "", body: ""});
   const [ currentEmail, setCurrentEmail ] = useState<
-    {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null}
-  >({view: "inbox", composeType: null, id: null})
+    {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"}
+  >({view: "inbox", composeType: null, id: null, prevView: "inbox"})
 
-  const cb = (entries:any) => {
+  const cbInbox = (entries:any) => {
     const [ entry ] = entries;
-    setLoadMoreInView(entry.isIntersecting);
+    setLoadMoreInboxInView(entry.isIntersecting);
+  }
+
+  const cbOutbox = (entries:any) => {
+    const [ entry ] = entries;
+    setLoadMoreOutboxInView(entry.isIntersecting);
   }
 
   const options = {
@@ -41,20 +50,38 @@ export const Email: React.FC<{}> = () => {
   };
 
   useEffect(() => {
-    const observer = new IntersectionObserver(cb, options);
-    if(scrollerBottom.current) observer.observe(scrollerBottom.current);
-    if( !previousVisibility.current && loadMoreInView ) {
+    const observer = new IntersectionObserver(cbInbox, options);
+    if(scrollerBottomInbox.current) observer.observe(scrollerBottomInbox.current);
+    if( !previousInboxVisibility.current && loadMoreInboxInView ) {
+      console.log("inbox infinite request");
       fetcher.submit(
-        { loadOffset: (emailCount+25).toString() },
-        { method: "post", action: `/api/email/fetch?index` }
+        { loadOffset: (inboxCount+25).toString() },
+        { method: "post", action: `/api/email/fetchInbox?index` }
       );
-      setEmailCount(emailCount+25);
+      setInboxCount(inboxCount+25);
     }
-    previousVisibility.current = loadMoreInView;
+    previousInboxVisibility.current = loadMoreInboxInView;
     return () => {
-      if(scrollerBottom.current) observer.unobserve(scrollerBottom.current);
+      if(scrollerBottomInbox.current) observer.unobserve(scrollerBottomInbox.current);
     }
-  },[scrollerBottom, options])
+  },[scrollerBottomInbox, options])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(cbOutbox, options);
+    if(scrollerBottomOutbox.current) observer.observe(scrollerBottomOutbox.current);
+    if( !previousOutboxVisibility.current && loadMoreOutboxInView ) {
+      console.log("outbox infinite request");
+      fetcher.submit(
+        { loadOffset: (outboxCount+25).toString() },
+        { method: "post", action: `/api/email/fetchOutbox?index` }
+      );
+      setOutboxCount(outboxCount+25);
+    }
+    previousOutboxVisibility.current = loadMoreOutboxInView;
+    return () => {
+      if(scrollerBottomOutbox.current) observer.unobserve(scrollerBottomOutbox.current);
+    }
+  },[scrollerBottomOutbox, options])
 
   useEffect(() => {
     if(currentEmail.view==="inbox") {
@@ -66,10 +93,15 @@ export const Email: React.FC<{}> = () => {
   },[currentEmail, storeScroll, setStoreScroll])
 
   useEffect(() => {
-    if(fetcher.data?.additionalEmails) {
-      let newEmails:EmailInterface[] = [...fetcher.data.additionalEmails];
+    if(fetcher.data?.additionalInboxEmails) {
+      let newEmails:EmailInterface[] = [...fetcher.data.additionalInboxEmails];
       alterEmailArray(prev=>[...prev,...newEmails]);
-      fetcher.data.additionalEmails = null;
+      fetcher.data.additionalInboxEmails = null;
+    }
+    if(fetcher.data?.additionalOutboxEmails) {
+      let newEmails:EmailInterface[] = [...fetcher.data.additionalOutboxEmails];
+      alterSentEmailArray(prev=>[...prev,...newEmails]);
+      fetcher.data.additionalOutboxEmails = null;
     }
   }, [fetcher]);
 
@@ -110,25 +142,25 @@ export const Email: React.FC<{}> = () => {
                       />
                     </div>
                   )}
-                  <div ref={scrollerBottom}>&nbsp;</div>
+                  <div ref={scrollerBottomInbox}>&nbsp;</div>
                 </>
                 :currentEmail.view==="outbox"
                   ?<>
-                  {sentEmailArray.map((email:any) =>
-                    <div key={email._id}>
-                      <Snippet 
-                        alterEmailArray={alterSentEmailArray}
-                        checkedSnippets={checkedSnippets}
-                        currentEmail={currentEmail}
-                        email={email}
-                        emailArray={sentEmailArray}
-                        setCurrentEmail={setCurrentEmail}
-                        setCheckedSnippets={setCheckedSnippets}
-                      />
-                    </div>
-                  )}
-                  <div ref={scrollerBottom}>&nbsp;</div>
-                </>
+                    {sentEmailArray.map((email:any) =>
+                      <div key={email._id}>
+                        <Snippet 
+                          alterEmailArray={alterSentEmailArray}
+                          checkedSnippets={checkedSnippets}
+                          currentEmail={currentEmail}
+                          email={email}
+                          emailArray={sentEmailArray}
+                          setCurrentEmail={setCurrentEmail}
+                          setCheckedSnippets={setCheckedSnippets}
+                        />
+                      </div>
+                    )}
+                    <div ref={scrollerBottomOutbox}>&nbsp;</div>
+                  </>
                   :currentEmail.view==="email"
                     ?<IndEmail 
                       email={

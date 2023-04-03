@@ -3,7 +3,7 @@ import { useFetcher } from "@remix-run/react";
 export const ActionBar: React.FC<{
   alterEmailArray: any,
   checkedSnippets: string[],
-  currentEmail: {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null},
+  currentEmail: {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"},
   editNewEmail: any,
   emailArray: any[],
   newEmail: {to: string, cc: string, bcc: string, subject: string, body: string},
@@ -15,7 +15,7 @@ export const ActionBar: React.FC<{
 
   const sendAndCleanup = () => {
     editNewEmail({to: "", cc: "", bcc:"", subject: "", body: ""});
-    setCurrentEmail({composeType: null, view: "inbox", id: null});
+    setCurrentEmail({composeType: null, view: currentEmail.prevView||"inbox", id: null});
     fetcher.data.newEmail = null;
   }
 
@@ -24,7 +24,7 @@ export const ActionBar: React.FC<{
     let ebClone = [ ...emailArray ];
     ebClone = ebClone.filter((email:any) => email._id!==id);
     alterEmailArray(ebClone);
-    setCurrentEmail({ view: "inbox", composeType: null, id: null });
+    setCurrentEmail({ view: currentEmail.prevView||"inbox", composeType: null, id: null });
   };
 
   const toggleMailbox = (e:React.ChangeEvent<HTMLSelectElement>) => {
@@ -102,7 +102,7 @@ export const ActionBar: React.FC<{
         ?<>
           <button 
               onClick={() => 
-                setCurrentEmail({composeType: null, view: "inbox", id: null})
+                setCurrentEmail({composeType: null, view: currentEmail.prevView||"inbox", id: null})
             }>BACK
           </button>
           <fetcher.Form 
@@ -122,7 +122,7 @@ export const ActionBar: React.FC<{
           ?<>
             <button 
               onClick={() => 
-                setCurrentEmail({composeType: null, view: "inbox", id: null})
+                setCurrentEmail({composeType: null, view: currentEmail.prevView||"inbox", id: null})
               }>BACK
             </button>
             <fetcher.Form 
@@ -143,7 +143,11 @@ export const ActionBar: React.FC<{
             </>
             :<>
               <button onClick={() => compose("new",null)}>NEW</button>
-              <select onChange={(e) => toggleMailbox(e)}>
+              <select
+                className="email__select"
+                onChange={(e) => toggleMailbox(e)}
+                value={currentEmail.view==="inbox"?"RECEIVED":"SENT"}
+              >
                 <option>RECEIVED</option>
                 <option>SENT</option>
               </select>

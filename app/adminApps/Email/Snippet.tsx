@@ -17,24 +17,19 @@ export const Snippet: React.FC<{
 }> = ({ alterEmailArray, checkedSnippets, currentEmail, email, emailArray, setCheckedSnippets, setCurrentEmail }) => {
   
   const markRead = () => {
+    const setPrevView = currentEmail.view;
     let newEmailArr:EmailInterface[] = [];
     emailArray.forEach(itEmail => {
       itEmail._id === email._id?itEmail.unread=0:"";
       newEmailArr.push(itEmail);
     })
     alterEmailArray(newEmailArr);
-    setCurrentEmail({ view: "email", composeType: null, id: email._id });
+    setCurrentEmail({ view: "email", composeType: null, id: email._id, prevView: setPrevView });
   }
   
   return (
     <div className={`snippet${email.unread?" snippet--unread":""}`}>
-      <div className="snippet__check" onClick={() =>
-        setCheckedSnippets((prev:any) =>
-          prev.includes(email._id)
-          ?[...prev.filter((checked:string)=>checked!==email._id)]
-          :[...prev,email._id]
-        )
-      }>
+      <div className="snippet__check">
         <input 
           type="checkbox"
           checked={!!checkedSnippets.find((match:string)=>match===email._id)}
@@ -66,7 +61,7 @@ export const Snippet: React.FC<{
       <div 
         className="snippet__date" 
         onClick={markRead}
-        style={currentEmail.view==="outbox"?{marginRight: "22px",whiteSpace: "nowrap"}:{opacity:"1"}}
+        style={currentEmail.view==="outbox"?{marginLeft: "-12px"}:{opacity:"1"}}
       >
         {
         dayjs(Date.parse(email.Date)||Number(email.created)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
@@ -75,22 +70,22 @@ export const Snippet: React.FC<{
             ?dayjs(Date.parse(email.Date)||Number(email.created)).format('MMM D')
             :dayjs(Date.parse(email.Date)||Number(email.created)).format('M/D/YY')
         }
+        {currentEmail.view==="outbox"
+          ?<div className={`snippet__status ${email.Opened?'snippet__status--opened':''}`}>
+            {email.Opened
+              ?<div className="snippet__status--opened__popup"><b>OPENED: </b>{
+                dayjs(Date.parse(email.Opened)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
+                ?dayjs(Date.parse(email.Opened)).format('h:mmA')
+                :dayjs(Date.parse(email.Opened)).format('YYYY')===dayjs(Date.now()).format('YYYY')
+                  ?dayjs(Date.parse(email.Opened)).format('MMM D')
+                  :dayjs(Date.parse(email.Opened)).format('M/D/YY')  
+              }.</div>
+              :<></>
+            }
+          </div>
+          :""
+        }
       </div>
-      {currentEmail.view==="outbox"
-        ?<div className={`snippet__status ${email.Opened?'snippet__status--opened':''}`}>
-          {email.Opened
-            ?<div className="snippet__status--opened__popup"><b>OPENED: </b>{
-              dayjs(Date.parse(email.Opened)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
-              ?dayjs(Date.parse(email.Opened)).format('h:mmA')
-              :dayjs(Date.parse(email.Opened)).format('YYYY')===dayjs(Date.now()).format('YYYY')
-                ?dayjs(Date.parse(email.Opened)).format('MMM D')
-                :dayjs(Date.parse(email.Opened)).format('M/D/YY')  
-            }.</div>
-            :<></>
-          }
-        </div>
-        :""
-      }
     </div>
   )
 }
