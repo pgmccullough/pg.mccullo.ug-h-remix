@@ -720,6 +720,76 @@ button {
   bottom: 0rem;
   opacity: 1;
 }
+.email__search {
+  display: flex;
+  margin-left: 12px;
+}
+.email__search-input {
+  border: 0;
+  background: none;
+  width: 0;
+  margin: 0;
+  opacity: 0;
+  transition: 0.25s;
+}
+.email__search-input--expanded {
+  width: 12vw;
+  margin-right: 4px;
+  opacity: 1;
+  border-bottom: 3px #fff solid;
+  color: #fff;
+  font-family: "PGM Sans", "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+@media (max-width: 991px) {
+  .email__search-input--expanded {
+    width: 50vw;
+  }
+}
+@media (max-width: 587px) {
+  .email__search-input--expanded {
+    width: 40vw;
+  }
+}
+.email__search-action {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  position: relative;
+}
+.email__search-action-circle {
+  width: 16px;
+  height: 16px;
+  border: 2px #fff solid;
+  border-radius: 100%;
+  position: absolute;
+  transition: 0.25s;
+}
+.email__search-action-line {
+  width: 3px;
+  height: 8px;
+  background: #fff;
+  transform: rotate(-45deg);
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  transition: 0.25s;
+}
+.email__search-action--x .email__search-action-circle {
+  border: none;
+  border-radius: 0;
+  width: 3px;
+  height: 24px;
+  background: #fff;
+  transform: rotate(45deg);
+  position: absolute;
+  left: 8px;
+  top: -2px;
+}
+.email__search-action--x .email__search-action-line {
+  height: 24px;
+  left: 8px;
+  top: -2px;
+}
 
 .snippet {
   border-bottom: 1px #666 solid;

@@ -1,4 +1,5 @@
 import { useFetcher } from "@remix-run/react";
+import { useEffect, useRef, useState } from 'react';
 
 export const ActionBar: React.FC<{
   alterEmailArray: any,
@@ -13,6 +14,16 @@ export const ActionBar: React.FC<{
 }> = ({ alterEmailArray, checkedSnippets, currentEmail, editNewEmail, emailArray, emNotif, newEmail, setCheckedSnippets, setCurrentEmail }) => {
 
   const fetcher = useFetcher();
+  const [ searchExpanded, toggleSearchExpanded ] = useState<boolean>(false);
+  const emailSearchEl = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if(searchExpanded) {
+      emailSearchEl.current?.focus();
+    } else {
+      emailSearchEl.current?.blur();
+    }
+  },[searchExpanded])
 
   const sendAndCleanup = () => {
     editNewEmail({to: "", cc: "", bcc:"", subject: "", body: ""});
@@ -149,14 +160,31 @@ export const ActionBar: React.FC<{
             </>
             :<>
               <button onClick={() => compose("new",null)}>NEW</button>
-              <select
-                className="email__select"
-                onChange={(e) => toggleMailbox(e)}
-                value={currentEmail.view==="inbox"?"RECEIVED":"SENT"}
-              >
-                <option>RECEIVED</option>
-                <option>SENT</option>
-              </select>
+              <div style={{display: "flex"}}>
+                <select
+                  className="email__select"
+                  onChange={(e) => toggleMailbox(e)}
+                  value={currentEmail.view==="inbox"?"RECEIVED":"SENT"}
+                >
+                  <option>RECEIVED</option>
+                  <option>SENT</option>
+                </select>
+                <div className={`email__search ${searchExpanded?"email__search--expanded":""}`}>
+                  <input 
+                    type="text" 
+                    className={`email__search-input ${searchExpanded?"email__search-input--expanded":""}`} 
+                    placeholder="Search..."
+                    ref={emailSearchEl}
+                  />
+                  <div 
+                    className={`email__search-action ${searchExpanded?"email__search-action--x":""}`}
+                    onClick={() => toggleSearchExpanded(!searchExpanded)}
+                  >
+                    <div className="email__search-action-circle"></div>
+                    <div className="email__search-action-line"></div>
+                  </div>
+                </div>
+              </div>
             </>
       }
       {
