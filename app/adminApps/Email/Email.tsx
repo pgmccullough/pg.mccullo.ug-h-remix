@@ -66,7 +66,11 @@ export const Email: React.FC<{}> = () => {
 
     const channel = pusher.subscribe("client-new-email");
     channel.bind("refresh", function (email:any) {
-      console.log("altered email array with",email)
+      console.log("altered email array with",email.email.insertedId);
+      fetcher.submit(
+        { singleEmailId: email.email.insertedId },
+        { method: "post", action: `/api/email/fetchOne?index` }
+      );
       //alterEmailArray(prev=>[email,...prev]);
       // Have some sort of alert (maybe change title in tab)
     });
@@ -121,6 +125,10 @@ export const Email: React.FC<{}> = () => {
   },[currentEmail, storeScroll, setStoreScroll])
 
   useEffect(() => {
+    if(fetcher.data?.fetchedSingle) {
+      console.log(fetcher.data.fetchedSingle);
+      fetcher.data.fetchedSingle = null;
+    }
     if(fetcher.data?.additionalInboxEmails) {
       let newEmails:EmailInterface[] = [...fetcher.data.additionalInboxEmails];
       alterEmailArray(prev=>[...prev,...newEmails]);
