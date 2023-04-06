@@ -7,7 +7,6 @@ export const action = async ({ request }: ActionArgs) => {
   const user = await getUser(request);
   const singleEmailId = (await request.formData()).get("singleEmailId")?.toString();
   let fetchedSingle;
-  console.log("DO WE HAVE A SEI?",singleEmailId);
   if(user?.role==="administrator") {
     const client = await clientPromise;
     const db = client.db("user_posts");
@@ -17,7 +16,6 @@ export const action = async ({ request }: ActionArgs) => {
       fetchedSingle = false;
     }
   }
-  console.log("WHAT THE ?",fetchedSingle);
   return { fetchedSingle };
 }
 

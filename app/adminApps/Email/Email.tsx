@@ -69,7 +69,7 @@ export const Email: React.FC<{}> = () => {
       console.log("altered email array with",email.email.insertedId);
       fetcher.submit(
         { singleEmailId: email.email.insertedId },
-        { method: "post", action: `/api/email/fetchOne?index` }
+        { method: "post", action: `/api/email/fetchOneById?index` }
       );
       //alterEmailArray(prev=>[email,...prev]);
       // Have some sort of alert (maybe change title in tab)
@@ -126,18 +126,20 @@ export const Email: React.FC<{}> = () => {
 
   useEffect(() => {
     if(fetcher.data?.fetchedSingle) {
-      console.log(fetcher.data.fetchedSingle);
+      console.log(fetcher.data.fetchedSingle[0]);
+      let newEmails:EmailInterface[] = [...fetcher.data.fetchedSingle];
+      alterEmailArray(prev=>[...newEmails, ...prev]);
       fetcher.data.fetchedSingle = null;
     }
     if(fetcher.data?.additionalInboxEmails) {
       let newEmails:EmailInterface[] = [...fetcher.data.additionalInboxEmails];
-      alterEmailArray(prev=>[...prev,...newEmails]);
+      alterEmailArray(prev=>[...prev, ...newEmails]);
       fetcher.data.additionalInboxEmails = null;
       emNotif(false);
     }
     if(fetcher.data?.additionalOutboxEmails) {
       let newEmails:EmailInterface[] = [...fetcher.data.additionalOutboxEmails];
-      alterSentEmailArray(prev=>[...prev,...newEmails]);
+      alterSentEmailArray(prev=>[...prev, ...newEmails]);
       fetcher.data.additionalOutboxEmails = null;
       emNotif(false);
     }

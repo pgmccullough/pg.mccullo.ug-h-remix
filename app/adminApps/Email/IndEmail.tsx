@@ -6,8 +6,6 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const fetcher = useFetcher();
 
-  console.log("WAIT DIE ",email);
-
   const emailBody = email?.HtmlBody||email?.TextBody||"undefined";
 
   const [attachments, setAttachments] = useState<any>([]);
