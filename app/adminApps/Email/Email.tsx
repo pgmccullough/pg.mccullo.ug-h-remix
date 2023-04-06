@@ -26,6 +26,7 @@ export const Email: React.FC<{}> = () => {
   const [ storeScroll, setStoreScroll ] = useState<Number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
   const [ sentEmailArray, alterSentEmailArray ] = useState<EmailInterface[]>(sentEmails);
+  const [ searchEmailArray, alterSearchEmailArray] = useState<EmailInterface[]>([]);
   const [ emailNotification, setEmailNotification ] = useState<{ 
     msg: string, visibility: boolean
   }>({ msg: "Loading", visibility: false})
@@ -33,7 +34,7 @@ export const Email: React.FC<{}> = () => {
     {to: string, cc: string, bcc: string, subject: string, body: string}
   >({to: "", cc: "", bcc:"", subject: "", body: ""});
   const [ currentEmail, setCurrentEmail ] = useState<
-    {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"}
+    {view: "inbox"|"outbox"|"search"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"}
   >({view: "inbox", composeType: null, id: null, prevView: "inbox"})
 
   const emNotif = (visibility: boolean, msg?: string) => {
@@ -130,12 +131,16 @@ export const Email: React.FC<{}> = () => {
             <div className="email" ref={emailScroll}>
               <ActionBar 
                 alterEmailArray={alterEmailArray}
+                alterSearchEmailArray={alterSearchEmailArray}
+                alterSentEmailArray={alterSentEmailArray}
                 checkedSnippets={checkedSnippets}
                 currentEmail={currentEmail}
                 editNewEmail={editNewEmail}
                 emailArray={emailArray}
                 emNotif={emNotif}
                 newEmail={newEmail}
+                searchEmailArray={searchEmailArray}
+                sentEmailArray={sentEmailArray}
                 setCheckedSnippets={setCheckedSnippets}
                 setCurrentEmail={setCurrentEmail}
               />
@@ -173,23 +178,44 @@ export const Email: React.FC<{}> = () => {
                     )}
                     <div ref={scrollerBottomOutbox}>&nbsp;</div>
                   </>
-                  :currentEmail.view==="email"
-                    ?<IndEmail 
-                      email={
-                        (
-                          emailArray.find((res:any) => res._id===currentEmail.id)
-                        ||sentEmailArray.find((res:any) => res._id===currentEmail.id)
-                        )!
-                      }
-                    />
-                    :currentEmail.view==="compose"
-                      ?<Composer 
-                        editNewEmail={editNewEmail}
-                        email={emailArray.find((res:any) => res._id===currentEmail.id)!}
-                        emailBodyRef={emailBodyRef}
-                        newEmail={newEmail}
+                  :currentEmail.view==="search"
+                  ?<>
+                    {searchEmailArray.length
+                      ?searchEmailArray.map((email:any) =>
+                        <div key={email._id}>
+                          <Snippet 
+                            alterEmailArray={alterSearchEmailArray}
+                            checkedSnippets={checkedSnippets}
+                            currentEmail={currentEmail}
+                            email={email}
+                            emailArray={searchEmailArray}
+                            setCurrentEmail={setCurrentEmail}
+                            setCheckedSnippets={setCheckedSnippets}
+                          />
+                        </div>
+                      )
+                      :<div>No matching emails found.</div>
+                    }
+                    <div ref={scrollerBottomOutbox}>&nbsp;</div>
+                  </>
+                    :currentEmail.view==="email"
+                      ?<IndEmail 
+                        email={
+                          (
+                            emailArray.find((res:any) => res._id===currentEmail.id)
+                          ||sentEmailArray.find((res:any) => res._id===currentEmail.id)
+                          ||searchEmailArray.find((res:any) => res._id===currentEmail.id)
+                          )!
+                        }
                       />
-                      :""
+                      :currentEmail.view==="compose"
+                        ?<Composer 
+                          editNewEmail={editNewEmail}
+                          email={emailArray.find((res:any) => res._id===currentEmail.id)!}
+                          emailBodyRef={emailBodyRef}
+                          newEmail={newEmail}
+                        />
+                        :""
               }
             </div>
           </div>

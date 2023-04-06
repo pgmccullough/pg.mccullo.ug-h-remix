@@ -6,8 +6,12 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const fetcher = useFetcher();
 
+  console.log("WAIT DIE ",email);
+
+  const emailBody = email?.HtmlBody||email?.TextBody||"undefined";
+
   const [attachments, setAttachments] = useState<any>([]);
-  const [cleanEmail, setCleanEmail] = useState<any>(email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email.TextBody);
+  const [cleanEmail, setCleanEmail] = useState<any>(emailBody?.replace(/(<style[\w\W]+style>)/g, ""));
 
   useEffect(() => {
     fetcher.submit(
@@ -28,7 +32,7 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   useEffect(() => {
     setAttachments([]);
-    setCleanEmail(attToImg(email.HtmlBody.replace(/(<style[\w\W]+style>)/g, ""),email.Attachments) || attToImg(email.TextBody,email.Attachments));
+    setCleanEmail(attToImg(emailBody.replace(/(<style[\w\W]+style>)/g, ""),email.Attachments) || attToImg(emailBody,email.Attachments));
   },[])
 
   return (

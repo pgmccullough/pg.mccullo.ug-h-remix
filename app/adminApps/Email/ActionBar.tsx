@@ -3,17 +3,22 @@ import { useEffect, useRef, useState } from 'react';
 
 export const ActionBar: React.FC<{
   alterEmailArray: any,
+  alterSearchEmailArray: any,
+  alterSentEmailArray: any,
   checkedSnippets: string[],
-  currentEmail: {view: "inbox"|"outbox"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"},
+  currentEmail: {view: "inbox"|"outbox"|"search"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"},
   editNewEmail: any,
   emNotif: any,
   emailArray: any[],
   newEmail: {to: string, cc: string, bcc: string, subject: string, body: string},
+  searchEmailArray: any[],
+  sentEmailArray: any[],
   setCheckedSnippets: any,
   setCurrentEmail: any
-}> = ({ alterEmailArray, checkedSnippets, currentEmail, editNewEmail, emailArray, emNotif, newEmail, setCheckedSnippets, setCurrentEmail }) => {
+}> = ({ alterEmailArray, alterSearchEmailArray, alterSentEmailArray, checkedSnippets, currentEmail, editNewEmail, emailArray, emNotif, newEmail, searchEmailArray, sentEmailArray, setCheckedSnippets, setCurrentEmail }) => {
 
   const fetcher = useFetcher();
+  const emailSearchFetch = useFetcher();
   const [ searchExpanded, toggleSearchExpanded ] = useState<boolean>(false);
   const emailSearchEl = useRef<HTMLInputElement>(null)
 
@@ -25,6 +30,38 @@ export const ActionBar: React.FC<{
     }
   },[searchExpanded])
 
+  useEffect(() => {
+    if( emailSearchFetch.type!=="done" && emailSearchFetch.type!=="init" ) {
+      emNotif(true, `Searching`);
+    } else {
+      emNotif(false);  
+    };
+    if(emailSearchFetch.data?.matchingEmails) {
+      setCurrentEmail({...currentEmail, view: "search", id: null});
+      alterSearchEmailArray(emailSearchFetch.data.matchingEmails);
+    }
+  },[emailSearchFetch]);
+
+  const mailBoxMethods = (whichbox: string) => {
+    let ebClone;
+    let whichAlterMethod;
+    switch(whichbox) {
+      case "outbox":
+        ebClone = [...sentEmailArray];
+        whichAlterMethod = alterSentEmailArray;
+        break;
+      case "search":
+        ebClone = [ ...searchEmailArray ];
+        whichAlterMethod = alterSearchEmailArray;
+        break;
+      default:
+        ebClone = [ ...emailArray ]
+        whichAlterMethod = alterEmailArray;
+        break;
+    }
+    return [ebClone, whichAlterMethod];
+  }
+
   const sendAndCleanup = () => {
     editNewEmail({to: "", cc: "", bcc:"", subject: "", body: ""});
     setCurrentEmail({composeType: null, view: currentEmail.prevView||"inbox", id: null});
@@ -34,16 +71,16 @@ export const ActionBar: React.FC<{
 
   const removeEmailFromState = (id: string) => {
     fetcher.data = "";
-    let ebClone = [ ...emailArray ];
-    ebClone = ebClone.filter((email:any) => email._id!==id);
-    alterEmailArray(ebClone);
+    let [ arr, alter ] = mailBoxMethods(currentEmail.view);
+    arr = arr.filter((email:any) => email._id!==id);
+    alter(arr);
     setCurrentEmail({ view: currentEmail.prevView||"inbox", composeType: null, id: null });
     emNotif(false);
   };
 
   const toggleMailbox = (e:React.ChangeEvent<HTMLSelectElement>) => {
     setCurrentEmail({ 
-      view: e.target.value==="SENT"?"outbox":"inbox",
+      view: e.target.value==="SENT"?"outbox":e.target.value==="SEARCH"?"search":"inbox",
       composeType: null,
       id: null
     })
@@ -59,9 +96,9 @@ export const ActionBar: React.FC<{
   
   const onMultiDelSuccess = () => {
     if(fetcher.data.delEmParsedArray.length) {
-      let ebClone = [ ...emailArray ];
-      ebClone = ebClone.filter((email:any) => !fetcher.data.delEmParsedArray.includes(email._id));
-      alterEmailArray(ebClone);
+      let [ arr, alter ] = mailBoxMethods(currentEmail.view);
+      arr = arr.filter((email:any) => !fetcher.data.delEmParsedArray.includes(email._id));
+      alter(arr);
       emNotif(false);
     }
     setCheckedSnippets([]);
@@ -72,9 +109,9 @@ export const ActionBar: React.FC<{
 
   const onMultiMarkReadSuccess = () => {
     if(fetcher.data.markEmParsedArray.length) {
-      let ebClone = [ ...emailArray ];
-      ebClone.forEach((email:any) => fetcher.data.markEmParsedArray.includes(email._id)?email.unread=0:"");
-      alterEmailArray(ebClone);
+      let [ arr, alter ] = mailBoxMethods(currentEmail.view);
+      arr.forEach((email:any) => fetcher.data.markEmParsedArray.includes(email._id)?email.unread=0:"");
+      alter(arr);
     }
     setCheckedSnippets([]);
     delete fetcher.data.multiMarkReadEmails;
@@ -164,18 +201,25 @@ export const ActionBar: React.FC<{
                 <select
                   className="email__select"
                   onChange={(e) => toggleMailbox(e)}
-                  value={currentEmail.view==="inbox"?"RECEIVED":"SENT"}
+                  value={currentEmail.view==="search"?"SEARCH":currentEmail.view==="inbox"?"RECEIVED":"SENT"}
                 >
+                  {searchEmailArray.length?<option>SEARCH</option>:""}
                   <option>RECEIVED</option>
                   <option>SENT</option>
                 </select>
                 <div className={`email__search ${searchExpanded?"email__search--expanded":""}`}>
-                  <input 
-                    type="text" 
-                    className={`email__search-input ${searchExpanded?"email__search-input--expanded":""}`} 
-                    placeholder="Search..."
-                    ref={emailSearchEl}
-                  />
+                  <emailSearchFetch.Form
+                    method="post"
+                    action={`/api/email/search?index`}
+                  >
+                    <input 
+                      type="text" 
+                      className={`email__search-input ${searchExpanded?"email__search-input--expanded":""}`} 
+                      name="search"
+                      placeholder="Search..."
+                      ref={emailSearchEl}
+                    />
+                  </emailSearchFetch.Form>
                   <div 
                     className={`email__search-action ${searchExpanded?"email__search-action--x":""}`}
                     onClick={() => toggleSearchExpanded(!searchExpanded)}

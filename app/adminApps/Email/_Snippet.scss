@@ -116,6 +116,7 @@
       margin: 0;
       opacity: 0;
       transition: 0.25s;
+      display: block!important;
       &--expanded {
         width: 12vw;
         margin-right: 4px;
