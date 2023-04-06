@@ -10,7 +10,7 @@ export const pusher = new Pusher({
 });
 
 // export async function newEmail(email:EmailInterface) {
-export const newEmail = async(email:EmailInterface) => {
+export const newEmail = async(email:any) => {
   // ref: https://pusher.com/docs/channels/using_channels/events/
   await pusher.trigger("client-new-email", "refresh", {
     email
