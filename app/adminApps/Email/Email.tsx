@@ -66,7 +66,8 @@ export const Email: React.FC<{}> = () => {
 
     const channel = pusher.subscribe("client-new-email");
     channel.bind("refresh", function (email:EmailInterface) {
-      console.log(email);
+      alterEmailArray([email,...emailArray]);
+      // Have some sort of alert (maybe change title in tab)
     });
 
     return () => {

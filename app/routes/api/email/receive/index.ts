@@ -66,7 +66,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
 
   try {
     const sendEmail = await db.collection('myEmails').insertOne(newEmail);
-    sendNewEmail(sendEmail);
+    sendNewEmail(newEmail);
     return { sendEmail };
   } catch(err) {
     throw new Response("Error storing email.", {
