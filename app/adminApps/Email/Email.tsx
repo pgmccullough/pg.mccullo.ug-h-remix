@@ -5,6 +5,7 @@ import { IndEmail } from './IndEmail';
 import { Composer } from './Composer';
 import { EmailInterface } from '~/common/types';
 import { useEffect, useRef, useState } from 'react';
+import Pusher from "pusher-js";
 
 export const Email: React.FC<{}> = () => {
 
@@ -56,6 +57,23 @@ export const Email: React.FC<{}> = () => {
     rootMargin: "0px",
     threshold: 0.1,
   };
+
+  useEffect(() => {
+    // Pusher.logToConsole = true;
+    const pusher = new Pusher('1463cc5404c5aa8377ba', {
+      cluster: 'mt1'
+    });
+
+    const channel = pusher.subscribe("client-new-email");
+    channel.bind("refresh", function (email:EmailInterface) {
+      console.log(email);
+    });
+
+    return () => {
+      channel.unbind_all();
+      channel.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(cbInbox, options);

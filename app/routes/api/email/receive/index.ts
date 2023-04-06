@@ -1,6 +1,7 @@
 import type { ActionArgs, ActionFunction } from "@remix-run/node";
 import { clientPromise } from "~/lib/mongodb";
 import AWS from "aws-sdk";
+import { newEmail as sendNewEmail } from "~/utils/pusher.server";
 
 export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
@@ -65,6 +66,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
 
   try {
     const sendEmail = await db.collection('myEmails').insertOne(newEmail);
+    sendNewEmail(sendEmail);
     return { sendEmail };
   } catch(err) {
     throw new Response("Error storing email.", {
