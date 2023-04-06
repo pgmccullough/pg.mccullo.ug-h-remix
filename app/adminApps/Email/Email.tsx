@@ -65,9 +65,9 @@ export const Email: React.FC<{}> = () => {
     });
 
     const channel = pusher.subscribe("client-new-email");
-    channel.bind("refresh", function (email:EmailInterface) {
+    channel.bind("refresh", function (email:{email:EmailInterface}) {
       console.log("altered email array with",email)
-      alterEmailArray(prev=>[email,...prev]);
+      alterEmailArray(prev=>[email.email,...prev]);
       // Have some sort of alert (maybe change title in tab)
     });
 
