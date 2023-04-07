@@ -36,9 +36,9 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
   const attToImg = (body:any,atts:any) => {
     atts?.map((att:any) => {
       setAttachments((prev:any) =>
-        [...prev,{ file: `https://pg.mccullo.ug/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`, name:att.Name }]
+        [...prev,{ file: `/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`, name:att.Name }]
       );
-      body = body.replace(`cid:${att.ContentID}`,`https://pg.mccullo.ug/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`);
+      body = body.replace(`cid:${att.ContentID}`,`/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`);
     })
     return body;
   };
