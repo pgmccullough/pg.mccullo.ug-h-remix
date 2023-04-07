@@ -6,7 +6,7 @@ export const Composer: React.FC<{
 }> = ({ editNewEmail, email, emailBodyRef, newEmail }) => {
 
   const [ formatButton, toggleFormatButton ] = useState({bold: false, italic: false, underline: false, strikethrough: false, code: false})
-  
+
   return (
     <>
       <div className="email__composer-head">
@@ -87,6 +87,7 @@ export const Composer: React.FC<{
               <b>From:</b> { email.FromName?email.FromName+" <"+email.From+">":email.From}<br />
               <b>Sent: </b> { email.Date } <br />
               <b>To: </b> { email.To } <br />
+              {email.Cc?<><b>cc: </b> { email.Cc } <br /></>:""}
               <b>Subject:</b> { email?.Subject||"" } <br />
               <p dangerouslySetInnerHTML={{__html: email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email.TextBody}} />
           </>

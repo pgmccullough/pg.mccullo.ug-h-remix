@@ -90,12 +90,14 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const listRecipients = (recipArray: {Email: string, Name: string}[]) =>
     recipArray.map(
-      ({Email, Name}:{Email:string, Name?:string }, i:number) => 
-        Name
-          ?<>
-            <span dangerouslySetInnerHTML={{__html: `${Name} &lt;${Email}&gt;`}} />{i<recipArray.length-1?", ":""}
-          </>
-          :<span>{Email}{i<recipArray.length-1?", ":""}</span>
+      ({Email, Name}:{Email:string, Name?:string }, i:number) => <span key={Email}>
+        {Name
+            ?<>
+              <span dangerouslySetInnerHTML={{__html: `${Name} &lt;${Email}&gt;`}} />{i<recipArray.length-1?", ":""}
+            </>
+            :<span>{Email}{i<recipArray.length-1?", ":""}</span>
+        }
+      </span>
     )
 
   return (

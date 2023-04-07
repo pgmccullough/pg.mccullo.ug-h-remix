@@ -131,20 +131,34 @@ export const ActionBar: React.FC<{
   const compose = (composeType:"new"|"reply"|"replyAll"|"forward"|"", id: string|null) => {
     setCurrentEmail({ view: "compose", composeType, id });
     const curEmail = emailArray.find((email:any) => email._id===id);
-    let subject = curEmail?.Subject?.trim();
+    let subject = curEmail?.Subject?.trim().replace(/^re:\s*/i, "").replace(/^fwd:\s*/i, "");
     if(composeType==="reply"||composeType==="replyAll") {
       subject = "Re: "+subject;
     }
     if(composeType==="forward") {
       subject = "Fwd: "+subject;
     }
+    
+    const cc = composeType==="replyAll"&&curEmail.CcFull.length
+      ?curEmail.CcFull.map(({Email}:{Email:string, Name:string }, i:number) => {
+        if(i<curEmail.CcFull.length-1) return Email+"; ";
+        return Email;
+      }).join("")
+      :""
+
+    const to = composeType==="reply"
+      ?curEmail.From||""
+      :composeType==="replyAll"&&curEmail.ToFull.length > 1
+        ?curEmail.From+"; "+curEmail.ToFull.map(({Email}:{Email:string, Name:string }, i:number) => {
+          if(Email.toLowerCase()==="p@mccullo.ug"||Email.toLowerCase()===curEmail.From.toLowerCase()) return "";
+          if(i<curEmail.ToFull.length-1) return Email+"; ";
+          return Email;
+        }).join("")
+        :curEmail.From||""
+
     editNewEmail({
-      to: composeType==="reply"||composeType==="replyAll"
-        ?curEmail.From||""
-        :"",
-      cc: curEmail.CcFull.length
-        ?curEmail.CcFull.join(";")
-        :"",
+      to: to.replace(/;\s*$/, ""),
+      cc,
       bcc:"",
       subject,
       body: curEmail.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||curEmail.TextBody
