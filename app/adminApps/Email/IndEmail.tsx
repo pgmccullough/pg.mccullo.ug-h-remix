@@ -1,6 +1,14 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useState } from "react";
 import { EmailInterface } from '~/common/types';
+import dayjs from 'dayjs';
+import 'dayjs/locale/en';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import advancedFormat from 'dayjs/plugin/advancedFormat';
+dayjs.extend(relativeTime)
+dayjs.extend(advancedFormat)
+dayjs().format();
+dayjs.locale('en');
 
 export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
@@ -25,7 +33,7 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
   const [cleanEmail, setCleanEmail] = useState<string>(emailBody);
 
   useEffect(() => {
-    if(email.unread) {
+    if(!email.unread || email.unread !== 0) {
       fetcher.submit(
         { readEmailId: email._id },
         { method: "post", action: `/api/email/markRead/${email._id}` }
@@ -48,22 +56,113 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
     setCleanEmail(attToImg(cleanEmail,email.Attachments));
   },[])
 
+  const iconMap:any = {
+    apng: "image",
+    avif: "image",
+    bmp: "image",
+    gif: "image",
+    ico: "image",
+    jpeg: "image",
+    jpg: "image",
+    png: "image",
+    svg: "image",
+    tiff: "image",
+    webp: "image",
+  }
+
+  const getIcon = (fileName: string) => {
+    const ext = fileName.split(".").at(-1)?.toLowerCase()||"no-ext";
+    if(iconMap[ext]==="image") {
+      return `<div class="email-attachments__icon"><img src="${fileName}" /></div>`
+    }
+    return `<div class="email-attachments__icon">.${ext}</div>`
+  }
+
+  const trimFileName = (fileName: string) => {
+    let trimmed = fileName.split(".");
+    let ext = trimmed.pop();
+    let name = trimmed.join("");
+    name = name.length <= 6
+    	?name
+      :name.slice(0,3)+"..."+name.slice(-3);
+    return name+"."+ext;
+  }
+
+  const listRecipients = (recipArray: {Email: string, Name: string}[]) =>
+    recipArray.map(
+      ({Email, Name}:{Email:string, Name?:string }, i:number) => 
+        Name
+          ?<>
+            <span dangerouslySetInnerHTML={{__html: `${Name} &lt;${Email}&gt;`}} />{i<recipArray.length-1?", ":""}
+          </>
+          :<span>{Email}{i<recipArray.length-1?", ":""}</span>
+    )
+
   return (
-    <div className="email-attachments">
-      {attachments.length
-        ?attachments.map((dl:any) =>
-          <div className="email-attachments__file" key={dl.file}>
-            <a href={dl.file} target="_BLANK">{dl.name}</a>
-          </div>
-        )
-        :""
-      }
+    <>
+      {attachments.length?
+        <div className="email-attachments">
+          {attachments.length
+            ?attachments.map((dl:any) => {
+              return (
+                <div className="email-attachments__file" key={dl.file}>
+                  <a href={dl.file} target="_BLANK" style={{textDecoration: "none"}}>
+                  <div 
+                    dangerouslySetInnerHTML={
+                      {__html: getIcon(dl.file)}
+                    } />
+                  </a>
+                  <a href={dl.file} target="_BLANK">
+                    {trimFileName(dl.name)}
+                  </a>
+                </div>
+              )
+            }
+            )
+            :""
+          }
+        </div>
+      :""}
+      <div className="email__meta">
+        <p>{email.Subject}</p>
+        <div className="email__meta_label">from:</div><div className="email__meta_content">
+          {email.FromFull.Name
+            ?<span dangerouslySetInnerHTML={{__html: `${email.FromFull.Name} &lt;${email.FromFull.Email}&gt;`}} />
+            :<span>{email.FromFull.Email}</span>
+          }
+        </div>
+
+        {email.ToFull.length
+          ?<>
+            <div className="email__meta_label">to:</div>
+            <div className="email__meta_content">
+              {listRecipients(email.ToFull)}
+            </div>
+          </>
+          :<></>
+        }
+
+        {email.CcFull.length
+          ?<>
+            <div className="email__meta_label">cc:</div>
+            <div className="email__meta_content">
+              {listRecipients(email.CcFull)}
+            </div>
+          </>
+          :<></>
+        }
+
+        <div className="email__meta_label">date:</div>
+        <div className="email__meta_content">
+          {dayjs(Date.parse(email.Date)).format('dddd, MMMM Do, YYYY, h:mm A')} ({dayjs().to(dayjs(Date.parse(email.Date)))})
+        </div>
+      </div>
       <div 
         style={{whiteSpace: "normal"}}
         dangerouslySetInnerHTML={
           {__html: cleanEmail}
         }
       />
-    </div>
+    </>
   )
 }

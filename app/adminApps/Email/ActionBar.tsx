@@ -20,6 +20,7 @@ export const ActionBar: React.FC<{
   const fetcher = useFetcher();
   const emailSearchFetch = useFetcher();
   const [ searchExpanded, toggleSearchExpanded ] = useState<boolean>(false);
+  const [ respondActions, toggleRespondActions ] = useState<boolean>(false);
   const emailSearchEl = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -150,8 +151,10 @@ export const ActionBar: React.FC<{
     })
   } 
 
+  const curEm = emailArray.find((email:any) => email._id===currentEmail.id);
+
   return (
-    <div className="email__actions"><>
+    <div className={`email__actions${currentEmail.view==="email"?" email__actions--unspaced":""}`}><>
       {
         currentEmail.view==="compose"
         ?<>
@@ -186,9 +189,21 @@ export const ActionBar: React.FC<{
               <input type="hidden" name="deleteEmailId" value={currentEmail.id} />
               <button type="submit" onClick={() => emNotif(true, `Deleting email`)}>DELETE</button>
             </fetcher.Form>
-            <button onClick={() => compose("reply",currentEmail.id)}>REPLY</button>
-            <button onClick={() => compose("replyAll",currentEmail.id)}>REPLY ALL</button>
-            <button onClick={() => compose("forward",currentEmail.id)}>FORWARD</button>
+            <button onClick={() => toggleRespondActions(!respondActions)}>RESPOND <div className="button__dropdown" /></button>
+            {respondActions
+              ?<>
+                <div className="email__actions_respondActions_bg" onClick={() => toggleRespondActions(false)} />
+                <div className="email__actions_respondActions">
+                  <button onClick={() => {toggleRespondActions(false); compose("reply",currentEmail.id)}}>REPLY</button>
+                  {curEm.ToFull.length > 1 || curEm.CcFull.length
+                    ?<button onClick={() => {toggleRespondActions(false); compose("replyAll",currentEmail.id)}}>REPLY ALL</button>
+                    :<></>
+                  }
+                  <button onClick={() => {toggleRespondActions(false); compose("forward",currentEmail.id)}}>FORWARD</button>
+                </div>
+              </>
+              :<></>
+            }
           </>
           :checkedSnippets.length
             ?<>

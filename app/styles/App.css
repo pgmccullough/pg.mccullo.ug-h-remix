@@ -635,8 +635,55 @@ button {
   padding: 0.25rem;
   z-index: 1;
 }
+.email__actions--unspaced {
+  justify-content: flex-start;
+}
+.email__actions_respondActions {
+  position: absolute;
+  display: flex;
+  width: 6.7rem;
+  top: 2rem;
+  left: 8.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: space-between;
+}
+.email__actions_respondActions button {
+  margin-bottom: 0.25rem !important;
+}
+.email__actions_respondActions_bg {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  left: 0px;
+  top: 0px;
+}
 .email__actions button {
   margin: 0 0.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.email__actions button .button__dropdown {
+  position: relative;
+  margin: -0.25rem;
+  margin-right: -0.4rem;
+  margin-left: 0px;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: calc(100% + 0.3rem);
+  background: #3c5899;
+  border-left: 1px #c6cce0 solid;
+}
+.email__actions button .button__dropdown:after {
+  content: "";
+  display: block;
+  position: absolute;
+  border-top: 7px #c6cce0 solid;
+  border-left: 5px transparent solid;
+  border-right: 5px transparent solid;
+  margin-top: 7px;
+  margin-left: 4px;
 }
 .email__actions form {
   display: flex;
@@ -790,6 +837,65 @@ button {
   height: 24px;
   left: 8px;
   top: -2px;
+}
+.email-attachments {
+  display: grid;
+  grid-template-columns: 33% 33% 33%;
+  grid-row-gap: 0.75rem;
+  padding: 0.75rem;
+  background: #eee;
+  border-bottom: 1px #ccc solid;
+  justify-items: center;
+}
+.email-attachments__file {
+  display: flex;
+  font-size: 0.75rem;
+  align-items: center;
+}
+.email-attachments__icon {
+  width: 40px;
+  height: 40px;
+  padding: 3px;
+  border-radius: 3px;
+  background: #eee;
+  box-shadow: 0 0 3px 0 #000;
+  margin-right: 5px;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+.email-attachments__icon img {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+.email__meta {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  line-height: 18px;
+  padding: 0.5rem;
+  background: #eee;
+  grid-row-gap: 4px;
+  box-shadow: 0 0 3px 0 #000;
+}
+.email__meta p {
+  grid-column: 1/-1;
+}
+.email__meta_label {
+  color: #666;
+  font-size: 12px;
+  border-bottom: 1px #ccc solid;
+}
+.email__meta_label:nth-last-of-type(2) {
+  border-bottom: none;
+}
+.email__meta_content {
+  font-size: 12px;
+  border-bottom: 1px #ccc solid;
+}
+.email__meta_content:last-of-type {
+  border-bottom: none;
 }
 
 .snippet {
