@@ -2,6 +2,7 @@ import type { ActionArgs, ActionFunction } from "@remix-run/node";
 import { clientPromise } from "~/lib/mongodb";
 import AWS from "aws-sdk";
 import { newEmail as sendNewEmail } from "~/utils/pusher.server";
+import { v4 as uuidv4 } from 'uuid';
 
 export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
@@ -50,7 +51,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
     }
     s3.upload(params, (err:any, data:any) => {
       if (err) {
-        console.log("Email Attachment Error", err);
+        console.error("Email Attachment Error", err);
       } if (data) {
         console.log("Email Attachment Upload Success", data.Location);
       }
@@ -59,7 +60,7 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
   const newEmail = {...reqBody,unread:1,created:Date.now()};
   newEmail.Attachments?.forEach((attach:any) => {
-    uploadAttachment(attach.Content,attach.Name,attach.ContentType,attach.ContentID);
+    uploadAttachment(attach.Content,attach.Name,attach.ContentType,attach.ContentID||uuidv4());
     delete attach.Content;
   })
   delete newEmail.Headers;
