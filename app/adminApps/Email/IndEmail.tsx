@@ -6,16 +6,31 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const fetcher = useFetcher();
 
-  const emailBody = email?.HtmlBody||email?.TextBody||"undefined";
+  let emailBody;
 
-  const [attachments, setAttachments] = useState<any>([]);
-  const [cleanEmail, setCleanEmail] = useState<any>(emailBody?.replace(/(<style[\w\W]+style>)/g, ""));
+  if(email?.HtmlBody) {
+    emailBody = email.HtmlBody
+      .replace(/(<style[\w\W]+style>)/g, "")
+      .replaceAll(/width:(.*);/g,'')
+      .replaceAll(/width="(.*)"/g,'width="100%"')
+  } else {
+    emailBody = email.TextBody||"";
+  }
+
+  if(!emailBody.includes('style="')) {
+    emailBody = `<div style="padding: 2rem;">${emailBody}</div>`;
+  }
+
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [cleanEmail, setCleanEmail] = useState<string>(emailBody);
 
   useEffect(() => {
-    fetcher.submit(
-      { readEmailId: email._id },
-      { method: "post", action: `/api/email/markRead/${email._id}` }
-    );
+    if(email.unread) {
+      fetcher.submit(
+        { readEmailId: email._id },
+        { method: "post", action: `/api/email/markRead/${email._id}` }
+      );
+    }
   },[]);
 
   const attToImg = (body:any,atts:any) => {
@@ -30,24 +45,25 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   useEffect(() => {
     setAttachments([]);
-    setCleanEmail(attToImg(emailBody.replace(/(<style[\w\W]+style>)/g, ""),email.Attachments) || attToImg(emailBody,email.Attachments));
+    setCleanEmail(attToImg(cleanEmail,email.Attachments));
   },[])
 
   return (
-    <>
+    <div className="email-attachments">
       {attachments.length
         ?attachments.map((dl:any) =>
-          <>
-            <a href={dl.file}>{dl.name}</a>
-          </>
+          <div className="email-attachments__file" key={dl.file}>
+            <a href={dl.file} target="_BLANK">{dl.name}</a>
+          </div>
         )
         :""
       }
-      <div
+      <div 
+        style={{whiteSpace: "normal"}}
         dangerouslySetInnerHTML={
           {__html: cleanEmail}
         }
       />
-    </>
+    </div>
   )
 }
