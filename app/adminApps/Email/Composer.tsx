@@ -1,11 +1,89 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EmailInterface } from '~/common/types';
 
 export const Composer: React.FC<{ 
-  editNewEmail: any, email: EmailInterface, emailBodyRef: any, newEmail: any
-}> = ({ editNewEmail, email, emailBodyRef, newEmail }) => {
+  currentEmail: any, editNewEmail: any, email: EmailInterface, emailBodyRef: any, newEmail: any
+}> = ({ currentEmail, editNewEmail, email, emailBodyRef, newEmail }) => {
+
+  const emailBody = email&&(email.FromName||email.Subject||email.Date)
+  ?`
+    <br /><br />
+    <hr />
+      <b>From:</b> ${ email.FromName?email.FromName+" <"+email.From+">":email.From}<br />
+      <b>Sent: </b> ${ email.Date } <br />
+      <b>To: </b> ${ email.To } <br />
+      ${email.Cc?<><b>cc: </b> { email.Cc } <br /></>:""}
+      <b>Subject:</b> ${ email?.Subject||"" } <br />
+      <p>${email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email.TextBody}</p>
+  `
+  :""
 
   const [ formatButton, toggleFormatButton ] = useState({bold: false, italic: false, underline: false, strikethrough: false, code: false})
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [cleanEmail, setCleanEmail] = useState<string>(emailBody);
+
+  const attToImg = (body:any,atts:any) => {
+    atts?.map((att:any) => {
+      setAttachments((prev:any) =>
+        [...prev,{ file: `/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`, name:att.Name }]
+      );
+      body = body.replace(`cid:${att.ContentID}`,`/api/media/images/emailAttachments/${att.ContentID}.${att.Name.split(".").at(-1)}`);
+    })
+    return body;
+  };
+
+  const iconMap:any = {
+    apng: "image",
+    avif: "image",
+    bmp: "image",
+    gif: "image",
+    ico: "image",
+    jpeg: "image",
+    jpg: "image",
+    png: "image",
+    svg: "image",
+    tiff: "image",
+    webp: "image",
+  }
+
+  const getIcon = (fileName: string) => {
+    const ext = fileName?.split(".").at(-1)?.toLowerCase()||"no-ext";
+    if(iconMap[ext]==="image") {
+      return `<div class="email-attachments__icon"><img src="${fileName}" /></div>`
+    }
+    return `<div class="email-attachments__icon">.${ext}</div>`
+  }
+
+  const trimFileName = (fileName: string) => {
+    let trimmed = fileName?.split(".");
+    let ext = trimmed.pop();
+    let name = trimmed.join("");
+    name = name.length <= 6
+    	?name
+      :name.slice(0,3)+"..."+name.slice(-3);
+    return name+"."+ext;
+  }
+
+  const dropAtt = ({file, name}: {file: string, name: string}) => {
+    let contentID = file.split("/").at(-1);
+    let noExtContentID = contentID?.split(".").at(-2);
+    const cloneEm = {...newEmail};
+    let cloneAtts = [...cloneEm.attachments];
+    let updatedAtts = cloneAtts.filter((attachment: {ContentLength:number, Name: string, ContentType: string, ContentID: string}) =>
+      attachment.ContentID!==noExtContentID
+    )
+    editNewEmail({...newEmail,attachments:updatedAtts});
+    let cloneDispAtts = [...attachments];
+    let updatedDispAtts = cloneDispAtts.filter((dispAtt: {file: string, name: string}) =>
+      dispAtt.file !== "/api/media/images/emailAttachments/"+contentID
+    ) 
+    setAttachments(updatedDispAtts);
+  }
+
+  useEffect(() => {
+    setAttachments([]);
+    setCleanEmail(attToImg(cleanEmail,newEmail.attachments));
+  },[])
 
   return (
     <>
@@ -74,25 +152,42 @@ export const Composer: React.FC<{
           <button className={`email__format-button email__format-button--attachment`}>ATT</button>
         </div>
       </div>
+
+      {attachments.length&&currentEmail.composeType==="forward"?
+        <div className="email-attachments">
+          {attachments.length
+            ?attachments.map((dl:any) => {
+              return (
+                <div className="email-attachments__file" key={dl.file}>
+                  <div>
+                    <div 
+                      dangerouslySetInnerHTML={
+                        {__html: getIcon(dl.file)}
+                      }
+                    />
+                    <div 
+                      className="email-attachments__remove"
+                      onClick={() => dropAtt(dl)}
+                    >+</div>
+                  </div>
+                  {trimFileName(dl.name)}
+                </div>
+              )
+            }
+            )
+            :""
+          }
+        </div>
+      :""}
+
       <div 
         className="email__body"
         contentEditable={true}
+        style={{whiteSpace: "normal"}}
         onKeyUp={() => editNewEmail({...newEmail, body: emailBodyRef.current.innerHTML})}
         ref={ emailBodyRef }
-      >
-        {email&&(email.FromName||email.Subject||email.Date)
-          ?<>
-            <br /><br />
-            <hr />
-              <b>From:</b> { email.FromName?email.FromName+" <"+email.From+">":email.From}<br />
-              <b>Sent: </b> { email.Date } <br />
-              <b>To: </b> { email.To } <br />
-              {email.Cc?<><b>cc: </b> { email.Cc } <br /></>:""}
-              <b>Subject:</b> { email?.Subject||"" } <br />
-              <p dangerouslySetInnerHTML={{__html: email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email.TextBody}} />
-          </>
-          :""}
-      </div>
+        dangerouslySetInnerHTML={{__html: cleanEmail}}
+      />
     </>
   )
 }

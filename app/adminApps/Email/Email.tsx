@@ -32,8 +32,8 @@ export const Email: React.FC<{}> = () => {
     msg: string, visibility: boolean
   }>({ msg: "Loading", visibility: false})
   const [ newEmail, editNewEmail ] = useState<
-    {to: string, cc: string, bcc: string, subject: string, body: string}
-  >({to: "", cc: "", bcc:"", subject: "", body: ""});
+    {attachments: [], to: string, cc: string, bcc: string, subject: string, body: string}
+  >({attachments: [], to: "", cc: "", bcc:"", subject: "", body: ""});
   const [ currentEmail, setCurrentEmail ] = useState<
     {view: "inbox"|"outbox"|"search"|"email"|"compose", composeType: string|null, id: string|null, prevView: "inbox"|"outbox"}
   >({view: "inbox", composeType: null, id: null, prevView: "inbox"})
@@ -238,6 +238,7 @@ export const Email: React.FC<{}> = () => {
                       />
                       :currentEmail.view==="compose"
                         ?<Composer 
+                          currentEmail={currentEmail}
                           editNewEmail={editNewEmail}
                           email={emailArray.find((res:any) => res._id===currentEmail.id)!}
                           emailBodyRef={emailBodyRef}

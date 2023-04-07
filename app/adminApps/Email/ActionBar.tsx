@@ -10,7 +10,7 @@ export const ActionBar: React.FC<{
   editNewEmail: any,
   emNotif: any,
   emailArray: any[],
-  newEmail: {to: string, cc: string, bcc: string, subject: string, body: string},
+  newEmail: {to: string, cc: string, bcc: string, subject: string, body: string, attachments: any[]},
   searchEmailArray: any[],
   sentEmailArray: any[],
   setCheckedSnippets: any,
@@ -64,7 +64,7 @@ export const ActionBar: React.FC<{
   }
 
   const sendAndCleanup = () => {
-    editNewEmail({to: "", cc: "", bcc:"", subject: "", body: ""});
+    editNewEmail({to: "", cc: "", bcc:"", subject: "", body: "", attachments: []});
     setCurrentEmail({composeType: null, view: currentEmail.prevView||"inbox", id: null});
     fetcher.data.newEmail = null;
     emNotif(false);
@@ -157,6 +157,7 @@ export const ActionBar: React.FC<{
         :curEmail.From||""
 
     editNewEmail({
+      attachments: composeType==="forward"&&curEmail.Attachments.length?curEmail.Attachments:[],
       to: to.replace(/;\s*$/, ""),
       cc,
       bcc:"",
@@ -181,6 +182,7 @@ export const ActionBar: React.FC<{
               method="post"
               action={`/api/email/send?index`}
             >
+              <input type="hidden" name="Attachments" value={newEmail.attachments} />
               <input type="hidden" name="Bcc" value={newEmail.bcc} />
               <input type="hidden" name="Cc" value={newEmail.cc} />
               <input type="hidden" name="HtmlBody" value={newEmail.body} />
