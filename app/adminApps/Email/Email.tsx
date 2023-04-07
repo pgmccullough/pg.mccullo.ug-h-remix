@@ -66,7 +66,6 @@ export const Email: React.FC<{}> = () => {
 
     const channel = pusher.subscribe("client-new-email");
     channel.bind("refresh", function (email:any) {
-      console.log("altered email array with",email.email.insertedId);
       fetcher.submit(
         { singleEmailId: email.email.insertedId },
         { method: "post", action: `/api/email/fetchOneById?index` }
@@ -126,7 +125,6 @@ export const Email: React.FC<{}> = () => {
 
   useEffect(() => {
     if(fetcher.data?.fetchedSingle) {
-      console.log(fetcher.data.fetchedSingle[0]);
       let newEmails:EmailInterface[] = [...fetcher.data.fetchedSingle];
       alterEmailArray(prev=>[...newEmails, ...prev]);
       fetcher.data.fetchedSingle = null;
