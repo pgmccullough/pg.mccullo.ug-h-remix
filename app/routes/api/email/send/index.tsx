@@ -51,8 +51,11 @@ export const action = async ({ request }: ActionArgs) => {
       }
     )
     outgoingEmail.Attachments = updatedAttachments;
+    if(!outgoingEmail.TextBody&&!outgoingEmail.HtmlBody) outgoingEmail.TextBody = " ";
     const genEmail = await emailClient.sendEmail(outgoingEmail)
-    delete outgoingEmail.Attachments.Content;
+    outgoingEmail.Attachments.forEach((indAtt:{Content?: string, ContentLength: number, file: string, name: string, Name: string, ContentID: string }) =>
+      delete indAtt.Content
+    );
     newEmail = {
       created: Date.now(),
       MessageStream: "outbound",

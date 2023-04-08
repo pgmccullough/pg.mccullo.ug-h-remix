@@ -19,8 +19,8 @@ export const Email: React.FC<{}> = () => {
   const scrollerBottomOutbox = useRef<any>(null);
   const previousInboxVisibility = useRef<any>(true);
   const previousOutboxVisibility = useRef<any>(true);
-  const [ inboxCount, setInboxCount ] = useState(0);
-  const [ outboxCount, setOutboxCount ] = useState(0);
+  const [ inboxCount, setInboxCount ] = useState(-25);
+  const [ outboxCount, setOutboxCount ] = useState(-25);
   const [ loadMoreOutboxInView, setLoadMoreOutboxInView ] = useState(false);
   const [ loadMoreInboxInView, setLoadMoreInboxInView ] = useState(false);
   const [ checkedSnippets, setCheckedSnippets ] = useState<string[]>([]);
@@ -84,7 +84,8 @@ export const Email: React.FC<{}> = () => {
     const observer = new IntersectionObserver(cbInbox, options);
     if(scrollerBottomInbox.current) observer.observe(scrollerBottomInbox.current);
     if( !previousInboxVisibility.current && loadMoreInboxInView ) {
-      emNotif(true, "Loading more received emails");
+      inboxCount<0
+      emNotif(true, inboxCount<0?"Fetching emails":"Loading more received emails");
       fetcher.submit(
         { loadOffset: (inboxCount+25).toString() },
         { method: "post", action: `/api/email/fetchInbox?index` }
@@ -101,7 +102,7 @@ export const Email: React.FC<{}> = () => {
     const observer = new IntersectionObserver(cbOutbox, options);
     if(scrollerBottomOutbox.current) observer.observe(scrollerBottomOutbox.current);
     if( !previousOutboxVisibility.current && loadMoreOutboxInView ) {
-      emNotif(true, "Loading more sent emails");
+      emNotif(true, outboxCount<0?"Fetching sent emails":"Loading more sent emails");
       fetcher.submit(
         { loadOffset: (outboxCount+25).toString() },
         { method: "post", action: `/api/email/fetchOutbox?index` }
