@@ -1,5 +1,13 @@
 @use '../../styles/partials/variables' as *;
 
+@keyframes deleteEmail {
+  from {}
+  to {
+    max-height: 0px;
+    opacity: 0;
+  }
+}
+
 .email {
   position: relative;
   margin-left: -12px;
@@ -310,6 +318,7 @@
   color: #666;
   display: flex;
   font-size: 13px;
+  transition: 0.25s;
   container-type: inline-size;
   container-name: snippet;
   @media (max-width: 450px) or ((min-width: 991px) and (max-width: 1232px)) { // < 1232px > 991px
@@ -317,6 +326,9 @@
   }
   &:hover {
     background: #ccc;
+  }
+  &--deleted {
+    animation: deleteEmail 5s forwards;
   }
   &__check {
     width: 30px;
@@ -381,8 +393,42 @@
       }
     }
   }
+  &__background {
+    background:linear-gradient(90deg,#8999c9 50%,#d87474 50%);
+    position: relative;
+    &--deleted {
+      background: #d87474;
+      animation: deleteEmail 5s forwards;
+    }
+    &--swipeleft {
+      background: #d87474;
+    }
+    &--swiperight {
+      background: #8999c9;
+    }
+  }
+  &__icon {
+    position: absolute;
+    height: 50%;
+    top: 15px;
+    &--hidden {
+      display: none;
+    }
+    &--read {
+      left: 10px;
+    }
+    &--trash {
+      right: 10px;
+    }
+  }
   &--unread {
     background: #eee;
     color: #222;
+  }
+  &--swipeleft {
+    
+  }
+  &--swiperight {
+    
   }
 }

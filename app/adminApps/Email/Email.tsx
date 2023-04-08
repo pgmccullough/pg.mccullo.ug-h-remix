@@ -84,6 +84,7 @@ export const Email: React.FC<{}> = () => {
     const observer = new IntersectionObserver(cbInbox, options);
     if(scrollerBottomInbox.current) observer.observe(scrollerBottomInbox.current);
     if( !previousInboxVisibility.current && loadMoreInboxInView ) {
+      inboxCount<0
       emNotif(true, inboxCount<0?"Fetching emails":"Loading more received emails");
       fetcher.submit(
         { loadOffset: (inboxCount+25).toString() },
@@ -182,6 +183,7 @@ export const Email: React.FC<{}> = () => {
                         currentEmail={currentEmail}
                         email={email}
                         emailArray={emailArray}
+                        emNotif={emNotif}
                         setCurrentEmail={setCurrentEmail}
                         setCheckedSnippets={setCheckedSnippets}
                       />
@@ -199,6 +201,7 @@ export const Email: React.FC<{}> = () => {
                           currentEmail={currentEmail}
                           email={email}
                           emailArray={sentEmailArray}
+                          emNotif={emNotif}
                           setCurrentEmail={setCurrentEmail}
                           setCheckedSnippets={setCheckedSnippets}
                         />
@@ -217,6 +220,7 @@ export const Email: React.FC<{}> = () => {
                             currentEmail={currentEmail}
                             email={email}
                             emailArray={searchEmailArray}
+                            emNotif={emNotif}
                             setCurrentEmail={setCurrentEmail}
                             setCheckedSnippets={setCheckedSnippets}
                           />
@@ -242,7 +246,6 @@ export const Email: React.FC<{}> = () => {
                           editNewEmail={editNewEmail}
                           email={emailArray.find((res:any) => res._id===currentEmail.id)!}
                           emailBodyRef={emailBodyRef}
-                          emNotif={emNotif}
                           newEmail={newEmail}
                         />
                         :""

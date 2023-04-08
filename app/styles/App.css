@@ -119,8 +119,7 @@ button {
   left: 50%;
   top: 0%;
   transform: translate(-50%, 0%);
-  -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
 }
 .header__bar {
   position: absolute;
@@ -290,9 +289,7 @@ button {
 }
 
 .app-button {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  user-select: none;
   background: #4A6CBA;
   color: #fff;
   display: inline-block;
@@ -616,6 +613,12 @@ button {
   margin: 0;
 }
 
+@keyframes deleteEmail {
+  to {
+    max-height: 0px;
+    opacity: 0;
+  }
+}
 .email {
   position: relative;
   margin-left: -12px;
@@ -871,8 +874,7 @@ button {
 .email-attachments__icon img {
   width: 34px;
   height: 34px;
-  -o-object-fit: cover;
-     object-fit: cover;
+  object-fit: cover;
   border-radius: 3px;
 }
 .email-attachments__remove {
@@ -928,6 +930,7 @@ button {
   color: #666;
   display: flex;
   font-size: 13px;
+  transition: 0.25s;
   container-type: inline-size;
   container-name: snippet;
 }
@@ -938,6 +941,9 @@ button {
 }
 .snippet:hover {
   background: #ccc;
+}
+.snippet--deleted {
+  animation: deleteEmail 5s forwards;
 }
 .snippet__check {
   width: 30px;
@@ -1008,11 +1014,38 @@ button {
 .snippet__status--opened:hover .snippet__status--opened__popup {
   display: block;
 }
+.snippet__background {
+  background: linear-gradient(90deg, #8999c9 50%, #d87474 50%);
+  position: relative;
+}
+.snippet__background--deleted {
+  background: #d87474;
+  animation: deleteEmail 5s forwards;
+}
+.snippet__background--swipeleft {
+  background: #d87474;
+}
+.snippet__background--swiperight {
+  background: #8999c9;
+}
+.snippet__icon {
+  position: absolute;
+  height: 50%;
+  top: 15px;
+}
+.snippet__icon--hidden {
+  display: none;
+}
+.snippet__icon--read {
+  left: 10px;
+}
+.snippet__icon--trash {
+  right: 10px;
+}
 .snippet--unread {
   background: #eee;
   color: #222;
 }
-
 .postcard__content__media__slider__weblink__anchor {
   text-decoration: none;
 }
@@ -1441,9 +1474,7 @@ button {
   top: 10px;
   left: 12px;
   font-size: 16px;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
+  user-select: none;
   display: inline-block;
   pointer-events: none;
 }
@@ -1552,4 +1583,6 @@ body {
   padding: 6px 12px 4px 12px;
   border-radius: 4px;
   margin-bottom: 6px;
-}/*# sourceMappingURL=App.css.map */
+}
+
+/*# sourceMappingURL=App.css.map */
