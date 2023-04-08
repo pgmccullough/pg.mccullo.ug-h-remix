@@ -1,5 +1,13 @@
 @use '../../styles/partials/variables' as *;
 
+@keyframes deleteEmail {
+  from {}
+  to {
+    max-height: 0px;
+    opacity: 0;
+  }
+}
+
 .email {
   position: relative;
   margin-left: -12px;
@@ -319,6 +327,9 @@
   &:hover {
     background: #ccc;
   }
+  &--deleted {
+    animation: deleteEmail 5s forwards;
+  }
   &__check {
     width: 30px;
     display: flex;
@@ -385,6 +396,10 @@
   &__background {
     background:linear-gradient(90deg,#8999c9 50%,#d87474 50%);
     position: relative;
+    &--deleted {
+      background: #d87474;
+      animation: deleteEmail 5s forwards;
+    }
     &--swipeleft {
       background: #d87474;
     }
@@ -396,6 +411,9 @@
     position: absolute;
     height: 50%;
     top: 15px;
+    &--hidden {
+      display: none;
+    }
     &--read {
       left: 10px;
     }

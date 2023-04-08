@@ -12,6 +12,7 @@ if (!sessionSecret) {
 }
 const storage = createCookieSessionStorage({
     cookie: {
+        // name: "sessionToken",
         name: "sessionToken",
         secure: process.env.NODE_ENV === "production",
         secrets: [sessionSecret],

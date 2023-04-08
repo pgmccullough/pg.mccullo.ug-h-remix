@@ -182,6 +182,7 @@ export const Email: React.FC<{}> = () => {
                         currentEmail={currentEmail}
                         email={email}
                         emailArray={emailArray}
+                        emNotif={emNotif}
                         setCurrentEmail={setCurrentEmail}
                         setCheckedSnippets={setCheckedSnippets}
                       />
@@ -199,6 +200,7 @@ export const Email: React.FC<{}> = () => {
                           currentEmail={currentEmail}
                           email={email}
                           emailArray={sentEmailArray}
+                          emNotif={emNotif}
                           setCurrentEmail={setCurrentEmail}
                           setCheckedSnippets={setCheckedSnippets}
                         />
@@ -217,6 +219,7 @@ export const Email: React.FC<{}> = () => {
                             currentEmail={currentEmail}
                             email={email}
                             emailArray={searchEmailArray}
+                            emNotif={emNotif}
                             setCurrentEmail={setCurrentEmail}
                             setCheckedSnippets={setCheckedSnippets}
                           />
