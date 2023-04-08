@@ -99,7 +99,7 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
         }
       </span>
     )
-
+    
   return (
     <>
       {attachments.length?
@@ -128,13 +128,15 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
       <div className="email__meta">
         <p>{email.Subject}</p>
         <div className="email__meta_label">from:</div><div className="email__meta_content">
-          {email.FromFull.Name
-            ?<span dangerouslySetInnerHTML={{__html: `${email.FromFull.Name} &lt;${email.FromFull.Email}&gt;`}} />
-            :<span>{email.FromFull.Email}</span>
+          {email.FromFull
+            ?email.FromFull.Name
+              ?<span dangerouslySetInnerHTML={{__html: `${email.FromFull.Name} &lt;${email.FromFull.Email}&gt;`}} />
+              :<span>{email.FromFull?.Email}</span>
+            :<span>{email.From}</span>
           }
         </div>
 
-        {email.ToFull.length
+        {email.ToFull?.length
           ?<>
             <div className="email__meta_label">to:</div>
             <div className="email__meta_content">
@@ -144,7 +146,17 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
           :<></>
         }
 
-        {email.CcFull.length
+        {email.MessageStream==="outbound"
+          ?<>
+            <div className="email__meta_label">to:</div>
+            <div className="email__meta_content">
+              {email.To}
+            </div>
+          </>
+          :<></>
+        }
+
+        {email.CcFull?.length
           ?<>
             <div className="email__meta_label">cc:</div>
             <div className="email__meta_content">
@@ -156,8 +168,20 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
         <div className="email__meta_label">date:</div>
         <div className="email__meta_content">
-          {dayjs(Date.parse(email.Date)).format('dddd, MMMM Do, YYYY, h:mm A')} ({dayjs().to(dayjs(Date.parse(email.Date)))})
+          {email.Date
+            ?dayjs(Date.parse(email.Date)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Date.parse(email.Date)))
+            :dayjs(Number(email.created)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Number(email.created)))
+          }
         </div>
+
+        {email.Opened
+        ?<>
+          <div className="email__meta_label">opened:</div>
+          <div className="email__meta_content">
+            {dayjs(Date.parse(email.Opened)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Date.parse(email.Opened)))}
+          </div>
+        </>
+        :""}
       </div>
       <div 
         style={{whiteSpace: "normal"}}

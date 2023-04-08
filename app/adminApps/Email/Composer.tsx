@@ -92,7 +92,6 @@ export const Composer: React.FC<{
       s3Path = s3Path.replaceAll("/","_"); // can't pass slashes so '_' is replaced in s3.server.ts
       const dataTransfer = new DataTransfer();
       const profileImg = fileRef.current.files[0];
-      console.log("DOES THIS HELP?",profileImg);
       setTempAttachment((prev:any) => [...prev,{ContentLength: profileImg.size, ContentType: profileImg.type}]);
       const blob = profileImg.slice(0, profileImg.size, profileImg.type); 
       const imgExtension = profileImg.name.split(".").at(-1);
@@ -121,15 +120,9 @@ export const Composer: React.FC<{
     if(attachFetch.state==="submitting") emNotif(true, "Uploading file")
     if(attachFetch.type==="done") {
       if(attachFetch.data?.imgSrc) {
-        console.log(attachFetch.data?.imgSrc);
-        console.log(tempAttachment);
         const cloneAtts = [...tempAttachment];
-        console.log("AGAIN: ",attachFetch.data.imgSrc.ContentLength);
         const finishedAtts = cloneAtts.map((tempAtt:any, i:number) => {
-          console.log("LET'S CHECK IF "+attachFetch.data.imgSrc.ContentLength+"==="+tempAtt.ContentLength)
           if(attachFetch.data.imgSrc.ContentLength===tempAtt.ContentLength) {
-            console.log("dyin' on ",i);
-            console.log("what's fatal here? ",attachFetch.data);
             return {...tempAtt, 
               file: attachFetch.data.imgSrc.file.replace("https://s3.amazonaws.com/pg.mccullo.ug/","/api/media/"),
               name: attachFetch.data.imgSrc.file.split("/").at(-1),
@@ -154,6 +147,7 @@ export const Composer: React.FC<{
               cleanObj.push(att);
             }
           });
+          editNewEmail((prev: any) => {return {...prev,attachments: cleanObj}});
           return cleanObj;
         });
         //attachFetch.data.imgSrc = null;
@@ -162,7 +156,7 @@ export const Composer: React.FC<{
         emNotif(false);
       }
     }
-  },[attachFetch, setAttachments])
+  },[attachFetch, setAttachments, editNewEmail])
 
   return (
     <>
