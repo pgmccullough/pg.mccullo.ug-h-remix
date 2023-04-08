@@ -1,4 +1,4 @@
-import { defer, LoaderFunction } from "@remix-run/node";
+import { LoaderFunction } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
@@ -43,7 +43,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   if(user?.role!=="administrator") {
     onThisDay = await db.collection('myPosts').find({$or: mongoOrArray, privacy : "Public"}).sort({created:-1}).toArray();
     posts = await db.collection("myPosts").find({ privacy : "Public" }).sort({created:-1}).limit(25).toArray();
-    return { onThisDay, posts, siteData:{...siteData[0]}, user };
+    // return { onThisDay, posts, siteData:{...siteData[0]}, user };
   } else {
     onThisDay = await db.collection('myPosts').find({$or: mongoOrArray}).sort({created:-1}).toArray();
     // CHECK FOR BIG EMAILS
@@ -59,8 +59,8 @@ export const loader: LoaderFunction = async ({ request }) => {
     // ]).toArray();
     // console.log("ALERT!!!",tempEmData);
     posts = await db.collection("myPosts").find({}).sort({created:-1}).limit(25).toArray();
-    // emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
-    // sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
+     emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
+     sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
     if(!process.env.POSTMARK_TOKEN) return {response: "Postmark token required."};
     const emailClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
     sentEmails.forEach((sentEmail:any) => {
@@ -78,8 +78,9 @@ export const loader: LoaderFunction = async ({ request }) => {
           })
       }
     }) 
-    return { onThisDay, posts, emails, sentEmails, siteData:{...siteData[0]}, user };
+    // return { onThisDay, posts, emails, sentEmails, siteData:{...siteData[0]}, user };
   }
+  return { onThisDay, posts, emails, sentEmails, siteData:{...siteData[0]}, user };
 }
 
 export default function Index() {
