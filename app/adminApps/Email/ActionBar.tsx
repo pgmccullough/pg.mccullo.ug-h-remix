@@ -154,7 +154,7 @@ export const ActionBar: React.FC<{
           if(i<curEmail.ToFull.length-1) return Email+"; ";
           return Email;
         }).join("")
-        :curEmail.From||""
+        :""
 
     editNewEmail({
       attachments: composeType==="forward"&&curEmail.Attachments.length?curEmail.Attachments:[],
@@ -182,7 +182,7 @@ export const ActionBar: React.FC<{
               method="post"
               action={`/api/email/send?index`}
             >
-              <input type="hidden" name="Attachments" value={newEmail.attachments} />
+              <input type="hidden" name="Attachments" value={JSON.stringify(newEmail.attachments)} />
               <input type="hidden" name="Bcc" value={newEmail.bcc} />
               <input type="hidden" name="Cc" value={newEmail.cc} />
               <input type="hidden" name="HtmlBody" value={newEmail.body} />

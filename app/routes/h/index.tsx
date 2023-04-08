@@ -61,7 +61,7 @@ export const loader: LoaderFunction = async ({ request }) => {
             }
           })
           .catch((error:any) => {
-            console.error("Unable to store sent email time to database.",error);
+            console.error("Unable to store sent email time to database.");
           })
       }
     }) 
