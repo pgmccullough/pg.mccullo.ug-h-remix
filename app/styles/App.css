@@ -924,6 +924,7 @@ button {
   color: #666;
   display: flex;
   font-size: 13px;
+  transition: 0.25s;
   container-type: inline-size;
   container-name: snippet;
 }
@@ -1004,11 +1005,31 @@ button {
 .snippet__status--opened:hover .snippet__status--opened__popup {
   display: block;
 }
+.snippet__background {
+  background: linear-gradient(90deg, #8999c9 50%, #d87474 50%);
+  position: relative;
+}
+.snippet__background--swipeleft {
+  background: #d87474;
+}
+.snippet__background--swiperight {
+  background: #8999c9;
+}
+.snippet__icon {
+  position: absolute;
+  height: 50%;
+  top: 15px;
+}
+.snippet__icon--read {
+  left: 10px;
+}
+.snippet__icon--trash {
+  right: 10px;
+}
 .snippet--unread {
   background: #eee;
   color: #222;
 }
-
 .postcard__content__media__slider__weblink__anchor {
   text-decoration: none;
 }

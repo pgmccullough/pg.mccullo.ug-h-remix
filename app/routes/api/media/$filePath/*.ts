@@ -32,8 +32,7 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) =>
     Key: fullPath!
   }
 
-  let baseOutput = s3.getObject(s3params)
-  .createReadStream()
+  let baseOutput = s3.getObject(s3params).createReadStream()
 
   return new Response(createReadableStreamFromReadable(baseOutput))
 }

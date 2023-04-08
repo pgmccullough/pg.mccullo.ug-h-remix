@@ -310,6 +310,7 @@
   color: #666;
   display: flex;
   font-size: 13px;
+  transition: 0.25s;
   container-type: inline-size;
   container-name: snippet;
   @media (max-width: 450px) or ((min-width: 991px) and (max-width: 1232px)) { // < 1232px > 991px
@@ -381,8 +382,35 @@
       }
     }
   }
+  &__background {
+    background:linear-gradient(90deg,#8999c9 50%,#d87474 50%);
+    position: relative;
+    &--swipeleft {
+      background: #d87474;
+    }
+    &--swiperight {
+      background: #8999c9;
+    }
+  }
+  &__icon {
+    position: absolute;
+    height: 50%;
+    top: 15px;
+    &--read {
+      left: 10px;
+    }
+    &--trash {
+      right: 10px;
+    }
+  }
   &--unread {
     background: #eee;
     color: #222;
+  }
+  &--swipeleft {
+    
+  }
+  &--swiperight {
+    
   }
 }
