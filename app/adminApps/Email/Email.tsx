@@ -246,7 +246,6 @@ export const Email: React.FC<{}> = () => {
                           editNewEmail={editNewEmail}
                           email={emailArray.find((res:any) => res._id===currentEmail.id)!}
                           emailBodyRef={emailBodyRef}
-                          emNotif={emNotif}
                           newEmail={newEmail}
                         />
                         :""
