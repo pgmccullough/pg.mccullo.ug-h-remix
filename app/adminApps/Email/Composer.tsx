@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useFetcher } from "@remix-run/react";
 import { EmailInterface } from '~/common/types';
+import { v4 as uuidv4 } from 'uuid';
 
 export const Composer: React.FC<{ 
-  currentEmail: any, editNewEmail: any, email: EmailInterface, emailBodyRef: any, newEmail: any
-}> = ({ currentEmail, editNewEmail, email, emailBodyRef, newEmail }) => {
+  currentEmail: any, editNewEmail: any, email: EmailInterface, emailBodyRef: any, emNotif: any, newEmail: any
+}> = ({ currentEmail, editNewEmail, email, emailBodyRef, emNotif, newEmail }) => {
 
   const emailBody = email&&(email.FromName||email.Subject||email.Date)
   ?`
@@ -18,9 +20,14 @@ export const Composer: React.FC<{
   `
   :""
 
+  const attachFetch = useFetcher();
+
   const [ formatButton, toggleFormatButton ] = useState({bold: false, italic: false, underline: false, strikethrough: false, code: false})
-  const [attachments, setAttachments] = useState<any[]>([]);
-  const [cleanEmail, setCleanEmail] = useState<string>(emailBody);
+  const [ attachments, setAttachments ] = useState<any[]>([]);
+  const [ cleanEmail, setCleanEmail ] = useState<string>(emailBody);
+  const [ tempAttachment, setTempAttachment ] = useState<any[]>([]);
+  const attInput = useRef<HTMLInputElement>(null);
+  const attSubmit = useRef<HTMLButtonElement>(null);
 
   const attToImg = (body:any,atts:any) => {
     atts?.map((att:any) => {
@@ -80,10 +87,82 @@ export const Composer: React.FC<{
     setAttachments(updatedDispAtts);
   }
 
+  const s3Upload = (s3Path:string, fileRef:React.RefObject<HTMLInputElement>) => {
+    if(fileRef.current&&fileRef.current.files?.length) {
+      s3Path = s3Path.replaceAll("/","_"); // can't pass slashes so '_' is replaced in s3.server.ts
+      const dataTransfer = new DataTransfer();
+      const profileImg = fileRef.current.files[0];
+      console.log("DOES THIS HELP?",profileImg);
+      setTempAttachment((prev:any) => [...prev,{ContentLength: profileImg.size, ContentType: profileImg.type}]);
+      const blob = profileImg.slice(0, profileImg.size, profileImg.type); 
+      const imgExtension = profileImg.name.split(".").at(-1);
+      const newFileName = s3Path + uuidv4() + "." + imgExtension;
+      const newFile = new File([blob], newFileName, {type: profileImg.type});
+      dataTransfer.items.add(newFile);
+      fileRef.current!.files = dataTransfer.files;
+      return newFile;
+    }
+    return false;
+  }
+
+  const uploadAttachments = () => {
+    const fileRenamed:Blob|false = s3Upload("images/emailAttachments/", attInput)
+    if( fileRenamed && attSubmit.current ) {
+      attSubmit.current.click();
+    }
+  }
+
   useEffect(() => {
     setAttachments([]);
     setCleanEmail(attToImg(cleanEmail,newEmail.attachments));
   },[])
+
+  useEffect(() => {
+    if(attachFetch.state==="submitting") emNotif(true, "Uploading file")
+    if(attachFetch.type==="done") {
+      if(attachFetch.data?.imgSrc) {
+        console.log(attachFetch.data?.imgSrc);
+        console.log(tempAttachment);
+        const cloneAtts = [...tempAttachment];
+        console.log("AGAIN: ",attachFetch.data.imgSrc.ContentLength);
+        const finishedAtts = cloneAtts.map((tempAtt:any, i:number) => {
+          console.log("LET'S CHECK IF "+attachFetch.data.imgSrc.ContentLength+"==="+tempAtt.ContentLength)
+          if(attachFetch.data.imgSrc.ContentLength===tempAtt.ContentLength) {
+            console.log("dyin' on ",i);
+            console.log("what's fatal here? ",attachFetch.data);
+            return {...tempAtt, 
+              file: attachFetch.data.imgSrc.file.replace("https://s3.amazonaws.com/pg.mccullo.ug/","/api/media/"),
+              name: attachFetch.data.imgSrc.file.split("/").at(-1),
+              Name: attachFetch.data.imgSrc.file.split("/").at(-1),
+              ContentID: attachFetch.data.imgSrc.file.split("/").at(-1).split(".")[0]
+            }}
+          }
+        )
+        const noUndefinedAtts = finishedAtts.filter((att:any) => att != null);
+        setAttachments((prev:any) => {
+          const deDup: number[] = [];
+          const cleanObj: any[] = [];
+          prev.forEach((att:any) => {
+            if(!deDup.includes(att.ContentLength)) {
+              deDup.push(att.ContentLength)
+              cleanObj.push(att);
+            }
+          });
+          noUndefinedAtts.forEach((att:any) => {
+            if(!deDup.includes(att.ContentLength)) {
+              deDup.push(att.ContentLength)
+              cleanObj.push(att);
+            }
+          });
+          return cleanObj;
+        });
+        //attachFetch.data.imgSrc = null;
+        // attachments state format: {file: '/api/media/images/emailAttachments/ii_lg6pdeu32.jpg', name: '1483582989.0.x.jpg'}
+        // newEmail.attachments: {ContentLength: 204431, Name: 'FOLBCDUGU5EVTGVLMNXKZUQTRY.jpg', ContentType: 'image/jpeg', ContentID: 'ii_lg6pdeto0'}
+        emNotif(false);
+      }
+    }
+  },[attachFetch, setAttachments])
 
   return (
     <>
@@ -149,16 +228,30 @@ export const Composer: React.FC<{
             className={`email__format-button ${formatButton.code?"email__format-button--active":""} email__format-button--code`}
             onClick={() => toggleFormatButton({...formatButton, code: !formatButton.code})}
           >{`</>`}</button>
-          <button className={`email__format-button email__format-button--attachment`}>ATT</button>
+          <attachFetch.Form 
+            method="post" 
+            action="/api/upload?index" 
+            encType="multipart/form-data"
+            style={{display: "none"}}
+          >
+            <input 
+              type="file"
+              name="img" 
+              onChange={uploadAttachments}
+              ref={attInput}
+            />
+            <button ref={attSubmit}></button>
+          </attachFetch.Form>
+          <button className={`email__format-button email__format-button--attachment`} onClick={() => attInput.current?.click()}>ATT</button>
         </div>
       </div>
 
-      {attachments.length&&currentEmail.composeType==="forward"?
+      {attachments.length?
         <div className="email-attachments">
           {attachments.length
-            ?attachments.map((dl:any) => {
-              return (
-                <div className="email-attachments__file" key={dl.file}>
+            ?attachments.map((dl:any) =>
+                dl?.file&&dl?.name
+                ?<div className="email-attachments__file" key={dl.file}>
                   <div>
                     <div 
                       dangerouslySetInnerHTML={
@@ -172,8 +265,7 @@ export const Composer: React.FC<{
                   </div>
                   {trimFileName(dl.name)}
                 </div>
-              )
-            }
+                :<></>
             )
             :""
           }
