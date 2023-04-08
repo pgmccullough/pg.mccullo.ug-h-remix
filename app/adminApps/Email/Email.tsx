@@ -19,8 +19,8 @@ export const Email: React.FC<{}> = () => {
   const scrollerBottomOutbox = useRef<any>(null);
   const previousInboxVisibility = useRef<any>(true);
   const previousOutboxVisibility = useRef<any>(true);
-  const [ inboxCount, setInboxCount ] = useState(-25);
-  const [ outboxCount, setOutboxCount ] = useState(-25);
+  const [ inboxCount, setInboxCount ] = useState<number>(emails.length-25);
+  const [ outboxCount, setOutboxCount ] = useState(sentEmails.length-25);
   const [ loadMoreOutboxInView, setLoadMoreOutboxInView ] = useState(false);
   const [ loadMoreInboxInView, setLoadMoreInboxInView ] = useState(false);
   const [ checkedSnippets, setCheckedSnippets ] = useState<string[]>([]);
