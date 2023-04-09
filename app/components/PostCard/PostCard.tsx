@@ -19,9 +19,9 @@ export const PostCard: React.FC<{
   const galSlide = useRef<HTMLElement>(null);
   const galWid = useRef<any>(null);
 
-  const [mediaSlides, setMediaSlides] = useState({
+  const [mediaSlides, setMediaSlides] = useState<{currentSlide: number, itemLength: number}>({
     currentSlide: 0,
-    itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0)
+    itemLength: 0
   })
 
   const [ editMode, setEditMode ] = useState(false);
@@ -100,9 +100,10 @@ export const PostCard: React.FC<{
   }
 
   useEffect(() => {
-    console.log(post._id);
-    console.log(mediaSlides)
-  },[mediaSlides])
+    setMediaSlides((prev: {currentSlide: number, itemLength: number}) => {
+      return {...prev, itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0)}
+    })
+  },[])
 
   return(
     <article 
