@@ -105,8 +105,8 @@ export const PostCard: React.FC<{
     })
   },[])
 
-  return(
-    <article 
+  return (
+    (<article 
       className="postcard"
       key={post._id}
     >
@@ -269,6 +269,6 @@ export const PostCard: React.FC<{
           <div className="postcard__content__meta">
           </div>
       </div>
-    </article>
-  )
+    </article>)
+  );
 }

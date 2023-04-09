@@ -1,5 +1,5 @@
 import { EmailInterface } from '~/common/types';
-import { useFetcher } from 'remix';
+import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en';

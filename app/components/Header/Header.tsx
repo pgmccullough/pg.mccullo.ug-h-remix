@@ -104,7 +104,7 @@ export const Header: React.FC<{}> = () => {
   }
 
   const gpsFromImg = async(img:string) => {
-    const { latitude, longitude } = await getGPS(img)||{latitude: null, longitude: null};
+    const { latitude, longitude } = (await getGPS(img))||{latitude: null, longitude: null};
     return { latitude, longitude };
   }
 
