@@ -9,17 +9,20 @@ export interface Post {
   created: number,
   feedback: {
       commentsOn: any,
+      comments: any,
       sharesOn: any,
-      likesOn: any
+      shares: any,
+      likesOn: any,
+      likes: any,
   },
   lastEdited: number,
   media: {
       audio: any,
       directory?: string,
-      files: any,
-      images: any,
-      links: any,
-      videos: any
+      files: any[]|null,
+      images: any[]|null,
+      links: any[]|null,
+      videos: any[]|null,
   }
   privacy: "Public"|"Followers"|"Friends"|"Self"|"Save Media"
 }

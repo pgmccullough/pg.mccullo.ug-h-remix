@@ -7,7 +7,7 @@ import { File } from '../Media/File/File';
 import { Image } from '../Media/Image/Image';
 import { Video } from '../Media/Video/Video';
 import { Weblink } from '../Media/Weblink/Weblink';
-import { Post } from '~/common/types';
+import { EmojiReact } from '../EmojiReact/EmojiReact';
 
 export const PostCard: React.FC<{
   editState: any, setEditState: any, post: any
@@ -267,6 +267,12 @@ export const PostCard: React.FC<{
             :""
           }
           <div className="postcard__content__meta">
+            {post.feedback?.likesOn
+              ?<EmojiReact
+                likes={post.feedback.likes}
+              />
+              :<></>
+            }
           </div>
       </div>
     </article>)
