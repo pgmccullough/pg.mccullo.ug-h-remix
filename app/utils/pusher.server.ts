@@ -9,6 +9,8 @@ export const pusher = new Pusher({
   useTLS: true
 });
 
+// EMAIL PUSHERS
+
 export const receiveEmail = async(email:{ acknowledged: boolean, insertedId: ObjectId }) => {
   await pusher.trigger("client-receive-email", "refresh", {
     email
@@ -32,3 +34,24 @@ export const sendEmail = async(email:{ acknowledged: boolean, insertedId: Object
     email
   });
 }
+
+// HEADER PUSHERS
+
+export const newWatchWord = async(watchword: any) => {
+  await pusher.trigger("client-change-watchword", "refresh", {
+    watchword
+  });
+}
+
+export const newStoryImg = async(storyImg: any) => {
+  await pusher.trigger("client-change-storyImg", "refresh", {
+    storyImg
+  });
+}
+
+export const newProfileImg = async(profileImg: any) => {
+  await pusher.trigger("client-change-profileImg", "refresh", {
+    profileImg
+  });
+}
+

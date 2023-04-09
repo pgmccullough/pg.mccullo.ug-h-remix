@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SiteData } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
 import { UploadBox } from '../UploadBox/UploadBox';
 import { v4 as uuidv4 } from 'uuid';
 import { gps as getGPS } from 'exifr';
+import Pusher from "pusher-js";
 
 export const Header: React.FC<{}> = () => {
     
@@ -21,10 +22,12 @@ export const Header: React.FC<{}> = () => {
   const storyImageSubmit = useRef<HTMLButtonElement>(null);
   const storyImageInput = useRef<HTMLInputElement>(null);
   const storyImage = useRef<HTMLImageElement>(null);
+  const storyTimestamp = useRef<HTMLSpanElement>(null);
 
   const profileImageSubmit = useRef<HTMLButtonElement>(null);
   const profileImageInput = useRef<HTMLInputElement>(null);
   const profileImage = useRef<HTMLImageElement>(null)
+  const profTimestamp = useRef<HTMLSpanElement>(null);
 
   const uploadStoryImg = () => {
     if(storyImageInput.current) storyImageInput.current.click();
@@ -137,6 +140,40 @@ export const Header: React.FC<{}> = () => {
     }
   }
 
+
+  useEffect(() => {
+    const pusher = new Pusher('1463cc5404c5aa8377ba', {
+      cluster: 'mt1'
+    });
+
+    const watchwordChannel = pusher.subscribe("client-change-watchword");
+    watchwordChannel.bind("refresh", (watchword: { watchword: string }) => {
+      if(watchWordRef.current) watchWordRef.current.innerText = watchword.watchword;
+    });
+
+    const storyImgChannel = pusher.subscribe("client-change-storyImg");
+    storyImgChannel.bind("refresh", (storyImgData: { storyImg: { gps: string|null, timestamp: number, image: string } }) =>  {
+      console.log("storyImg change:", storyImgData);
+      storyImage.current!.src = storyImgData.storyImg.image;
+      storyTimestamp.current!.innerText = stampToTime(storyImgData.storyImg.timestamp);
+    });
+
+    const profileImgChannel = pusher.subscribe("client-change-profileImg");
+    profileImgChannel.bind("refresh", (profImgData: { profileImg: { gps: string|null, timestamp: number, image: string } }) =>  {
+      profileImage.current!.style.backgroundImage = `url(${profImgData.profileImg.image})`;
+      profTimestamp.current!.innerText = stampToTime(profImgData.profileImg.timestamp);
+    });    
+
+    return () => {
+      watchwordChannel.unbind_all();
+      watchwordChannel.unsubscribe();
+      storyImgChannel.unbind_all();
+      storyImgChannel.unsubscribe();
+      profileImgChannel.unbind_all();
+      profileImgChannel.unsubscribe();
+    };
+  }, []);
+
   return (
     <header className="header">
       <fetcher.Form 
@@ -197,7 +234,7 @@ export const Header: React.FC<{}> = () => {
           }
           {siteData&&siteData.cover_image?
           <div className="header__p">
-            cover: {stampToTime(siteData?.cover_image?.timestamp/1000)}
+            cover: <span ref={storyTimestamp}>{stampToTime(siteData?.cover_image?.timestamp/1000)}</span>
             {siteData?.cover_image?.gps?.lat
               ?<>
                 <a 
@@ -222,7 +259,8 @@ export const Header: React.FC<{}> = () => {
           </div>
           :""}
           {siteData&&siteData.profile_image?
-          <div className="header__p">profile: {stampToTime(siteData?.profile_image?.timestamp/1000)}
+          <div className="header__p">
+            profile: <span ref={profTimestamp}>{stampToTime(siteData?.profile_image?.timestamp/1000)}</span>
             {siteData?.profile_image?.gps?.lat
               ?<>
                 <a 

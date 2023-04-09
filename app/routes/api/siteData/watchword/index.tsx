@@ -2,6 +2,7 @@ import type { ActionArgs } from "@remix-run/node";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
+import { newWatchWord } from "~/utils/pusher.server";
 
 export const action = async ({ request }: ActionArgs) => {
   const user = await getUser(request);
@@ -28,5 +29,6 @@ export const action = async ({ request }: ActionArgs) => {
       watchwordRes = err;
     }
   }
+  await newWatchWord(watchwordData.watchword);
   return { watchwordRes };
 }

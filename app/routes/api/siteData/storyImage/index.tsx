@@ -2,6 +2,7 @@ import type { ActionArgs } from "@remix-run/node";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
+import { newStoryImg } from "~/utils/pusher.server";
 
 export const action = async ({ request }: ActionArgs) => {
   let storyImgRes = null;
@@ -48,6 +49,7 @@ export const action = async ({ request }: ActionArgs) => {
     } catch (err) {
       storyImgRes = err;
     }
+    await newStoryImg(parsedSiteData.cover_image);
   }
   return { storyImgRes };
 }

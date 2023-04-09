@@ -2,6 +2,7 @@ import type { ActionArgs } from "@remix-run/node";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
+import { newProfileImg } from "~/utils/pusher.server";
 
 export const action = async ({ request }: ActionArgs) => {
   let profileImgRes = null;
@@ -48,6 +49,7 @@ export const action = async ({ request }: ActionArgs) => {
     } catch (err) {
       profileImgRes = err;
     }
+    await newProfileImg(parsedSiteData.profile_image);
   }
   return { profileImgRes };
 }
