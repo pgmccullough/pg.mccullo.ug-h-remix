@@ -11,6 +11,7 @@ export const Email: React.FC<{}> = () => {
 
   let { emails, sentEmails } = useLoaderData();  
   const fetcher = useFetcher();
+  const sentFetcher = useFetcher();
 
   const emailBodyRef = useRef<any>(null);
   const emailScroll = useRef<any>(null);
@@ -64,7 +65,7 @@ export const Email: React.FC<{}> = () => {
     });
 
     const newChannel = pusher.subscribe("client-receive-email");
-    newChannel.bind("refresh", function (email:any) {
+    newChannel.bind("refresh", function (email:{email: {acknowledged: boolean, insertedId: string }}) {
       fetcher.submit(
         { singleEmailId: email.email.insertedId },
         { method: "post", action: `/api/email/fetchOneById?index` }
@@ -72,18 +73,25 @@ export const Email: React.FC<{}> = () => {
     });
 
     const deleteChannel = pusher.subscribe("client-delete-email");
-    deleteChannel.bind("refresh", function (email:any) {
-      console.log(email, "deleted");
+    deleteChannel.bind("refresh", function (deletedIds:{email: any[]}) {
+      let emArrClone = [...emailArray];
+      emArrClone = emArrClone.filter((email:any) => !deletedIds.email.includes(email._id));
+      alterEmailArray(emArrClone);
     });
 
     const readChannel = pusher.subscribe("client-read-email");
-    readChannel.bind("refresh", function (email:any) {
-      console.log(email, "read");
+    readChannel.bind("refresh", function (readIds:{email: any[]}) {
+      let emArrClone = [...emailArray];
+      emArrClone.forEach((email:any) => readIds.email.includes(email._id)?email.unread=0:"");
+      alterEmailArray(emArrClone);
     });
 
     const sendChannel = pusher.subscribe("client-send-email");
-    sendChannel.bind("refresh", function (email:any) {
-      console.log(email, "read");
+    sendChannel.bind("refresh", function (sentEmail:{email: {acknowledged: boolean, insertedId: string }}) {
+      sentFetcher.submit(
+        { singleEmailId: sentEmail.email.insertedId },
+        { method: "post", action: `/api/email/fetchOneById?index` }
+      );
     });
 
     return () => {
@@ -141,6 +149,14 @@ export const Email: React.FC<{}> = () => {
       emailScroll.current?.scrollTo(0,0);
     }
   },[currentEmail, storeScroll, setStoreScroll])
+
+  useEffect(() => {
+    if(sentFetcher.data?.fetchedSingle) {
+      let newEmails:EmailInterface[] = [...sentFetcher.data.fetchedSingle];
+      alterSentEmailArray(prev=>[...newEmails, ...prev]);
+      sentFetcher.data.fetchedSingle = null;
+    }
+  },[sentFetcher])
 
   useEffect(() => {
     if(fetcher.data?.fetchedSingle) {
