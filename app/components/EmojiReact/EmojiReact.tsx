@@ -1,3 +1,4 @@
+import { useFetcher } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { Post } from '~/common/types';
 import { emojis } from '~/common/emojis';
@@ -6,6 +7,7 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
   const [ emojiVisibility, setEmojiVisibility ] = useState<boolean>(false);
   const [ guestUUID, setGuestUUID ] = useState<string>("anon");
   const [tempStore, setTempStore] = useState<{[key:string]: any[]}>({})
+  const emojiFetch = useFetcher();
 
   useEffect(() => { 
     setGuestUUID(window.localStorage.guestUUID||"anon");
@@ -21,24 +23,41 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
       "😳":[window.localStorage.guestUUID,"b","c","d"],
       "💀":["a","c","a","b"],
     }
-    setTempStore(randomReactsToPlayWith)
+    const randomReactsToPlayWithSmall = {
+      "🤬":["a","b"],
+      "🤯":["a","b","c","a","b","c","a","b","c"],
+      "😳":[window.localStorage.guestUUID,"b","c","d"],
+      "💀":["a","c","a","b"],
+    }
+    setTempStore(likes)
   },[])
 
   const clickEmoji = (emoji: string) => {
-    const cloneTS = {...tempStore};
-    if(cloneTS[emoji]) { // emoji is on this post already
-      if(cloneTS[emoji].includes(guestUUID)) {
-        cloneTS[emoji] = cloneTS[emoji].filter((guest:string) => guest !== guestUUID);
-        if(!cloneTS[emoji].length) delete cloneTS[emoji];
-      } else {
-        cloneTS[emoji].push(guestUUID);
-        console.log("adding first of one");
-      }
-    } else {
-      cloneTS[emoji] = [ guestUUID ];
-    }
-    setTempStore(cloneTS);
+    emojiFetch.submit(
+      { postId, emoji, userId: guestUUID },
+      { method: "post", action: `/api/post/react?index` }
+    );
+    // const cloneTS = {...tempStore};
+    // if(cloneTS[emoji]) { // emoji is on this post already
+    //   if(cloneTS[emoji].includes(guestUUID)) {
+    //     cloneTS[emoji] = cloneTS[emoji].filter((guest:string) => guest !== guestUUID);
+    //     if(!cloneTS[emoji].length) delete cloneTS[emoji];
+    //   } else {
+    //     cloneTS[emoji].push(guestUUID);
+    //     console.log("adding first of one");
+    //   }
+    // } else {
+    //   cloneTS[emoji] = [ guestUUID ];
+    // }
+    // setTempStore(cloneTS);
   }
+
+  useEffect(() => {
+    if(emojiFetch.data?.cloneTS) {
+      setTempStore(emojiFetch.data.cloneTS);
+      emojiFetch.data.cloneTS = null;
+    }
+  },[ emojiFetch ])
 
   return (
     <>
@@ -56,20 +75,28 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
         {Object.keys(tempStore).length
           ?<div className="emoji-votes">
             {
-              // Object.keys(tempStore).map((emoji:string, index: number) =>
               Object.keys(tempStore)
-                .map((emoji, index) => [emoji,tempStore[emoji]])
+                .map((emoji) => [emoji,tempStore[emoji]])
                 .sort((a,b) => b[1].length-a[1].length)
                 .map(([emoji, likes]:any[], index) =>
-                <div 
-                  key={emoji+postId+"_2_"+index} 
-                  className={`emoji-vote${likes.includes(guestUUID)?" emoji-vote--mine":""}`}
-                  onClick={() => clickEmoji(emoji)}
-                >
-                  <div className="emoji-vote-emoji">{emoji}</div><div className="emoji-vote-count">{tempStore[emoji].length}</div>
-                </div>
-              )
+                  index < 6
+                  ?<div 
+                    key={emoji+postId+"_2_"+index} 
+                    className={`emoji-vote${likes.includes(guestUUID)?" emoji-vote--mine":""}`}
+                    onClick={() => clickEmoji(emoji)}
+                  >
+                    <div className="emoji-vote-emoji">{emoji}</div><div className="emoji-vote-count">{tempStore[emoji].length}</div>
+                  </div>
+                  :""
+                )
             }
+            {Object.keys(tempStore).length>6
+              ?<div className="emoji-votes-remnants">
+                {Object.keys(tempStore).reduce((a,_c) => a+1, -6)} others x
+                {Object.keys(tempStore).reduce((a,c) => 
+                  a+(Object.keys(tempStore).indexOf(c) >= 6?tempStore[c].length:0), 0)}
+              </div>
+              :""}
           </div>
           :""
         }

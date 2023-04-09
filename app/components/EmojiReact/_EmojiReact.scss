@@ -76,6 +76,17 @@
   padding: 0 0.5rem;
   border-radius: 4px;
   align-items: flex-end;
+  &-remnants {
+    font-size: .75rem;
+    border: 2px #456CBA solid;
+    border-radius: 4px;
+    background: #fff;
+    padding: 0 0.5rem;
+    position: relative;
+    align-self: center;
+    line-height: 1rem;
+    margin-left: 5px;
+  }
 }
 
 .emoji-vote {
