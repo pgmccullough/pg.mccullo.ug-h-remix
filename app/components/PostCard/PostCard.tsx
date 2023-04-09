@@ -1,5 +1,5 @@
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { stampToTime } from '../../functions/functions';
 import { Audio } from '../Media/Audio/Audio';
@@ -99,8 +99,10 @@ export const PostCard: React.FC<{
     }
   }
 
-  console.log("post media: ",post.media);
-  console.log("Reduce:",Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0))
+  useEffect(() => {
+    console.log(post._id);
+    console.log(mediaSlides)
+  },[mediaSlides])
 
   return(
     <article 
