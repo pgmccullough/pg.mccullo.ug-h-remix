@@ -59,24 +59,42 @@ export const Email: React.FC<{}> = () => {
   };
 
   useEffect(() => {
-    // Pusher.logToConsole = true;
     const pusher = new Pusher('1463cc5404c5aa8377ba', {
       cluster: 'mt1'
     });
 
-    const channel = pusher.subscribe("client-new-email");
-    channel.bind("refresh", function (email:any) {
+    const newChannel = pusher.subscribe("client-receive-email");
+    newChannel.bind("refresh", function (email:any) {
       fetcher.submit(
         { singleEmailId: email.email.insertedId },
         { method: "post", action: `/api/email/fetchOneById?index` }
       );
-      //alterEmailArray(prev=>[email,...prev]);
-      // Have some sort of alert (maybe change title in tab)
+    });
+
+    const deleteChannel = pusher.subscribe("client-delete-email");
+    deleteChannel.bind("refresh", function (email:any) {
+      console.log(email, "deleted");
+    });
+
+    const readChannel = pusher.subscribe("client-read-email");
+    readChannel.bind("refresh", function (email:any) {
+      console.log(email, "read");
+    });
+
+    const sendChannel = pusher.subscribe("client-send-email");
+    sendChannel.bind("refresh", function (email:any) {
+      console.log(email, "read");
     });
 
     return () => {
-      channel.unbind_all();
-      channel.unsubscribe();
+      newChannel.unbind_all();
+      newChannel.unsubscribe();
+      deleteChannel.unbind_all();
+      deleteChannel.unsubscribe();
+      readChannel.unbind_all();
+      readChannel.unsubscribe();
+      sendChannel.unbind_all();
+      sendChannel.unsubscribe();
     };
   }, []);
 

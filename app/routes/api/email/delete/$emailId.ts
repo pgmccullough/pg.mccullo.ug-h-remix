@@ -1,4 +1,5 @@
 import type { ActionArgs } from "@remix-run/node";
+import { deleteEmail } from "~/utils/pusher.server";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
@@ -16,9 +17,6 @@ export const action = async ({ request }: ActionArgs) => {
       response = false;
     }
   }
+  await deleteEmail([deleteEmailId]);
   return { response, deleteEmailId };
-}
-
-export default function deleteEmail() {
-  return 400;
 }

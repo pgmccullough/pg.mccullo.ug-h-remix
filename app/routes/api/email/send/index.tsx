@@ -3,6 +3,7 @@ import type { ActionArgs } from "@remix-run/node";
 import * as postmark from "postmark"
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
+import { sendEmail } from "~/utils/pusher.server";
 import AWS from "aws-sdk";
 
 export const action = async ({ request }: ActionArgs) => {
@@ -71,6 +72,7 @@ export const action = async ({ request }: ActionArgs) => {
       Opened: 0
     };
     newEmail = await db.collection('myEmails').insertOne(newEmail);
+    await sendEmail(newEmail);
   }
   return { newEmail };
 }

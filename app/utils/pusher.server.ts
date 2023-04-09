@@ -1,5 +1,4 @@
 import Pusher from "pusher";
-import type { EmailInterface } from "~/common/types";
 import type { ObjectId } from "mongodb";
 
 export const pusher = new Pusher({
@@ -10,10 +9,26 @@ export const pusher = new Pusher({
   useTLS: true
 });
 
-// export async function newEmail(email:EmailInterface) {
-export const newEmail = async(email:{ acknowledged: boolean, insertedId: ObjectId }) => {
-  // ref: https://pusher.com/docs/channels/using_channels/events/
-  await pusher.trigger("client-new-email", "refresh", {
+export const receiveEmail = async(email:{ acknowledged: boolean, insertedId: ObjectId }) => {
+  await pusher.trigger("client-receive-email", "refresh", {
+    email
+  });
+}
+
+export const deleteEmail = async(email:any[]) => {
+  await pusher.trigger("client-delete-email", "refresh", {
+    email
+  });
+}
+
+export const readEmail = async(email:any[]) => {
+  await pusher.trigger("client-read-email", "refresh", {
+    email
+  });
+}
+
+export const sendEmail = async(email:{ acknowledged: boolean, insertedId: ObjectId }) => {
+  await pusher.trigger("client-send-email", "refresh", {
     email
   });
 }

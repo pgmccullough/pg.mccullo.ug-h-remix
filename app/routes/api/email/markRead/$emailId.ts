@@ -1,4 +1,5 @@
 import type { ActionArgs } from "@remix-run/node";
+import { readEmail } from "~/utils/pusher.server";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
@@ -16,5 +17,6 @@ export const action = async ({ request }: ActionArgs) => {
       response = false;
     }
   }
+  await readEmail([readEmailId]);
   return { response, readEmailId };
 }
