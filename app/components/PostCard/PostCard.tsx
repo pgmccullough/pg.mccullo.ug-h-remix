@@ -80,7 +80,7 @@ export const PostCard: React.FC<{
   }
   
   const onTouchMove = (e: any) => {
-    if(touchStart) {
+    if(mediaSlides.itemLength>1 && touchStart) {
       setTouchDistance(touchStart - e.targetTouches[0].clientX)
       setTouchEnd(e.targetTouches[0].clientX)
     }
@@ -90,8 +90,8 @@ export const PostCard: React.FC<{
     if (!touchStart || !touchEnd) return
     setTouchDistance(0);
     const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > 150
-    const isRightSwipe = distance < -150
+    const isLeftSwipe = distance > 75
+    const isRightSwipe = distance < -75
     if (isLeftSwipe) {
       if((mediaSlides.itemLength-mediaSlides.currentSlide)>=2) gallerySlide("right");
     } else if(isRightSwipe) {
