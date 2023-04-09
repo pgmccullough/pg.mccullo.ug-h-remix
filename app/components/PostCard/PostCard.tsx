@@ -270,6 +270,7 @@ export const PostCard: React.FC<{
             {post.feedback?.likesOn
               ?<EmojiReact
                 likes={post.feedback.likes}
+                postId={post._id}
               />
               :<></>
             }

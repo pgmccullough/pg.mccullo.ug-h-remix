@@ -6,6 +6,7 @@ import { Header } from "~/components/Header/Header";
 import { Sidebar } from '~/components/Sidebar/Sidebar';
 import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
+import { v4 as uuidv4 } from 'uuid';
 import * as postmark from "postmark"
 import type { Post } from "~/common/types";
 
@@ -99,6 +100,10 @@ export default function Index() {
     rootMargin: "0px",
     threshold: 0.1,
   };
+
+  useEffect(() => {
+    if(!localStorage.guestUUID) localStorage.guestUUID = uuidv4();
+  },[])
 
   useEffect(() => {
     const observer = new IntersectionObserver(cb, options);
