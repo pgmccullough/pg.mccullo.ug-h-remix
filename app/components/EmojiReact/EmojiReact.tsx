@@ -1,6 +1,5 @@
 import { useFetcher } from '@remix-run/react';
 import { useEffect, useState } from 'react';
-import { Post } from '~/common/types';
 import { emojis } from '~/common/emojis';
 
 export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, postId }) => {
@@ -11,24 +10,6 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
 
   useEffect(() => { 
     setGuestUUID(window.localStorage.guestUUID||"anon");
-    const randomReactsToPlayWith = {
-      "😆":["a","b","c"],
-      "😂":[window.localStorage.guestUUID,"b","c"],
-      "🤣":["a"],
-      "😊":[window.localStorage.guestUUID],
-      "🥰":["a","c"],
-      "😛":["a","b","c"],
-      "🤬":["a","b"],
-      "🤯":["a","b","c","a","b","c","a","b","c"],
-      "😳":[window.localStorage.guestUUID,"b","c","d"],
-      "💀":["a","c","a","b"],
-    }
-    const randomReactsToPlayWithSmall = {
-      "🤬":["a","b"],
-      "🤯":["a","b","c","a","b","c","a","b","c"],
-      "😳":[window.localStorage.guestUUID,"b","c","d"],
-      "💀":["a","c","a","b"],
-    }
     setTempStore(likes)
   },[])
 
@@ -37,19 +18,6 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
       { postId, emoji, userId: guestUUID },
       { method: "post", action: `/api/post/react?index` }
     );
-    // const cloneTS = {...tempStore};
-    // if(cloneTS[emoji]) { // emoji is on this post already
-    //   if(cloneTS[emoji].includes(guestUUID)) {
-    //     cloneTS[emoji] = cloneTS[emoji].filter((guest:string) => guest !== guestUUID);
-    //     if(!cloneTS[emoji].length) delete cloneTS[emoji];
-    //   } else {
-    //     cloneTS[emoji].push(guestUUID);
-    //     console.log("adding first of one");
-    //   }
-    // } else {
-    //   cloneTS[emoji] = [ guestUUID ];
-    // }
-    // setTempStore(cloneTS);
   }
 
   useEffect(() => {
