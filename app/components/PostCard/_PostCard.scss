@@ -204,8 +204,18 @@
             min-width: 0; 
             overflow: hidden;
             background: #666;
-
+            &__counter {
+              position: absolute;
+              background: rgba(0,0,0,0.65);
+              color: #fff;
+              bottom: 0px;
+              right: 0px;
+              padding: 0.15rem 0.5rem 0rem;
+              font-size: 0.75rem;
+              border-radius: 7px 0 0 0;
+            }
             &__slider {
+                position: relative;
                 margin: 0;
                 width: 100%;
                 transition: 0.5s;
