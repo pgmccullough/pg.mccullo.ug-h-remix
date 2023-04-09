@@ -153,7 +153,6 @@ export const Header: React.FC<{}> = () => {
 
     const storyImgChannel = pusher.subscribe("client-change-storyImg");
     storyImgChannel.bind("refresh", (storyImgData: { storyImg: { gps: string|null, timestamp: number, image: string } }) =>  {
-      console.log("storyImg change:", storyImgData);
       storyImage.current!.src = storyImgData.storyImg.image;
       storyTimestamp.current!.innerText = stampToTime(storyImgData.storyImg.timestamp);
     });
