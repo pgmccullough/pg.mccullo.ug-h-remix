@@ -18,6 +18,19 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
       { postId, emoji, userId: guestUUID },
       { method: "post", action: `/api/post/react?index` }
     );
+    const cloneTS = {...tempStore};
+    if(cloneTS[emoji]) {
+      if(cloneTS[emoji].includes(guestUUID)) {
+        cloneTS[emoji] = cloneTS[emoji].filter((guest:string) => guest !== guestUUID);
+        if(!cloneTS[emoji].length) delete cloneTS[emoji];
+      } else {
+        cloneTS[emoji].push(guestUUID);
+        console.log("adding first of one");
+      }
+    } else {
+      cloneTS[emoji] = [ guestUUID ];
+    }
+    setTempStore(cloneTS);
   }
 
   useEffect(() => {
