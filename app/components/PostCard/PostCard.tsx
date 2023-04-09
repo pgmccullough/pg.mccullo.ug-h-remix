@@ -99,6 +99,9 @@ export const PostCard: React.FC<{
     }
   }
 
+  console.log("post media: ",post.media);
+  console.log("Reduce:",Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0))
+
   return(
     <article 
       className="postcard"
