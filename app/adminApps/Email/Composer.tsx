@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useFetcher } from "@remix-run/react";
 import { EmailInterface } from '~/common/types';
 import { v4 as uuidv4 } from 'uuid';
+import { TextEditor } from '~/components/TextEditor/TextEditor';
 
 export const Composer: React.FC<{ 
-  currentEmail: any, editNewEmail: any, email: EmailInterface, emailBodyRef: any, emNotif: any, newEmail: any
-}> = ({ currentEmail, editNewEmail, email, emailBodyRef, emNotif, newEmail }) => {
+  currentEmail: any, editNewEmail: any, email: EmailInterface, emNotif: any, newEmail: any
+}> = ({ currentEmail, editNewEmail, email, emNotif, newEmail }) => {
 
   const emailBody = email&&(email.FromName||email.Subject||email.Date)
   ?`
@@ -26,8 +27,10 @@ export const Composer: React.FC<{
   const [ attachments, setAttachments ] = useState<any[]>([]);
   const [ cleanEmail, setCleanEmail ] = useState<string>(emailBody);
   const [ tempAttachment, setTempAttachment ] = useState<any[]>([]);
+  const [ textEditorContent, setTextEditorContent ] = useState<any>("");
   const attInput = useRef<HTMLInputElement>(null);
   const attSubmit = useRef<HTMLButtonElement>(null);
+  const emailBodyRef = useRef<HTMLDivElement>(null);
 
   const attToImg = (body:any,atts:any) => {
     atts?.map((att:any) => {
@@ -158,6 +161,11 @@ export const Composer: React.FC<{
     }
   },[attachFetch, setAttachments, editNewEmail])
 
+  useEffect(() => {
+    console.log("DETECTING CHANGE: ",textEditorContent);
+    editNewEmail({...newEmail, body: textEditorContent});
+  },[textEditorContent])
+
   return (
     <>
       <div className="email__composer-head">
@@ -266,14 +274,20 @@ export const Composer: React.FC<{
         </div>
       :""}
 
-      <div 
+      {/* <div 
         className="email__body"
         contentEditable={true}
         style={{whiteSpace: "normal"}}
         onKeyUp={() => editNewEmail({...newEmail, body: emailBodyRef.current.innerHTML})}
         ref={ emailBodyRef }
         dangerouslySetInnerHTML={{__html: cleanEmail}}
+      /> */}
+      <TextEditor 
+        contentStateSetter={setTextEditorContent}
+        htmlString={cleanEmail} 
+        placeholderText={`Compose email...`}
       />
+      
     </>
   )
 }

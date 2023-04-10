@@ -3,6 +3,7 @@
 
 @use './partials/global';
 @use '../components/Header/Header.scss';
+@use '../components/TextEditor/TextEditor.scss';
 @use '../components/Sidebar/Sidebar.scss';
 @use '../components/PostCard/PostCard.scss';
 @use '../adminApps/Email/Snippet.scss';

@@ -222,6 +222,45 @@ button {
   text-underline-offset: 4px;
 }
 
+.textEditor {
+  position: relative;
+}
+.textEditor div[contenteditable=true] {
+  padding: 0.25rem 0.75rem;
+  min-height: 4rem;
+}
+.textEditor__placeholder {
+  color: #999;
+  overflow: hidden;
+  position: absolute;
+  text-overflow: ellipsis;
+  margin-top: calc(-3rem + 4px);
+  left: 12px;
+  font-size: 16px;
+  user-select: none;
+  display: inline-block;
+  pointer-events: none;
+}
+.textEditor .font-bold {
+  font-weight: 600;
+}
+.textEditor .code {
+  color: red;
+  background: #eee;
+  border: 1px #ccc solid;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.textEditor .italic {
+  font-style: italic;
+}
+.textEditor .underline {
+  text-decoration: underline;
+}
+.textEditor .line-through {
+  text-decoration: line-through;
+}
+
 #sidebar {
   width: 100%;
   display: block;
@@ -1507,6 +1546,7 @@ button {
   border: 2px #456CBA solid;
   border-radius: 4px;
   cursor: pointer;
+  line-height: 1.35rem;
 }
 
 .click-away-bg {

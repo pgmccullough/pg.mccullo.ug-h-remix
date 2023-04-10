@@ -31,6 +31,7 @@
     "lexical": "^0.6.4",
     "mongodb": "^4.12.1",
     "morgan": "^1.10.0",
+    "node-html-parser": "^6.1.5",
     "postmark": "^3.0.15",
     "pusher": "^5.1.2",
     "pusher-js": "^8.0.2",
