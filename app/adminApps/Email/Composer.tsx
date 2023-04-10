@@ -161,7 +161,6 @@ export const Composer: React.FC<{
   },[attachFetch, setAttachments, editNewEmail])
 
   useEffect(() => {
-    console.log("DETECTING CHANGE: ",textEditorContent);
     editNewEmail({...newEmail, body: textEditorContent});
   },[textEditorContent])
 
@@ -247,6 +246,7 @@ export const Composer: React.FC<{
         </div>
         <TextEditor 
           appendComplexHTML={cleanEmail}
+          attachmentAction={() => attInput.current?.click()}
           contentStateSetter={setTextEditorContent}
           placeholderText={`Compose email...`}
         />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react";
 import {
   $getRoot,
   $getSelection,
@@ -20,9 +20,13 @@ import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import type { EditorState, LexicalEditor } from "lexical";
 
 export const TextEditor: React.FC<{
-  appendComplexHTML?: any, contentStateSetter?: any, htmlString?: string, placeholderText?: string
+  appendComplexHTML?: any, 
+  attachmentAction?: any,
+  contentStateSetter?: any, 
+  htmlString?: string, 
+  placeholderText?: string
 }> = (
-  { appendComplexHTML, contentStateSetter, htmlString, placeholderText }
+  { appendComplexHTML, attachmentAction, contentStateSetter, htmlString, placeholderText }
 ) => {
 
   const Placeholder = ({placeholderText}:{placeholderText?:string}) => {
@@ -60,7 +64,7 @@ export const TextEditor: React.FC<{
         },
       }}
       >
-        <Toolbar />
+        <Toolbar attachmentAction={attachmentAction} />
         <RichTextPlugin
           contentEditable={
             <ContentEditable/>
@@ -98,7 +102,7 @@ const InitialText = ({htmlString}:any) => {
   return (<></>)
 }
 
-const Toolbar = () => {
+const Toolbar = ({attachmentAction}:{attachmentAction?:any}) => {
   const [ editor ] = useLexicalComposerContext();
   const [ isBold, setIsBold ] = useState(false);
   const [ isCode, setIsCode ] = useState(false);
@@ -149,7 +153,10 @@ const Toolbar = () => {
         className={`email__format-button ${isCode?"email__format-button--active":""} email__format-button--code`}
         onClick={() => {editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');}}
       >{`</>`}</button>
-      <button className={`email__format-button email__format-button--attachment`}>ATT</button>
+      {attachmentAction
+        ?<button className={`email__format-button email__format-button--attachment`} onClick={attachmentAction}>ATT</button>
+        :""
+      }
     </div>
   );
 };
