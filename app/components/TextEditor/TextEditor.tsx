@@ -15,9 +15,15 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { mergeRegister } from '@lexical/utils';
+// import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
+import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import type { EditorState, LexicalEditor } from "lexical";
 
-export const TextEditor: React.FC<{contentStateSetter?: any, htmlString?: string, placeholderText?: string}> = ({ contentStateSetter, htmlString, placeholderText }) => {
+export const TextEditor: React.FC<{
+  appendComplexHTML?: any, contentStateSetter?: any, htmlString?: string, placeholderText?: string
+}> = (
+  { appendComplexHTML, contentStateSetter, htmlString, placeholderText }
+) => {
 
   const Placeholder = ({placeholderText}:{placeholderText?:string}) => {
     return (
@@ -48,6 +54,7 @@ export const TextEditor: React.FC<{contentStateSetter?: any, htmlString?: string
             strikethrough: 'line-through',
           },
         },
+        nodes: [HorizontalRuleNode],
         onError(error) {
           throw error;
         },
@@ -65,12 +72,15 @@ export const TextEditor: React.FC<{contentStateSetter?: any, htmlString?: string
         <OnChangePlugin onChange={onChange} ignoreSelectionChange />
         <HistoryPlugin />
       </LexicalComposer>
+      {appendComplexHTML
+        ?<div dangerouslySetInnerHTML={{__html: appendComplexHTML}} />
+        :""
+      }
     </div>
   )
 }
 
 const InitialText = ({htmlString}:any) => {
-  console.log(htmlString);
   const [ editor ] = useLexicalComposerContext();
   useEffect(() => {
     editor.update(() => {

@@ -5,12 +5,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { TextEditor } from '~/components/TextEditor/TextEditor';
 
 export const Composer: React.FC<{ 
-  currentEmail: any, editNewEmail: any, email: EmailInterface, emNotif: any, newEmail: any
-}> = ({ currentEmail, editNewEmail, email, emNotif, newEmail }) => {
+  editNewEmail: any, email: EmailInterface, emNotif: any, newEmail: any
+}> = ({ editNewEmail, email, emNotif, newEmail }) => {
 
   const emailBody = email&&(email.FromName||email.Subject||email.Date)
   ?`
-    <br /><br />
     <hr />
       <b>From:</b> ${ email.FromName?email.FromName+" <"+email.From+">":email.From}<br />
       <b>Sent: </b> ${ email.Date } <br />
@@ -246,6 +245,11 @@ export const Composer: React.FC<{
           </attachFetch.Form>
           <button className={`email__format-button email__format-button--attachment`} onClick={() => attInput.current?.click()}>ATT</button>
         </div>
+        <TextEditor 
+          appendComplexHTML={cleanEmail}
+          contentStateSetter={setTextEditorContent}
+          placeholderText={`Compose email...`}
+        />
       </div>
 
       {attachments.length?
@@ -282,11 +286,7 @@ export const Composer: React.FC<{
         ref={ emailBodyRef }
         dangerouslySetInnerHTML={{__html: cleanEmail}}
       /> */}
-      <TextEditor 
-        contentStateSetter={setTextEditorContent}
-        htmlString={cleanEmail} 
-        placeholderText={`Compose email...`}
-      />
+
       
     </>
   )

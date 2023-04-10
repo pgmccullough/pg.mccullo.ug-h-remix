@@ -275,7 +275,6 @@ export const Email: React.FC<{}> = () => {
                       />
                       :currentEmail.view==="compose"
                         ?<Composer 
-                          currentEmail={currentEmail}
                           editNewEmail={editNewEmail}
                           email={emailArray.find((res:any) => res._id===currentEmail.id)!}
                           emNotif={emNotif}
