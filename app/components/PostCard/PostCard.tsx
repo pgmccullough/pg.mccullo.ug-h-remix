@@ -8,6 +8,7 @@ import { Image } from '../Media/Image/Image';
 import { Video } from '../Media/Video/Video';
 import { Weblink } from '../Media/Weblink/Weblink';
 import { EmojiReact } from '../EmojiReact/EmojiReact';
+import { Comments } from "../Comments/Comments";
 
 export const PostCard: React.FC<{
   editState: any, setEditState: any, post: any
@@ -273,6 +274,10 @@ export const PostCard: React.FC<{
                 postId={post._id}
               />
               :<></>
+            }
+            {user?.role === "administrator" && post.feedback?.commentsOn
+              ?<Comments />
+              :""
             }
           </div>
       </div>

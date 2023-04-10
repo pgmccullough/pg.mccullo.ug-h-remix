@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, SetStateAction } from "react";
 import {
   $getRoot,
   $getSelection,
@@ -20,14 +20,18 @@ import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
 import type { EditorState, LexicalEditor } from "lexical";
 
 export const TextEditor: React.FC<{
-  appendComplexHTML?: any, 
+  appendComplexHTML?: string, 
   attachmentAction?: any,
-  contentStateSetter?: any, 
+  contentStateSetter?: SetStateAction<any>, 
   htmlString?: string, 
   placeholderText?: string
-}> = (
-  { appendComplexHTML, attachmentAction, contentStateSetter, htmlString, placeholderText }
-) => {
+}> = ({
+  appendComplexHTML, 
+  attachmentAction, 
+  contentStateSetter, 
+  htmlString, 
+  placeholderText
+}) => {
 
   const Placeholder = ({placeholderText}:{placeholderText?:string}) => {
     return (
