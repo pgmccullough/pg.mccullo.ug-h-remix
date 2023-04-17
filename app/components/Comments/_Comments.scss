@@ -1,0 +1,19 @@
+.comment {
+  display: flex;
+  &__poster {
+
+  }
+  &__user-image {
+    width: 36px;
+    height: 36px;
+    background: #ccc;
+    border-radius: 100%;
+  }
+  &__content-inner {
+    background: #fff;
+    padding: 1rem;
+    border: 1px #ccc solid;
+    border-radius: 6px;
+  }
+}
+

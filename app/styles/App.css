@@ -103,6 +103,30 @@ button {
   cursor: pointer;
 }
 
+.font-bold {
+  font-weight: 600;
+}
+
+.code {
+  color: red;
+  background: #eee;
+  border: 1px #ccc solid;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.line-through {
+  text-decoration: line-through;
+}
+
 .header__cover {
   position: absolute;
   top: 0px;
@@ -240,25 +264,6 @@ button {
   user-select: none;
   display: inline-block;
   pointer-events: none;
-}
-.textEditor .font-bold {
-  font-weight: 600;
-}
-.textEditor .code {
-  color: red;
-  background: #eee;
-  border: 1px #ccc solid;
-  border-radius: 4px;
-  padding: 2px 4px;
-}
-.textEditor .italic {
-  font-style: italic;
-}
-.textEditor .underline {
-  text-decoration: underline;
-}
-.textEditor .line-through {
-  text-decoration: line-through;
 }
 
 .email__formatter {
@@ -1666,6 +1671,22 @@ button {
 }
 .emoji-vote-count:before {
   content: "x";
+}
+
+.comment {
+  display: flex;
+}
+.comment__user-image {
+  width: 36px;
+  height: 36px;
+  background: #ccc;
+  border-radius: 100%;
+}
+.comment__content-inner {
+  background: #fff;
+  padding: 1rem;
+  border: 1px #ccc solid;
+  border-radius: 6px;
 }
 
 @keyframes loaderSpin {

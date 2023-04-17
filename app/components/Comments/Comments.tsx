@@ -1,5 +1,90 @@
+import { useEffect, useState } from "react";
+import { useFetcher } from "@remix-run/react";
 import { TextEditor } from "../TextEditor/TextEditor";
+ 
+export interface CommentI {
+  id: string,
+  parentId: string|null,
+  timestamp: number,
+  userId: string,
+  body: string
+}
 
-export const Comments: React.FC = () => {
-  return <TextEditor />
+export const Comments: React.FC<
+  { comments: CommentI[], postId: string }
+> = ({ comments, postId }) => {
+
+  const [ inStateComments, setInStateComments ] = useState<CommentI[]>(comments);
+  const [commentBody, setCommentBody] = useState<string>("");
+  const [ guestUUID, setGuestUUID ] = useState<string>("");
+  
+  const postComment = useFetcher();
+  useEffect(() => {
+    if(postComment.data?.newCommentObj) {
+      setInStateComments(postComment.data.newCommentObj);
+      delete postComment.data.newCommentObj;
+    }
+    setGuestUUID(window.localStorage.guestUUID||"anon");
+  },[postComment]);
+
+  const Comment: React.FC<
+  { comment: CommentI  }
+> = ({ comment }) => {
+  return (
+    <div key={comment.id} className="comment">
+      <div className="comment__poster">
+        <div className="comment__user-image"></div>
+      </div>
+      <div className="comment__content">
+        Patrick Glendon McCullough
+        <div className="comment__content-inner" dangerouslySetInnerHTML={{__html: comment.body}} />
+        <button>reply</button>
+      </div>
+    </div>
+  )
+}
+
+  return (
+    <>
+      {inStateComments&&inStateComments
+        .sort((a:CommentI, b:CommentI) => a.timestamp - b.timestamp)
+        .map((comment: CommentI) => 
+          !comment.parentId
+            ?<Comment comment={comment} />
+            :inStateComments
+              .filter((subComment: CommentI) => subComment.parentId === comment.id)
+              .sort((a, b) => a.timestamp - b.timestamp)
+              .map((subComment: CommentI) => 
+                <Comment comment={subComment} />
+              )
+          
+        )
+      }
+      <postComment.Form
+        method="post"
+        action={`/api/comment/new?index`}
+      >
+        <TextEditor 
+          contentStateSetter={setCommentBody}
+          placeholderText={"Write a comment..."}
+        />
+        <input 
+          name="commentBody"
+          type="hidden"
+          value={commentBody}
+        />
+        <input 
+          name="postId"
+          type="hidden"
+          value={postId}
+        />
+        <input 
+          name="userId"
+          type="hidden"
+          value={guestUUID}
+        />
+        <button>SUBMIT</button>
+      </postComment.Form>
+    </>
+  )
 };

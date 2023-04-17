@@ -103,7 +103,7 @@ export const Email: React.FC<{}> = () => {
       sendChannel.unbind_all();
       sendChannel.unsubscribe();
     };
-  }, []);
+  }, [ alterEmailArray, emailArray ]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(cbInbox, options);

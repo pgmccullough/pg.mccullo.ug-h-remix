@@ -47,8 +47,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   } else {
     onThisDay = await db.collection('myPosts').find({$or: mongoOrArray}).sort({created:-1}).toArray();
     posts = await db.collection("myPosts").find({}).sort({created:-1}).limit(25).toArray();
-    emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(7).toArray();
-    sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(7).toArray();
+    emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
+    sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
     if(!process.env.POSTMARK_TOKEN) return {response: "Postmark token required."};
     const emailClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
     sentEmails.forEach((sentEmail:any) => {

@@ -276,7 +276,10 @@ export const PostCard: React.FC<{
               :<></>
             }
             {user?.role === "administrator" && post.feedback?.commentsOn
-              ?<Comments />
+              ?<Comments 
+                comments={post.feedback?.comments} 
+                postId={post._id}
+              />
               :""
             }
           </div>

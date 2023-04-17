@@ -16,25 +16,6 @@
     display: inline-block;
     pointer-events: none;
   }
-  & .font-bold {
-    font-weight: 600;
-  }
-  & .code {
-    color: red;
-    background: #eee;
-    border: 1px #ccc solid;
-    border-radius: 4px;
-    padding: 2px 4px;
-  }
-  & .italic {
-    font-style: italic;
-  }
-  & .underline {
-    text-decoration: underline;
-  }
-  & .line-through {
-    text-decoration: line-through;
-  }
 }
 
 .email__formatter {
