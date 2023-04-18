@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useFetcher } from "@remix-run/react";
 import { EmailInterface } from '~/common/types';
 import { v4 as uuidv4 } from 'uuid';
+import { TextEditor } from '~/components/TextEditor/TextEditor';
 
 export const Composer: React.FC<{ 
-  currentEmail: any, editNewEmail: any, email: EmailInterface, emailBodyRef: any, emNotif: any, newEmail: any
-}> = ({ currentEmail, editNewEmail, email, emailBodyRef, emNotif, newEmail }) => {
+  editNewEmail: any, email: EmailInterface, emNotif: any, newEmail: any
+}> = ({ editNewEmail, email, emNotif, newEmail }) => {
 
   const emailBody = email&&(email.FromName||email.Subject||email.Date)
   ?`
-    <br /><br />
     <hr />
       <b>From:</b> ${ email.FromName?email.FromName+" <"+email.From+">":email.From}<br />
       <b>Sent: </b> ${ email.Date } <br />
@@ -22,10 +22,10 @@ export const Composer: React.FC<{
 
   const attachFetch = useFetcher();
 
-  const [ formatButton, toggleFormatButton ] = useState({bold: false, italic: false, underline: false, strikethrough: false, code: false})
   const [ attachments, setAttachments ] = useState<any[]>([]);
   const [ cleanEmail, setCleanEmail ] = useState<string>(emailBody);
   const [ tempAttachment, setTempAttachment ] = useState<any[]>([]);
+  const [ textEditorContent, setTextEditorContent ] = useState<any>("");
   const attInput = useRef<HTMLInputElement>(null);
   const attSubmit = useRef<HTMLButtonElement>(null);
 
@@ -150,13 +150,14 @@ export const Composer: React.FC<{
           editNewEmail((prev: any) => {return {...prev,attachments: cleanObj}});
           return cleanObj;
         });
-        //attachFetch.data.imgSrc = null;
-        // attachments state format: {file: '/api/media/images/emailAttachments/ii_lg6pdeu32.jpg', name: '1483582989.0.x.jpg'}
-        // newEmail.attachments: {ContentLength: 204431, Name: 'FOLBCDUGU5EVTGVLMNXKZUQTRY.jpg', ContentType: 'image/jpeg', ContentID: 'ii_lg6pdeto0'}
         emNotif(false);
       }
     }
   },[attachFetch, setAttachments, editNewEmail])
+
+  useEffect(() => {
+    editNewEmail({...newEmail, body: textEditorContent});
+  },[textEditorContent])
 
   return (
     <>
@@ -201,79 +202,51 @@ export const Composer: React.FC<{
             value={newEmail.subject}
           />
         </div>
-        <div className="email__formatter">
-          <button 
-            className={`email__format-button ${formatButton.bold?"email__format-button--active":""} email__format-button--bold`}
-            onClick={() => toggleFormatButton({...formatButton, bold: !formatButton.bold})}
-          >B</button>
-          <button 
-            className={`email__format-button ${formatButton.italic?"email__format-button--active":""} email__format-button--italic`}
-            onClick={() => toggleFormatButton({...formatButton, italic: !formatButton.italic})}
-          >I</button>
-          <button 
-            className={`email__format-button ${formatButton.underline?"email__format-button--active":""} email__format-button--underline`}
-            onClick={() => toggleFormatButton({...formatButton, underline: !formatButton.underline})}
-          >U</button>
-          <button 
-            className={`email__format-button ${formatButton.strikethrough?"email__format-button--active":""} email__format-button--strikethrough`}
-            onClick={() => toggleFormatButton({...formatButton, strikethrough: !formatButton.strikethrough})}
-          >S</button>
-          <button 
-            className={`email__format-button ${formatButton.code?"email__format-button--active":""} email__format-button--code`}
-            onClick={() => toggleFormatButton({...formatButton, code: !formatButton.code})}
-          >{`</>`}</button>
-          <attachFetch.Form 
-            method="post" 
-            action="/api/upload?index" 
-            encType="multipart/form-data"
-            style={{display: "none"}}
-          >
-            <input 
-              type="file"
-              name="img" 
-              onChange={uploadAttachments}
-              ref={attInput}
-            />
-            <button ref={attSubmit}></button>
-          </attachFetch.Form>
-          <button className={`email__format-button email__format-button--attachment`} onClick={() => attInput.current?.click()}>ATT</button>
-        </div>
-      </div>
-
-      {attachments.length?
-        <div className="email-attachments">
-          {attachments.length
-            ?attachments.map((dl:any) =>
-                dl?.file&&dl?.name
-                ?<div className="email-attachments__file" key={dl.file}>
-                  <div>
-                    <div 
-                      dangerouslySetInnerHTML={
-                        {__html: getIcon(dl.file)}
-                      }
-                    />
-                    <div 
-                      className="email-attachments__remove"
-                      onClick={() => dropAtt(dl)}
-                    >+</div>
-                  </div>
-                  {trimFileName(dl.name)}
+        <attachFetch.Form 
+          method="post" 
+          action="/api/upload?index" 
+          encType="multipart/form-data"
+          style={{display: "none"}}
+        >
+          <input 
+            type="file"
+            name="img" 
+            onChange={uploadAttachments}
+            ref={attInput}
+          />
+          <button ref={attSubmit} />
+        </attachFetch.Form>
+        {attachments.length?
+          <div className="email-attachments">
+            {attachments.map((dl:any) =>
+              dl?.file&&dl?.name
+              ?<div className="email-attachments__file" key={dl.file}>
+                <div>
+                  <div 
+                    dangerouslySetInnerHTML={
+                      {__html: getIcon(dl.file)}
+                    }
+                  />
+                  <div 
+                    className="email-attachments__remove"
+                    onClick={() => dropAtt(dl)}
+                  >+</div>
                 </div>
-                :<></>
-            )
-            :""
-          }
-        </div>
-      :""}
-
-      <div 
-        className="email__body"
-        contentEditable={true}
-        style={{whiteSpace: "normal"}}
-        onKeyUp={() => editNewEmail({...newEmail, body: emailBodyRef.current.innerHTML})}
-        ref={ emailBodyRef }
-        dangerouslySetInnerHTML={{__html: cleanEmail}}
-      />
+                {trimFileName(dl.name)}
+              </div>
+              :<></>
+            )}
+          </div>
+        :""}
+        <TextEditor 
+          //appendComplexHTML={cleanEmail}
+          attachmentAction={() => attInput.current?.click()}
+          contentStateSetter={setTextEditorContent}
+          htmlString={cleanEmail}
+          placeholderText={`Compose email...`}
+          tbProps={{hidden:false, sticky:true}}
+        />
+      </div>
     </>
   )
 }

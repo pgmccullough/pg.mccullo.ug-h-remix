@@ -13,7 +13,6 @@ export const Email: React.FC<{}> = () => {
   const fetcher = useFetcher();
   const sentFetcher = useFetcher();
 
-  const emailBodyRef = useRef<any>(null);
   const emailScroll = useRef<any>(null);
 
   const scrollerBottomInbox = useRef<any>(null);
@@ -104,7 +103,7 @@ export const Email: React.FC<{}> = () => {
       sendChannel.unbind_all();
       sendChannel.unsubscribe();
     };
-  }, []);
+  }, [ alterEmailArray, emailArray ]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(cbInbox, options);
@@ -276,10 +275,8 @@ export const Email: React.FC<{}> = () => {
                       />
                       :currentEmail.view==="compose"
                         ?<Composer 
-                          currentEmail={currentEmail}
                           editNewEmail={editNewEmail}
                           email={emailArray.find((res:any) => res._id===currentEmail.id)!}
-                          emailBodyRef={emailBodyRef}
                           emNotif={emNotif}
                           newEmail={newEmail}
                         />
