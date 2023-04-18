@@ -1700,6 +1700,9 @@ button {
   font-size: 0.8rem;
   line-height: 1rem;
 }
+.comment__content {
+  width: 100%;
+}
 .comment__content-inner {
   background: #fff;
   padding: 0 1rem;

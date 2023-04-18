@@ -25,13 +25,16 @@
     font-size: 0.8rem;
     line-height: 1rem;
   }
-  &__content-inner {
-    background: #fff;
-    padding: 0 1rem;
-    max-width: calc(100% - 2rem);
-    border: 1px #ccc solid;
-    border-radius: 6px;
-    margin: 0.5rem 0;
+  &__content {
+    width: 100%;
+    &-inner {
+      background: #fff;
+      padding: 0 1rem;
+      max-width: calc(100% - 2rem);
+      border: 1px #ccc solid;
+      border-radius: 6px;
+      margin: 0.5rem 0;
+    }
   }
   &__input {
     background: #fff;

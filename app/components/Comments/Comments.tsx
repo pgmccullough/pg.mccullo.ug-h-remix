@@ -68,33 +68,35 @@ export const Comments: React.FC<
         )
       }
       {user?.role === "administrator"
-        ?<postComment.Form
-          method="post"
-          action={`/api/comment/new?index`}
-        >
+        ?<>
           <TextEditor 
-            contentStateSetter={setCommentBody}
-            clearContent={clearContent}
-            placeholderText={"Write a comment..."}
-            styleClass={"comment__input"}
-          />
-          <input 
-            name="commentBody"
-            type="hidden"
-            value={commentBody}
-          />
-          <input 
-            name="postId"
-            type="hidden"
-            value={postId}
-          />
-          <input 
-            name="userId"
-            type="hidden"
-            value={guestUUID}
-          />
-          <button>SUBMIT</button>
-        </postComment.Form>
+              contentStateSetter={setCommentBody}
+              clearContent={clearContent}
+              placeholderText={"Write a comment..."}
+              styleClass={"comment__input"}
+            />
+          <postComment.Form
+            method="post"
+            action={`/api/comment/new?index`}
+          >
+            <input 
+              name="commentBody"
+              type="hidden"
+              value={commentBody}
+            />
+            <input 
+              name="postId"
+              type="hidden"
+              value={postId}
+            />
+            <input 
+              name="userId"
+              type="hidden"
+              value={guestUUID}
+            />
+            <button>SUBMIT</button>
+          </postComment.Form>
+        </>
         :""}
     </>
   )
