@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useLoaderData } from "@remix-run/react";
 import { User, SiteData } from '../../common/types';
 import { Email } from '~/adminApps/Email/Email';
+import { TextEditor } from '../TextEditor/TextEditor';
 
 export const Sidebar: React.FC<{}> = () => {
   const { user, siteData } = useLoaderData<{user: User, siteData: SiteData}>();

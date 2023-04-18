@@ -67,7 +67,7 @@ export const action = async ({ request }: ActionArgs) => {
       From: outgoingEmail.From,
       Subject: outgoingEmail.Subject,
       MessageId: genEmail.MessageID,
-      TextBody: outgoingEmail.HtmlBody?.replace(/(&lt;([^>]+)>)/gi, ""),
+      TextBody: outgoingEmail.HtmlBody?.replace(/(<([^>]+)>)/gi, ""),
       HtmlBody: outgoingEmail.HtmlBody,
       Opened: 0
     };

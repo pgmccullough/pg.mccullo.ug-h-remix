@@ -103,6 +103,30 @@ button {
   cursor: pointer;
 }
 
+.font-bold {
+  font-weight: 600;
+}
+
+.code {
+  color: red;
+  background: #eee;
+  border: 1px #ccc solid;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+.line-through {
+  text-decoration: line-through;
+}
+
 .header__cover {
   position: absolute;
   top: 0px;
@@ -220,6 +244,26 @@ button {
   text-decoration-thickness: 1px;
   text-decoration-color: #666;
   text-underline-offset: 4px;
+}
+
+.textEditor {
+  position: relative;
+}
+.textEditor div[contenteditable=true] {
+  padding: 0.25rem 0.75rem;
+  min-height: 4rem;
+}
+.textEditor__placeholder {
+  color: #999;
+  overflow: hidden;
+  position: absolute;
+  text-overflow: ellipsis;
+  margin-top: calc(-3rem + 4px);
+  left: 12px;
+  font-size: 16px;
+  user-select: none;
+  display: inline-block;
+  pointer-events: none;
 }
 
 #sidebar {
@@ -732,6 +776,10 @@ button {
 .email__formatter {
   width: 100%;
   background: #eee;
+}
+.email__formatter--sticky {
+  position: sticky;
+  top: 30px;
 }
 .email__format-button {
   background: #ccc;
@@ -1622,6 +1670,53 @@ button {
 }
 .emoji-vote-count:before {
   content: "x";
+}
+
+.comment {
+  margin: 1rem 0;
+  display: flex;
+}
+.comment__poster {
+  margin: 0 1rem;
+}
+.comment__user-image {
+  width: 36px;
+  height: 36px;
+  background: #ccc;
+  border-radius: 100%;
+  overflow: hidden;
+}
+.comment__user-image--img {
+  object-fit: cover;
+  width: 36px;
+  height: 36px;
+}
+.comment__user-name {
+  font-size: 0.9rem;
+  line-height: 1rem;
+}
+.comment__date {
+  color: #666;
+  font-size: 0.8rem;
+  line-height: 1rem;
+}
+.comment__content {
+  width: 100%;
+}
+.comment__content-inner {
+  background: #fff;
+  padding: 0 1rem;
+  max-width: calc(100% - 2rem);
+  border: 1px #ccc solid;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+.comment__input {
+  background: #fff;
+  border: 1px #ccc solid;
+  border-top: 0;
+  border-radius: 6px;
+  margin: 0.5rem 0;
 }
 
 @keyframes loaderSpin {
