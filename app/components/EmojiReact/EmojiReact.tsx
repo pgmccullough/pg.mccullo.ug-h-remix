@@ -53,7 +53,7 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
       </div>
       <div className="emoji-button-and-votes">
         <button className="react-button" onClick={() => setEmojiVisibility(!emojiVisibility)}>😀 REACT</button>
-        {tempStore&&Object.keys(tempStore).length
+        {Object.keys(tempStore).length
           ?<div className="emoji-votes">
             {
               Object.keys(tempStore)

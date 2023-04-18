@@ -16,10 +16,6 @@ export const PostCard: React.FC<{
 }> = ({ editState, setEditState, post }) => {
 
   const { feedback } = post;
-  delete feedback.comments;
-  delete feedback.shares;
-  delete feedback.likes;
-
 
   const { user } = useLoaderData();
   const fetcher = useFetcher();
@@ -37,7 +33,7 @@ export const PostCard: React.FC<{
   const [ touchStart, setTouchStart ] = useState<number|null>(null);
   const [ touchEnd, setTouchEnd ] = useState<number|null>(null);
   const [ touchDistance, setTouchDistance ] = useState<number>(0);
-  const [ postFeedback, setPostFeedback ] = useState<{commentsOn: boolean|null, sharesOn: boolean|null, likesOn: boolean|null }>(feedback)
+  const [ postFeedback, setPostFeedback ] = useState<{commentsOn: any, sharesOn: any, likesOn: any }>(feedback)
 
   delete post.media.directory;
 
@@ -166,21 +162,37 @@ export const PostCard: React.FC<{
                   method="post"
                   action={`/api/post/update/${post._id}`}
                 >
-                  <select name="privacy">
+                  <select 
+                    name="privacy"
+                    defaultValue={post.privacy}
+                  >
                     {privacyOptions.map((privacy:string) =>
-                      <option selected={
-                        privacy===post.privacy
-                          ?true
-                          :false
-                      }>
+                      <option key={privacy}>
                         {privacy}
                       </option>
-                    )
-                    }
+                    )}
                   </select>
-                  <input type="checkbox" /> Comments
-                  <input type="checkbox" /> Shares
-                  <input type="checkbox" /> Likes
+                  <input 
+                    type="checkbox"
+                    name="commentsOn"
+                    checked={!postFeedback.commentsOn||postFeedback.commentsOn==="false"?false:true}
+                    onChange={(e) => {setPostFeedback({...postFeedback, commentsOn: e.target.value==="true"?"false":"true"})}}
+                    value={postFeedback.commentsOn?"true":"false"}
+                  /> Comments
+                  <input 
+                    type="checkbox"
+                    name="sharesOn"
+                    checked={!postFeedback.sharesOn||postFeedback.sharesOn==="false"?false:true}
+                    onChange={(e) => {setPostFeedback({...postFeedback, sharesOn: e.target.value==="true"?"false":"true"})}}
+                    value={postFeedback.sharesOn?"true":"false"}
+                  /> Shares
+                  <input 
+                    type="checkbox"
+                    name="likesOn"
+                    checked={!postFeedback.likesOn||postFeedback.likesOn==="false"?false:true}
+                    onChange={(e) => {setPostFeedback({...postFeedback, likesOn: e.target.value==="true"?"false":"true"})}}
+                    value={postFeedback.likesOn?"true":"false"}
+                  /> Likes
                   <button>SAVE</button>
                 </fetcher.Form>
                 <>
