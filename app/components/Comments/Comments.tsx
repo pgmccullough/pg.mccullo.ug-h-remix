@@ -70,11 +70,11 @@ export const Comments: React.FC<
       {user?.role === "administrator"
         ?<>
           <TextEditor 
-              contentStateSetter={setCommentBody}
-              clearContent={clearContent}
-              placeholderText={"Write a comment..."}
-              styleClass={"comment__input"}
-            />
+            contentStateSetter={setCommentBody}
+            clearContent={clearContent}
+            placeholderText={"Write a comment..."}
+            styleClass={"comment__input"}
+          />
           <postComment.Form
             method="post"
             action={`/api/comment/new?index`}

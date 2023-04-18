@@ -277,7 +277,7 @@ export const PostCard: React.FC<{
             }
             {post.feedback?.commentsOn
               ?<Comments 
-                comments={post.feedback?.comments} 
+                comments={post.feedback?.comments||""} 
                 postId={post._id}
               />
               :""
