@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { TextEditor } from "../TextEditor/TextEditor";
+import { Comment } from "./Comment";
  
 export interface CommentI {
   id: string,
@@ -23,31 +24,14 @@ export const Comments: React.FC<
   }>();
 
   const postComment = useFetcher();
+
   useEffect(() => {
     if(postComment.data?.newCommentObj) {
       setInStateComments(postComment.data.newCommentObj);
       delete postComment.data.newCommentObj;
     }
     setGuestUUID(user.id||window.localStorage.guestUUID||"anon");
-  },[postComment]);
-
-  const Comment: React.FC<
-  { comment: CommentI  }
-> = ({ comment }) => {
-
-  return (
-    <div key={comment.id} className="comment">
-      <div className="comment__poster">
-        <div className="comment__user-image"></div>
-      </div>
-      <div className="comment__content">
-        Patrick Glendon McCullough
-        <div className="comment__content-inner" dangerouslySetInnerHTML={{__html: comment.body}} />
-        <button>reply</button>
-      </div>
-    </div>
-  )
-}
+  },[ postComment ]);
 
   return (
     <>

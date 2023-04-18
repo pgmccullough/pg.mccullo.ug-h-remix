@@ -15,7 +15,7 @@ export const action = async ({ request }: ActionArgs) => {
   newComment.body = newCommentData.get("commentBody")?.toString()||"";
   newComment.parentId = newCommentData.get("parentId")?.toString()||null;
   const postId = newCommentData.get("postId")!.toString();
-  newComment.userId = user?.user_name||newCommentData.get("userId")?.toString();
+  newComment.userId = newCommentData.get("userId")?.toString()||"anon";
   const client = await clientPromise;
   const db = client.db("user_posts");
   try{
