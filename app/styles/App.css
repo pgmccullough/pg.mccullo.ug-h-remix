@@ -1684,7 +1684,8 @@ button {
 }
 .comment__content-inner {
   background: #fff;
-  padding: 1rem;
+  padding: 0 1rem;
+  max-width: calc(100% - 2rem);
   border: 1px #ccc solid;
   border-radius: 6px;
 }
