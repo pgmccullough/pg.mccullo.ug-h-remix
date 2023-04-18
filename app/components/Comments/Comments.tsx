@@ -18,6 +18,7 @@ export const Comments: React.FC<
   const [ inStateComments, setInStateComments ] = useState<CommentI[]>(comments);
   const [ commentBody, setCommentBody ] = useState<string>("");
   const [ guestUUID, setGuestUUID ] = useState<string>("");
+  const [ clearContent, setClearContent ] = useState<boolean>(false);
   
   const { user } = useLoaderData<{
     user: {id: string, user_name: string, role: string, first_name: string, last_name: string, profile_image: string},
@@ -29,9 +30,14 @@ export const Comments: React.FC<
     if(postComment.data?.newCommentObj) {
       setInStateComments(postComment.data.newCommentObj);
       delete postComment.data.newCommentObj;
+      setClearContent(true);
     }
     setGuestUUID(user?.id||window.localStorage.guestUUID||"anon");
   },[ postComment ]);
+
+  useEffect(() => {
+    setClearContent(false);
+  },[commentBody])
 
   return (
     <>
@@ -68,7 +74,9 @@ export const Comments: React.FC<
         >
           <TextEditor 
             contentStateSetter={setCommentBody}
+            clearContent={clearContent}
             placeholderText={"Write a comment..."}
+            styleClass={"comment__input"}
           />
           <input 
             name="commentBody"

@@ -10,6 +10,7 @@ import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { CLEAR_EDITOR_COMMAND } from 'lexical';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
@@ -22,15 +23,21 @@ import type { EditorState, LexicalEditor } from "lexical";
 export const TextEditor: React.FC<{
   appendComplexHTML?: string, 
   attachmentAction?: any,
+  clearContent?: boolean,
   contentStateSetter?: SetStateAction<any>, 
   htmlString?: string, 
-  placeholderText?: string
+  placeholderText?: string,
+  styleClass?: string,
+  tbProps?: {hidden: boolean, sticky: boolean}
 }> = ({
   appendComplexHTML, 
-  attachmentAction, 
+  attachmentAction,
+  clearContent,
   contentStateSetter, 
   htmlString, 
-  placeholderText
+  placeholderText,
+  styleClass,
+  tbProps
 }) => {
 
   const Placeholder = ({placeholderText}:{placeholderText?:string}) => {
@@ -49,7 +56,7 @@ export const TextEditor: React.FC<{
   }
   
   return (
-    <div className="textEditor">
+    <div className={`textEditor ${styleClass||""}`}>
       <LexicalComposer
       initialConfig={{
         namespace: "textEditor",
@@ -68,7 +75,7 @@ export const TextEditor: React.FC<{
         },
       }}
       >
-        <Toolbar attachmentAction={attachmentAction} />
+        <Toolbar attachmentAction={attachmentAction} tbProps={tbProps} />
         <RichTextPlugin
           contentEditable={
             <ContentEditable/>
@@ -79,6 +86,7 @@ export const TextEditor: React.FC<{
         {htmlString?<InitialText htmlString={htmlString} />:""}
         <OnChangePlugin onChange={onChange} ignoreSelectionChange />
         <HistoryPlugin />
+        <ClearCommand clearContent={clearContent} />
       </LexicalComposer>
       {appendComplexHTML
         ?<div dangerouslySetInnerHTML={{__html: appendComplexHTML}} />
@@ -86,6 +94,22 @@ export const TextEditor: React.FC<{
       }
     </div>
   )
+}
+
+const ClearCommand = ({clearContent}:any) => {
+  const [ editor ] = useLexicalComposerContext();
+  useEffect(() => {
+    if(clearContent) {
+      editor.update(() => {
+        const root = $getRoot();
+        const paragraph = $createParagraphNode();
+        root.clear();
+        root.append(paragraph);
+      });
+    }
+  },[clearContent])
+
+  return (<></>)
 }
 
 const InitialText = ({htmlString}:any) => {
@@ -106,7 +130,7 @@ const InitialText = ({htmlString}:any) => {
   return (<></>)
 }
 
-const Toolbar = ({attachmentAction}:{attachmentAction?:any}) => {
+const Toolbar = ({attachmentAction, tbProps}:{attachmentAction?:any, tbProps?:{hidden: boolean, sticky: boolean}}) => {
   const [ editor ] = useLexicalComposerContext();
   const [ isBold, setIsBold ] = useState(false);
   const [ isCode, setIsCode ] = useState(false);
@@ -136,7 +160,7 @@ const Toolbar = ({attachmentAction}:{attachmentAction?:any}) => {
   }, [updateToolbar, editor]);
 
   return (
-    <div className="email__formatter">
+    <div className={`email__formatter${tbProps?.sticky?" email__formatter--sticky":""}`}>
       <button 
         className={`email__format-button ${isBold?"email__format-button--active":""} email__format-button--bold`}
         onClick={() => {editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}}

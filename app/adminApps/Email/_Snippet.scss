@@ -109,6 +109,10 @@
   &__formatter {
     width: 100%;
     background: #eee;
+    &--sticky {
+      position: sticky;
+      top: 30px;
+    }
   }
   &__format-button {
     background: #ccc;

@@ -266,11 +266,6 @@ button {
   pointer-events: none;
 }
 
-.email__formatter {
-  position: sticky;
-  top: 30px;
-}
-
 #sidebar {
   width: 100%;
   display: block;
@@ -781,6 +776,10 @@ button {
 .email__formatter {
   width: 100%;
   background: #eee;
+}
+.email__formatter--sticky {
+  position: sticky;
+  top: 30px;
 }
 .email__format-button {
   background: #ccc;
@@ -1706,6 +1705,13 @@ button {
   padding: 0 1rem;
   max-width: calc(100% - 2rem);
   border: 1px #ccc solid;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+.comment__input {
+  background: #fff;
+  border: 1px #ccc solid;
+  border-top: 0;
   border-radius: 6px;
   margin: 0.5rem 0;
 }

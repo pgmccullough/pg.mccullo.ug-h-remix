@@ -244,6 +244,7 @@ export const Composer: React.FC<{
           contentStateSetter={setTextEditorContent}
           htmlString={cleanEmail}
           placeholderText={`Compose email...`}
+          tbProps={{hidden:false, sticky:true}}
         />
       </div>
     </>
