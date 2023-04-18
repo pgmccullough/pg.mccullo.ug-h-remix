@@ -13,6 +13,7 @@ export const action = async ({ request }: ActionArgs) => {
   let newCommentResponse;
   const newCommentData = await request.formData();
   newComment.body = newCommentData.get("commentBody")?.toString()||"";
+  // parentId is never used to add child comment 
   newComment.parentId = newCommentData.get("parentId")?.toString()||null;
   const postId = newCommentData.get("postId")!.toString();
   newComment.userId = newCommentData.get("userId")?.toString()||"anon";

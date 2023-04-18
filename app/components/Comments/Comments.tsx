@@ -16,7 +16,7 @@ export const Comments: React.FC<
 > = ({ comments, postId }) => {
 
   const [ inStateComments, setInStateComments ] = useState<CommentI[]>(comments);
-  const [commentBody, setCommentBody] = useState<string>("");
+  const [ commentBody, setCommentBody ] = useState<string>("");
   const [ guestUUID, setGuestUUID ] = useState<string>("");
   
   const { user } = useLoaderData<{
@@ -39,12 +39,22 @@ export const Comments: React.FC<
         .sort((a:CommentI, b:CommentI) => a.timestamp - b.timestamp)
         .map((comment: CommentI) => 
           !comment.parentId
-            ?<Comment comment={comment} />
+            ?<Comment
+              comment={comment}  
+              inStateComments={inStateComments}
+              postId={postId} 
+              setInStateComments={setInStateComments}
+            />
             :inStateComments
               .filter((subComment: CommentI) => subComment.parentId === comment.id)
               .sort((a, b) => a.timestamp - b.timestamp)
               .map((subComment: CommentI) => 
-                <Comment comment={subComment} />
+                <Comment 
+                  comment={subComment}  
+                  inStateComments={inStateComments}
+                  postId={postId} 
+                  setInStateComments={setInStateComments}
+                />
               )
           
         )

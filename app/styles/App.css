@@ -1674,13 +1674,32 @@ button {
 }
 
 .comment {
+  margin: 1rem 0;
   display: flex;
+}
+.comment__poster {
+  margin: 0 1rem;
 }
 .comment__user-image {
   width: 36px;
   height: 36px;
   background: #ccc;
   border-radius: 100%;
+  overflow: hidden;
+}
+.comment__user-image--img {
+  object-fit: cover;
+  width: 36px;
+  height: 36px;
+}
+.comment__user-name {
+  font-size: 0.9rem;
+  line-height: 1rem;
+}
+.comment__date {
+  color: #666;
+  font-size: 0.8rem;
+  line-height: 1rem;
 }
 .comment__content-inner {
   background: #fff;
@@ -1688,6 +1707,7 @@ button {
   max-width: calc(100% - 2rem);
   border: 1px #ccc solid;
   border-radius: 6px;
+  margin: 0.5rem 0;
 }
 
 @keyframes loaderSpin {

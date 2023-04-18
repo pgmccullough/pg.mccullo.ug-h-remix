@@ -1,13 +1,29 @@
 .comment {
+  margin: 1rem 0;
   display: flex;
   &__poster {
-
+    margin: 0 1rem;
   }
   &__user-image {
     width: 36px;
     height: 36px;
     background: #ccc;
     border-radius: 100%;
+    overflow: hidden;
+    &--img {
+      object-fit: cover;
+      width: 36px;
+      height: 36px;
+    }
+  }
+  &__user-name {
+    font-size: 0.9rem;
+    line-height: 1rem;
+  }
+  &__date {
+    color: #666;
+    font-size: 0.8rem;
+    line-height: 1rem;
   }
   &__content-inner {
     background: #fff;
@@ -15,6 +31,7 @@
     max-width: calc(100% - 2rem);
     border: 1px #ccc solid;
     border-radius: 6px;
+    margin: 0.5rem 0;
   }
 }
 
