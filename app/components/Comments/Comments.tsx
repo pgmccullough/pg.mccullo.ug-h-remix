@@ -30,7 +30,7 @@ export const Comments: React.FC<
       setInStateComments(postComment.data.newCommentObj);
       delete postComment.data.newCommentObj;
     }
-    setGuestUUID(user.id||window.localStorage.guestUUID||"anon");
+    setGuestUUID(user?.id||window.localStorage.guestUUID||"anon");
   },[ postComment ]);
 
   return (
@@ -44,6 +44,7 @@ export const Comments: React.FC<
               inStateComments={inStateComments}
               postId={postId} 
               setInStateComments={setInStateComments}
+              user={user}
             />
             :inStateComments
               .filter((subComment: CommentI) => subComment.parentId === comment.id)
@@ -54,36 +55,39 @@ export const Comments: React.FC<
                   inStateComments={inStateComments}
                   postId={postId} 
                   setInStateComments={setInStateComments}
+                  user={user}
                 />
               )
           
         )
       }
-      <postComment.Form
-        method="post"
-        action={`/api/comment/new?index`}
-      >
-        <TextEditor 
-          contentStateSetter={setCommentBody}
-          placeholderText={"Write a comment..."}
-        />
-        <input 
-          name="commentBody"
-          type="hidden"
-          value={commentBody}
-        />
-        <input 
-          name="postId"
-          type="hidden"
-          value={postId}
-        />
-        <input 
-          name="userId"
-          type="hidden"
-          value={guestUUID}
-        />
-        <button>SUBMIT</button>
-      </postComment.Form>
+      {user?.role === "administrator"
+        ?<postComment.Form
+          method="post"
+          action={`/api/comment/new?index`}
+        >
+          <TextEditor 
+            contentStateSetter={setCommentBody}
+            placeholderText={"Write a comment..."}
+          />
+          <input 
+            name="commentBody"
+            type="hidden"
+            value={commentBody}
+          />
+          <input 
+            name="postId"
+            type="hidden"
+            value={postId}
+          />
+          <input 
+            name="userId"
+            type="hidden"
+            value={guestUUID}
+          />
+          <button>SUBMIT</button>
+        </postComment.Form>
+        :""}
     </>
   )
 };

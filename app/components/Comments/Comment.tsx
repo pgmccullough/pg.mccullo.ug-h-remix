@@ -17,9 +17,20 @@ interface CommentI {
   body: string
 }
 
-export const Comment: React.FC<
-{ comment: CommentI, postId: string, inStateComments: CommentI[], setInStateComments: any }
-> = ({ comment, inStateComments, postId, setInStateComments }) => {
+export const Comment: React.FC<{
+  comment: CommentI, 
+  postId: string, 
+  inStateComments: CommentI[], 
+  setInStateComments: any, 
+  user: {
+    id: string, 
+    user_name: string, 
+    role: string, 
+    first_name: string, 
+    last_name: string, 
+    profile_image: string
+  }
+}> = ({ comment, inStateComments, postId, setInStateComments, user }) => {
 
   const [ commenterData, setCommenterData ] = useState<{name: string, image: string}>({name: "", image: ""})
 
@@ -70,9 +81,14 @@ export const Comment: React.FC<
         <div className="comment__user-name">{commenterData.name||"Unknown user"}</div>
         <div className="comment__date">{dayjs().to(dayjs(comment.timestamp))}</div>
         <div className="comment__content-inner" dangerouslySetInnerHTML={{__html: comment.body}} />
-        <button>REPLY</button>
-        <button onClick={() => deleteComment(comment.id)}>DELETE</button>
-      </div>
+        {user?.role==="administrator"
+          ?<>
+            <button>REPLY</button>
+            <button onClick={() => deleteComment(comment.id)}>DELETE</button>
+          </>
+          :""
+        }
+        </div>
     </div>
   )
 }
