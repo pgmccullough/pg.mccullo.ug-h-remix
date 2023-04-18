@@ -16,7 +16,7 @@ export interface Post {
       likes: any,
   },
   lastEdited: number,
-  media: {
+  media: any|{
       audio: any,
       directory?: string,
       files: any[]|null,

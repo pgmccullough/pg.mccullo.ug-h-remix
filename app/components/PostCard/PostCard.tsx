@@ -9,10 +9,17 @@ import { Video } from '../Media/Video/Video';
 import { Weblink } from '../Media/Weblink/Weblink';
 import { EmojiReact } from '../EmojiReact/EmojiReact';
 import { Comments } from "../Comments/Comments";
+import type { Post } from "~/common/types";
 
 export const PostCard: React.FC<{
-  editState: any, setEditState: any, post: any
+  editState: any, setEditState: any, post: Post
 }> = ({ editState, setEditState, post }) => {
+
+  const { feedback } = post;
+  delete feedback.comments;
+  delete feedback.shares;
+  delete feedback.likes;
+
 
   const { user } = useLoaderData();
   const fetcher = useFetcher();
@@ -27,9 +34,10 @@ export const PostCard: React.FC<{
 
   const [ editMode, setEditMode ] = useState(false);
 
-  const [touchStart, setTouchStart] = useState<number|null>(null);
-  const [touchEnd, setTouchEnd] = useState<number|null>(null);
-  const [touchDistance, setTouchDistance] = useState<number>(0);
+  const [ touchStart, setTouchStart ] = useState<number|null>(null);
+  const [ touchEnd, setTouchEnd ] = useState<number|null>(null);
+  const [ touchDistance, setTouchDistance ] = useState<number>(0);
+  const [ postFeedback, setPostFeedback ] = useState<{commentsOn: boolean|null, sharesOn: boolean|null, likesOn: boolean|null }>(feedback)
 
   delete post.media.directory;
 
@@ -113,7 +121,7 @@ export const PostCard: React.FC<{
     >
       <div className="postcard__time">
         <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
-          <time dateTime={post.created}>{stampToTime(post.created)}</time>
+          <time dateTime={post.created.toString()}>{stampToTime(post.created)}</time>
         </Link>
         <div style={{display: "flex"}}>
           {user?.role==="administrator"
@@ -170,6 +178,9 @@ export const PostCard: React.FC<{
                     )
                     }
                   </select>
+                  <input type="checkbox" /> Comments
+                  <input type="checkbox" /> Shares
+                  <input type="checkbox" /> Likes
                   <button>SAVE</button>
                 </fetcher.Form>
                 <>
