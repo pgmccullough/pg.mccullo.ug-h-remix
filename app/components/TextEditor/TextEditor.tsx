@@ -5,19 +5,22 @@ import {
   $isRangeSelection,
   $createParagraphNode,
   FORMAT_TEXT_COMMAND,
+  LexicalNode
 } from 'lexical';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { CLEAR_EDITOR_COMMAND } from 'lexical';
+
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import { NodeEventPlugin } from '@lexical/react/LexicalNodeEventPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { mergeRegister } from '@lexical/utils';
 // import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
+import { $createLinkNode, $isLinkNode, LinkNode } from '@lexical/link';
 import type { EditorState, LexicalEditor } from "lexical";
 
 export const TextEditor: React.FC<{
@@ -40,6 +43,10 @@ export const TextEditor: React.FC<{
   tbProps
 }) => {
 
+  const [ linkBox, setLinkBox ] = useState<{
+    editor: any, isOpen: boolean, linkNode: any, posX: number, posY: number, url: string, text: string
+  }>({editor: null, isOpen: false, linkNode: null, posX: 0, posY: 0, url: "", text: ""})
+
   const Placeholder = ({placeholderText}:{placeholderText?:string}) => {
     return (
       <div className="textEditor__placeholder">
@@ -48,15 +55,67 @@ export const TextEditor: React.FC<{
     )
   }
 
-  const onChange = (editorState: EditorState, editor: LexicalEditor) => {
+  const linkClicked = (event: LinkNode|any, editor: LexicalEditor) => {
+    const { layerY, layerX } = event;
+    const { href, innerText } = event.target.parentNode;
+    setLinkBox({ ...linkBox, editor, linkNode: event.target, isOpen: true, posX: layerX, posY: layerY, url: href, text: innerText });
+  }
+
+  const traverseNodes = (node: LexicalNode, updatedLinkNode: LexicalNode) => {
+    if(!node.__children) return;
+    if($isLinkNode(node)&&
+      node.__children.includes(linkBox.linkNode[Object.keys(linkBox.linkNode)[0]])
+    ) {
+      node.replace(updatedLinkNode);
+    }
+    const children = node.getChildren();
+    if(children.length) {
+      children.forEach((child: LexicalNode) => {
+        traverseNodes(child, updatedLinkNode);
+      })
+    }
+  }
+
+  const updateLink = () => {
+    linkBox.editor.update(() => {
+      const updatedLinkNode = $createLinkNode(linkBox.url, {
+        rel: linkBox.linkNode.parentElement.getAttribute('rel'),
+        target: linkBox.linkNode.parentElement.getAttribute('target')
+      })
+      const parser = new DOMParser();
+      const linkText = parser.parseFromString(linkBox.text||linkBox.url, 'text/html');
+      const nodes = $generateNodesFromDOM(linkBox.editor, linkText);
+      nodes.forEach((n)=> updatedLinkNode.append(n))
+      let children = $getRoot().getChildren();
+      children.length&&children.forEach((node:LexicalNode) => {
+        traverseNodes(node, updatedLinkNode)
+      })
+    })
+    setLinkBox({ ...linkBox, isOpen: false });
+  }
+
+  const onChange = (_editorState: EditorState, editor: LexicalEditor) => {
     editor.update(() => {
       const html = $generateHtmlFromNodes(editor, null);
-      contentStateSetter?contentStateSetter(html):console.error("State setter must be passed to access content");
+      contentStateSetter
+        ?contentStateSetter(html)
+        :console.error("State setter must be passed to access content");
     })
   }
   
   return (
     <div className={`textEditor ${styleClass||""}`}>
+      {linkBox.isOpen
+      ?<div 
+        className="textEditor__link-box"
+        style={{left: linkBox.posX+"px", top: linkBox.posY+"px"}}
+      >
+        <input type="text" value={linkBox.text} onChange={(e) => setLinkBox({...linkBox, text: e.target.value})} />
+        <input type="text" value={linkBox.url} onChange={(e) => setLinkBox({...linkBox, url: e.target.value})} />
+        <button onClick={() => setLinkBox({ ...linkBox, isOpen: false })}>CANCEL</button>
+        <button onClick={updateLink}>UPDATE</button>
+      </div>
+      :""}
       <LexicalComposer
       initialConfig={{
         namespace: "textEditor",
@@ -69,7 +128,7 @@ export const TextEditor: React.FC<{
             strikethrough: 'line-through',
           },
         },
-        nodes: [HorizontalRuleNode],
+        nodes: [HorizontalRuleNode, LinkNode],
         onError(error) {
           throw error;
         },
@@ -84,6 +143,7 @@ export const TextEditor: React.FC<{
           placeholder={<Placeholder placeholderText={placeholderText} />}
         />
         {htmlString?<InitialText htmlString={htmlString} />:""}
+        <NodeEventPlugin nodeType={LinkNode} eventType={'click'} eventListener={linkClicked} />
         <OnChangePlugin onChange={onChange} ignoreSelectionChange />
         <HistoryPlugin />
         <ClearCommand clearContent={clearContent} />

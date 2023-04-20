@@ -265,6 +265,12 @@ button {
   display: inline-block;
   pointer-events: none;
 }
+.textEditor__link-box {
+  position: absolute;
+  background: #ccc;
+  padding: 1rem;
+  border: 1px #000 solid;
+}
 
 #sidebar {
   width: 100%;

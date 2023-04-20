@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useLoaderData } from "@remix-run/react";
-import { User, SiteData } from '../../common/types';
+import { useState } from 'react';
+import type { User, SiteData } from '../../common/types';
 import { Email } from '~/adminApps/Email/Email';
 import { TextEditor } from '../TextEditor/TextEditor';
 
 export const Sidebar: React.FC<{}> = () => {
   const { user, siteData } = useLoaderData<{user: User, siteData: SiteData}>();
+  const [ editMode, setEditMode ] = useState<boolean>(true);
+  const [ bioContent, setBioContent ] = useState<string>(siteData?.site_description);
 
   return (
     <div id="sidebar">
@@ -19,7 +22,12 @@ export const Sidebar: React.FC<{}> = () => {
           <div className="postcard__content__media"></div>
           <div className="postcard__content__text">
             {siteData?.site_description
-              ?<span dangerouslySetInnerHTML={{__html: siteData?.site_description}} />
+              ?editMode
+                ?<TextEditor 
+                    htmlString={siteData?.site_description}
+                    contentStateSetter={setBioContent}
+                  />
+                :<span dangerouslySetInnerHTML={{__html: siteData?.site_description}} />
               :""
             }
           </div>
