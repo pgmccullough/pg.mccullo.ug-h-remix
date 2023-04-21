@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, SetStateAction } from "react";
 import {
+  $getNodeByKey,
   $getRoot,
   $getSelection,
   $isRangeSelection,
@@ -21,7 +22,7 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { mergeRegister } from '@lexical/utils';
 // import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
-import { $createLinkNode, $isLinkNode, LinkNode } from '@lexical/link';
+import { $createLinkNode, $isLinkNode, LinkNode, toggleLink } from '@lexical/link';
 import type { EditorState, LexicalEditor } from "lexical";
 
 export const TextEditor: React.FC<{
@@ -142,22 +143,22 @@ export const TextEditor: React.FC<{
         :""
       }
       <LexicalComposer
-      initialConfig={{
-        namespace: "textEditor",
-        theme: {
-          text: {
-            bold: 'font-bold',
-            code: 'code',
-            italic: 'italic',
-            underline: 'underline',
-            strikethrough: 'line-through',
+        initialConfig={{
+          namespace: "textEditor",
+          theme: {
+            text: {
+              bold: 'font-bold',
+              code: 'code',
+              italic: 'italic',
+              underline: 'underline',
+              strikethrough: 'line-through',
+            },
           },
-        },
-        nodes: [HorizontalRuleNode, LinkNode],
-        onError(error) {
-          throw error;
-        },
-      }}
+          nodes: [HorizontalRuleNode, LinkNode],
+          onError(error) {
+            throw error;
+          },
+        }}
       >
         <Toolbar attachmentAction={attachmentAction} tbProps={tbProps} />
         <RichTextPlugin
@@ -222,6 +223,12 @@ const Toolbar = ({attachmentAction, tbProps}:{attachmentAction?:any, tbProps?:{h
   const [ isItalic, setIsItalic ] = useState(false);
   const [ isStrikethrough, setIsStrikethrough ] = useState(false);
   const [ isUnderline, setIsUnderline ] = useState(false);
+  
+  const createLink = (editor: LexicalEditor) => {
+    editor.update(() => {
+      toggleLink("");
+    });
+  }
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -266,6 +273,10 @@ const Toolbar = ({attachmentAction, tbProps}:{attachmentAction?:any, tbProps?:{h
         className={`email__format-button ${isCode?"email__format-button--active":""} email__format-button--code`}
         onClick={() => {editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');}}
       >{`</>`}</button>
+      <button 
+        className={`email__format-button`}
+        onClick={() => createLink(editor)}
+      >{`LINK`}</button>
       {attachmentAction
         ?<button className={`email__format-button email__format-button--attachment`} onClick={attachmentAction}>ATT</button>
         :""
