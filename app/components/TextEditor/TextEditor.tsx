@@ -4,6 +4,7 @@ import {
   $getSelection,
   $isRangeSelection,
   $createParagraphNode,
+  $createTextNode,
   FORMAT_TEXT_COMMAND,
   LexicalNode
 } from 'lexical';
@@ -44,8 +45,8 @@ export const TextEditor: React.FC<{
 }) => {
 
   const [ linkBox, setLinkBox ] = useState<{
-    editor: any, isOpen: boolean, linkNode: any, posX: number, posY: number, url: string, text: string
-  }>({editor: null, isOpen: false, linkNode: null, posX: 0, posY: 0, url: "", text: ""})
+    editor: any, editRemove: boolean, isOpen: boolean, linkNode: any, posX: number, posY: number, url: string, text: string
+  }>({editor: null, editRemove: false, isOpen: false, linkNode: null, posX: 0, posY: 0, url: "", text: ""})
 
   const Placeholder = ({placeholderText}:{placeholderText?:string}) => {
     return (
@@ -55,10 +56,11 @@ export const TextEditor: React.FC<{
     )
   }
 
-  const linkClicked = (event: LinkNode|any, editor: LexicalEditor) => {
+  const linkClicked = (event: any, editor: LexicalEditor) => {
+    event.preventDefault();
     const { layerY, layerX } = event;
     const { href, innerText } = event.target.parentNode;
-    setLinkBox({ ...linkBox, editor, linkNode: event.target, isOpen: true, posX: layerX, posY: layerY, url: href, text: innerText });
+    setLinkBox({ ...linkBox, editor, linkNode: event.target, editRemove: true, posX: layerX, posY: layerY, url: href, text: innerText });
   }
 
   const traverseNodes = (node: LexicalNode, updatedLinkNode: LexicalNode) => {
@@ -74,6 +76,17 @@ export const TextEditor: React.FC<{
         traverseNodes(child, updatedLinkNode);
       })
     }
+  }
+
+  const removeLink = () => {
+    linkBox.editor.update(() => {
+      const strippedLink = $createTextNode(linkBox.linkNode.innerHTML);
+      let children = $getRoot().getChildren();
+      children.length&&children.forEach((node:LexicalNode) => {
+        traverseNodes(node, strippedLink)
+      })
+      setLinkBox({ ...linkBox, editRemove: false });
+    })
   }
 
   const updateLink = () => {
@@ -105,17 +118,29 @@ export const TextEditor: React.FC<{
   
   return (
     <div className={`textEditor ${styleClass||""}`}>
+      {linkBox.editRemove
+        ?<div 
+          className="textEditor__link-box"
+          style={{left: linkBox.posX+"px", top: linkBox.posY+"px"}}
+        >
+          <button onClick={removeLink}>REMOVE</button>
+          <button onClick={() => setLinkBox({ ...linkBox, editRemove: false, isOpen: true })}>EDIT</button>
+          <button onClick={() => setLinkBox({ ...linkBox, editRemove: false })}>CANCEL</button>
+        </div>
+        :""
+      }
       {linkBox.isOpen
-      ?<div 
-        className="textEditor__link-box"
-        style={{left: linkBox.posX+"px", top: linkBox.posY+"px"}}
-      >
-        <input type="text" value={linkBox.text} onChange={(e) => setLinkBox({...linkBox, text: e.target.value})} />
-        <input type="text" value={linkBox.url} onChange={(e) => setLinkBox({...linkBox, url: e.target.value})} />
-        <button onClick={() => setLinkBox({ ...linkBox, isOpen: false })}>CANCEL</button>
-        <button onClick={updateLink}>UPDATE</button>
-      </div>
-      :""}
+        ?<div 
+          className="textEditor__link-box"
+          style={{left: linkBox.posX+"px", top: linkBox.posY+"px"}}
+        >
+          <input type="text" value={linkBox.text} onChange={(e) => setLinkBox({...linkBox, text: e.target.value})} />
+          <input type="text" value={linkBox.url} onChange={(e) => setLinkBox({...linkBox, url: e.target.value})} />
+          <button onClick={() => setLinkBox({ ...linkBox, isOpen: false })}>CANCEL</button>
+          <button onClick={updateLink}>UPDATE</button>
+        </div>
+        :""
+      }
       <LexicalComposer
       initialConfig={{
         namespace: "textEditor",
@@ -143,7 +168,7 @@ export const TextEditor: React.FC<{
           placeholder={<Placeholder placeholderText={placeholderText} />}
         />
         {htmlString?<InitialText htmlString={htmlString} />:""}
-        <NodeEventPlugin nodeType={LinkNode} eventType={'click'} eventListener={linkClicked} />
+        <NodeEventPlugin nodeType={LinkNode} eventType={'contextmenu'} eventListener={linkClicked} />
         <OnChangePlugin onChange={onChange} ignoreSelectionChange />
         <HistoryPlugin />
         <ClearCommand clearContent={clearContent} />
