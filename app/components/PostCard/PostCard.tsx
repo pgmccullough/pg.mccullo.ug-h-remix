@@ -118,7 +118,7 @@ export const PostCard: React.FC<{
       <div className="postcard__time">
         <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
           {/* <time dateTime={post.created.toString()}>{stampToTime(post.created)}</time> */}
-          <time dateTime={post.created.toString()}>{(post.created)}</time>
+          <time dateTime={post.created.toString()}>{stampToTime(post.created)}</time>
         </Link>
         <div style={{display: "flex"}}>
           {user?.role==="administrator"
