@@ -39,7 +39,7 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
       emojiFetch.data.cloneTS = null;
     }
   },[ emojiFetch ])
-console.log(tempStore);
+
   return (
     <>
       <div
