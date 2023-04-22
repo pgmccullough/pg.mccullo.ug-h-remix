@@ -20,6 +20,7 @@ export const PostCard: React.FC<{
   editState: any, setEditState: any, post: Post
 }> = ({ editState, setEditState, post }) => {
 
+  const [ canShowDate, setCanShowDate ] = useState<boolean>(false)
   const { feedback } = post;
 
   const { user } = useLoaderData();
@@ -113,6 +114,7 @@ export const PostCard: React.FC<{
     setMediaSlides((prev: {currentSlide: number, itemLength: number}) => {
       return {...prev, itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0)}
     })
+    setCanShowDate(true);
   },[])
 
   return (
@@ -122,7 +124,7 @@ export const PostCard: React.FC<{
     >
       <div className="postcard__time">
         <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
-          <time dateTime={post.created.toString()}>{dayjs(post.created*1000).format('LLL')}</time>
+          {canShowDate?<time dateTime={post.created.toString()}>{dayjs(post.created*1000).format('LLL')}</time>:""}
         </Link>
         <div style={{display: "flex"}}>
           {user?.role==="administrator"
