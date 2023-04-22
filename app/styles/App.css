@@ -381,8 +381,10 @@ button {
 }
 
 .postcard {
+  position: relative;
   display: inline-block;
   width: 100%;
+  z-index: 96;
 }
 .postcard__privacy {
   margin-right: 2rem;
