@@ -291,7 +291,7 @@ export const PostCard: React.FC<{
             :""
           }
           <div className="postcard__content__meta">
-            {post.feedback?.likesOn
+            {post.feedback?.likesOn&&null
               ?<EmojiReact
                 likes={post.feedback.likes}
                 postId={post._id}
