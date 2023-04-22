@@ -1,5 +1,5 @@
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { stampToTime } from '../../functions/functions';
 import { Audio } from '../Media/Audio/Audio';
@@ -117,7 +117,7 @@ export const PostCard: React.FC<{
     >
       <div className="postcard__time">
         <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
-          <time dateTime={post.created.toString()}>{stampToTime(post.created)}</time>
+          <Suspense fallback={post.created}><time dateTime={post.created.toString()}>{stampToTime(post.created)}</time></Suspense>
         </Link>
         <div style={{display: "flex"}}>
           {user?.role==="administrator"
