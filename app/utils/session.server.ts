@@ -86,7 +86,7 @@ type LoginForm = {
 
 export async function login({
   username,
-  password,
+  password
 }: any) {
   const client = await clientPromise;
   const db = client.db("user_posts");

@@ -1,5 +1,5 @@
 import { LoaderFunction } from "@remix-run/node";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { Outlet, useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
@@ -137,6 +137,7 @@ export default function Index() {
       <div className="content">
         <Sidebar />
         <div className="right-column">
+          <Outlet />
           {onThisDay.length?<div className="onThisDay__label">On this Day</div>:""}
           {onThisDay?.map((thisDay: Post) =>
               <PostCard 

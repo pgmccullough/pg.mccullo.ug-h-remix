@@ -11,6 +11,7 @@
         background: #333;
         opacity: 0.3;
         z-index: 100;
+        cursor: default;
     }
     &__card {
         position: fixed;
@@ -37,6 +38,8 @@
             align-items: center;
             transition: 0.25s;
             cursor: pointer;
+            text-decoration: none;
+            color: #000;
             &:hover {
                 box-shadow: 0 0 0 3px #ccc;
             }

@@ -1174,6 +1174,7 @@ button {
   background: #333;
   opacity: 0.3;
   z-index: 100;
+  cursor: default;
 }
 .register__card {
   position: fixed;
@@ -1201,6 +1202,8 @@ button {
   align-items: center;
   transition: 0.25s;
   cursor: pointer;
+  text-decoration: none;
+  color: #000;
 }
 .register__card__button:hover {
   box-shadow: 0 0 0 3px #ccc;
