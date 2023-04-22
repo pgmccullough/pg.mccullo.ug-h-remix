@@ -1,3 +1,4 @@
+import type { LinksFunction, LoaderArgs } from "@remix-run/node";
 import { LoaderFunction, MetaFunction } from "@remix-run/node";
 import {
   Links,
@@ -12,13 +13,19 @@ import {
 import { useEffect } from "react";
 import * as gtag from "~/utils/gtags.client";
 
+import styles from "~/styles/App.css";
+
+export const links: LinksFunction = () => {
+  return [{ rel: "stylesheet", href: styles }];
+}
+
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
   title: "Patrick Glendon McCullough",
   viewport: "width=device-width,initial-scale=1",
 });
 
-export const loader: LoaderFunction = async ({ request }) => {
+export const loader: LoaderFunction = async ({ request }: LoaderArgs) => {
   return {gaTrackingId: "G-48Y17ZTWTK"};
 }
 
