@@ -11,6 +11,11 @@ import { EmojiReact } from '../EmojiReact/EmojiReact';
 import { Comments } from "../Comments/Comments";
 import type { Post } from "~/common/types";
 
+import dayjs from 'dayjs';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+dayjs.extend(localizedFormat)
+dayjs().format();
+
 export const PostCard: React.FC<{
   editState: any, setEditState: any, post: Post
 }> = ({ editState, setEditState, post }) => {
@@ -117,8 +122,7 @@ export const PostCard: React.FC<{
     >
       <div className="postcard__time">
         <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
-          {/* <time dateTime={post.created.toString()}>{stampToTime(post.created)}</time> */}
-          <time dateTime={post.created.toString()}>{stampToTime(post.created)}</time>
+          <time dateTime={post.created.toString()}>{dayjs(post.created*1000).format('LLL')}</time>
         </Link>
         <div style={{display: "flex"}}>
           {user?.role==="administrator"
