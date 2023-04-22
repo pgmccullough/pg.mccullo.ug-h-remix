@@ -1,5 +1,5 @@
 import { useFetcher } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { EmailInterface } from '~/common/types';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en';
@@ -169,8 +169,8 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
         <div className="email__meta_label">date:</div>
         <div className="email__meta_content">
           {email.Date
-            ?dayjs(Date.parse(email.Date)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Date.parse(email.Date)))
-            :dayjs(Number(email.created)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Number(email.created)))
+            ?<Suspense fallback={email.Date}>{dayjs(Date.parse(email.Date)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Date.parse(email.Date)))}</Suspense>
+            :<Suspense fallback={email.created}>{dayjs(Number(email.created)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Number(email.created)))}</Suspense>
           }
         </div>
 
@@ -178,7 +178,7 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
         ?<>
           <div className="email__meta_label">opened:</div>
           <div className="email__meta_content">
-            {dayjs(Date.parse(email.Opened)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Date.parse(email.Opened)))}
+            <Suspense fallback={email.Opened}>{dayjs(Date.parse(email.Opened)).format('dddd, MMMM Do, YYYY, h:mm A')+" "+dayjs().to(dayjs(Date.parse(email.Opened)))}</Suspense>
           </div>
         </>
         :""}

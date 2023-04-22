@@ -46,6 +46,7 @@ export const Comments: React.FC<
         .map((comment: CommentI) => 
           !comment.parentId
             ?<Comment
+              key={comment.id}
               comment={comment}  
               inStateComments={inStateComments}
               postId={postId} 
@@ -57,6 +58,7 @@ export const Comments: React.FC<
               .sort((a, b) => a.timestamp - b.timestamp)
               .map((subComment: CommentI) => 
                 <Comment 
+                  key={subComment.id}
                   comment={subComment}  
                   inStateComments={inStateComments}
                   postId={postId} 

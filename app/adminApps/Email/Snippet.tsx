@@ -1,6 +1,6 @@
 import { EmailInterface } from '~/common/types';
 import { useFetcher } from "@remix-run/react";
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -157,23 +157,27 @@ export const Snippet: React.FC<{
           onClick={() => markRead()}
           style={currentEmail.view==="outbox"?{marginLeft: "-12px"}:{opacity:"1"}}
         >
-          {
-          dayjs(Date.parse(email.Date)||Number(email.created)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
-            ?dayjs(Date.parse(email.Date)||Number(email.created)).format('h:mmA')
-            :dayjs(Date.parse(email.Date)||Number(email.created)).format('YYYY')===dayjs(Date.now()).format('YYYY')
-              ?dayjs(Date.parse(email.Date)||Number(email.created)).format('MMM D')
-              :dayjs(Date.parse(email.Date)||Number(email.created)).format('M/D/YY')
-          }
+          <Suspense fallback={email.Date||email.created}>
+            {
+            dayjs(Date.parse(email.Date)||Number(email.created)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
+              ?dayjs(Date.parse(email.Date)||Number(email.created)).format('h:mmA')
+              :dayjs(Date.parse(email.Date)||Number(email.created)).format('YYYY')===dayjs(Date.now()).format('YYYY')
+                ?dayjs(Date.parse(email.Date)||Number(email.created)).format('MMM D')
+                :dayjs(Date.parse(email.Date)||Number(email.created)).format('M/D/YY')
+            }
+          </Suspense>
           {currentEmail.view==="outbox"
             ?<div className={`snippet__status ${email.Opened?'snippet__status--opened':''}`}>
               {email.Opened
-                ?<div className="snippet__status--opened__popup"><b>OPENED: </b>{
-                  dayjs(Date.parse(email.Opened)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
-                  ?dayjs(Date.parse(email.Opened)).format('h:mmA')
-                  :dayjs(Date.parse(email.Opened)).format('YYYY')===dayjs(Date.now()).format('YYYY')
-                    ?dayjs(Date.parse(email.Opened)).format('MMM D')
-                    :dayjs(Date.parse(email.Opened)).format('M/D/YY')  
-                }.</div>
+                ?<Suspense fallback={email.Opened}>
+                  <div className="snippet__status--opened__popup"><b>OPENED: </b>{
+                    dayjs(Date.parse(email.Opened)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
+                    ?dayjs(Date.parse(email.Opened)).format('h:mmA')
+                    :dayjs(Date.parse(email.Opened)).format('YYYY')===dayjs(Date.now()).format('YYYY')
+                      ?dayjs(Date.parse(email.Opened)).format('MMM D')
+                      :dayjs(Date.parse(email.Opened)).format('M/D/YY')  
+                  }.</div>
+                </Suspense>
                 :<></>
               }
             </div>

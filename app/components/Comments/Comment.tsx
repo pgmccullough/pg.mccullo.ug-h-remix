@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useFetcher } from "@remix-run/react";
 import dayjs from 'dayjs';
 import 'dayjs/locale/en';
@@ -79,7 +79,11 @@ export const Comment: React.FC<{
       </div>
       <div className="comment__content">
         <div className="comment__user-name">{commenterData.name||"Unknown user"}</div>
-        <div className="comment__date">{dayjs().to(dayjs(comment.timestamp))}</div>
+        <div className="comment__date">
+          <Suspense fallback={comment.timestamp}>
+            {dayjs().to(dayjs(comment.timestamp))}
+          </Suspense>
+        </div>
         <div className="comment__content-inner" dangerouslySetInnerHTML={{__html: comment.body}} />
         {user?.role==="administrator"
           ?<>
