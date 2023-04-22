@@ -676,6 +676,10 @@ button {
   margin: 0;
 }
 
+.fake-p {
+  margin: 1rem 0;
+}
+
 @keyframes deleteEmail {
   to {
     max-height: 0px;
