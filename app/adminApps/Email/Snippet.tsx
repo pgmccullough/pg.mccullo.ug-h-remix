@@ -24,6 +24,7 @@ export const Snippet: React.FC<{
   const [touchDistance, setTouchDistance] = useState<number>(0);
   const [beingDeleted, setBeingDeleted] = useState<boolean>(false)
   const [shrinkHeight, setShrinkHeight] = useState<number>(73);
+  const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const snippetDOM = useRef<HTMLDivElement>(null);
   const swipeMarkRead = useFetcher();
   const swipeDelete = useFetcher();
@@ -82,6 +83,7 @@ export const Snippet: React.FC<{
   }
 
   useEffect(() => {
+    setCanShowDate(true);
     setShrinkHeight(snippetDOM.current?.scrollHeight||73);
   },[])
 
@@ -158,22 +160,26 @@ export const Snippet: React.FC<{
           style={currentEmail.view==="outbox"?{marginLeft: "-12px"}:{opacity:"1"}}
         >
           {
-          dayjs(Date.parse(email.Date)||Number(email.created)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
+          canShowDate
+          ?dayjs(Date.parse(email.Date)||Number(email.created)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
             ?dayjs(Date.parse(email.Date)||Number(email.created)).format('h:mmA')
             :dayjs(Date.parse(email.Date)||Number(email.created)).format('YYYY')===dayjs(Date.now()).format('YYYY')
               ?dayjs(Date.parse(email.Date)||Number(email.created)).format('MMM D')
               :dayjs(Date.parse(email.Date)||Number(email.created)).format('M/D/YY')
+          :""
           }
           {currentEmail.view==="outbox"
             ?<div className={`snippet__status ${email.Opened?'snippet__status--opened':''}`}>
               {email.Opened
                 ?
                   <div className="snippet__status--opened__popup"><b>OPENED: </b>{
-                    dayjs(Date.parse(email.Opened)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
-                    ?dayjs(Date.parse(email.Opened)).format('h:mmA')
-                    :dayjs(Date.parse(email.Opened)).format('YYYY')===dayjs(Date.now()).format('YYYY')
-                      ?dayjs(Date.parse(email.Opened)).format('MMM D')
-                      :dayjs(Date.parse(email.Opened)).format('M/D/YY')  
+                    canShowDate
+                    ?dayjs(Date.parse(email.Opened)).format('MMDDYYYY')===dayjs(Date.now()).format('MMDDYYYY')
+                      ?dayjs(Date.parse(email.Opened)).format('h:mmA')
+                      :dayjs(Date.parse(email.Opened)).format('YYYY')===dayjs(Date.now()).format('YYYY')
+                        ?dayjs(Date.parse(email.Opened)).format('MMM D')
+                        :dayjs(Date.parse(email.Opened)).format('M/D/YY')
+                    :""
                   }.</div>
                 :<></>
               }
