@@ -80,7 +80,7 @@ export const Comment: React.FC<{
       <div className="comment__content">
         <div className="comment__user-name">{commenterData.name||"Unknown user"}</div>
         <div className="comment__date">
-          {dayjs().to(dayjs(comment.timestamp))}
+          {/* {dayjs().to(dayjs(comment.timestamp))} */}
         </div>
         <div className="comment__content-inner" dangerouslySetInnerHTML={{__html: comment.body}} />
         {user?.role==="administrator"
