@@ -4,8 +4,6 @@ import { Response } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import isbot from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
-import { parseAcceptLanguage } from 'intl-parse-accept-language';
-import { LocaleContextProvider } from "./utils/LocaleProvider";
 
 const ABORT_DELAY = 5000;
 
@@ -15,7 +13,6 @@ export default function handleRequest(
   responseHeaders: Headers,
   remixContext: EntryContext
 ) {
-
   return isbot(request.headers.get("user-agent"))
     ? handleBotRequest(
         request,
@@ -37,23 +34,16 @@ function handleBotRequest(
   responseHeaders: Headers,
   remixContext: EntryContext
 ) {
-  const acceptLanguage = request.headers.get('accept-language');
-  const locales = parseAcceptLanguage(acceptLanguage, {
-    validate: Intl.DateTimeFormat.supportedLocalesOf,
-  });
+
   return new Promise((resolve, reject) => {
     let didError = false;
 
     const { pipe, abort } = renderToPipeableStream(
-      <LocaleContextProvider locales={locales}>
-        <RemixServer context={remixContext} url={request.url} />
-      </LocaleContextProvider>,
+      <RemixServer context={remixContext} url={request.url} />,
       {
         onAllReady() {
           const body = new PassThrough();
-
           responseHeaders.set("Content-Type", "text/html");
-
           resolve(
             new Response(body, {
               headers: responseHeaders,
