@@ -32,6 +32,7 @@ export const Comment: React.FC<{
   }
 }> = ({ comment, inStateComments, postId, setInStateComments, user }) => {
 
+  const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const [ commenterData, setCommenterData ] = useState<{name: string, image: string}>({name: "", image: ""})
 
   const commenter = useFetcher();
@@ -60,6 +61,10 @@ export const Comment: React.FC<{
     }
   },[ commentDeleter ])
 
+  useEffect(() => {
+    setCanShowDate(true);
+  },[])
+
   const deleteComment = (commentId:string) => {
     {commentDeleter.submit(
       { userId: comment.userId, commentId, postId, parentId: comment.parentId||"" },
@@ -80,7 +85,7 @@ export const Comment: React.FC<{
       <div className="comment__content">
         <div className="comment__user-name">{commenterData.name||"Unknown user"}</div>
         <div className="comment__date">
-          {/* {dayjs().to(dayjs(comment.timestamp))} */}
+          {canShowDate?dayjs().to(dayjs(comment.timestamp)):""}
         </div>
         <div className="comment__content-inner" dangerouslySetInnerHTML={{__html: comment.body}} />
         {user?.role==="administrator"

@@ -15,6 +15,7 @@ export const Header: React.FC<{}> = () => {
     user: {user_name: string,role: string},
     siteData: SiteData
   }>();
+  const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
   const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData.watchword.word });
   const watchWordRef = useRef<HTMLDivElement>(null);
@@ -161,7 +162,9 @@ export const Header: React.FC<{}> = () => {
     profileImgChannel.bind("refresh", (profImgData: { profileImg: { gps: string|null, timestamp: number, image: string } }) =>  {
       profileImage.current!.style.backgroundImage = `url(${profImgData.profileImg.image})`;
       profTimestamp.current!.innerText = stampToTime(profImgData.profileImg.timestamp);
-    });    
+    });
+
+    setCanShowDate(true);
 
     return () => {
       watchwordChannel.unbind_all();
@@ -233,7 +236,7 @@ export const Header: React.FC<{}> = () => {
           }
           {siteData&&siteData.cover_image?
           <div className="header__p">
-            cover: <span ref={storyTimestamp}>{stampToTime(siteData?.cover_image?.timestamp/1000)}</span>
+            cover: <span ref={storyTimestamp}>{canShowDate?stampToTime(siteData?.cover_image?.timestamp/1000):""}</span>
             {siteData?.cover_image?.gps?.lat
               ?<>
                 <a 
@@ -259,7 +262,7 @@ export const Header: React.FC<{}> = () => {
           :""}
           {siteData&&siteData.profile_image?
           <div className="header__p">
-            profile: <span ref={profTimestamp}>{stampToTime(siteData?.profile_image?.timestamp/1000)}</span>
+            profile: <span ref={profTimestamp}>{canShowDate?stampToTime(siteData?.profile_image?.timestamp/1000):""}</span>
             {siteData?.profile_image?.gps?.lat
               ?<>
                 <a 

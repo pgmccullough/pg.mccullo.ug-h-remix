@@ -20,7 +20,7 @@ export const PostCard: React.FC<{
   editState: any, setEditState: any, post: Post
 }> = ({ editState, setEditState, post }) => {
 
-  const [ canShowDate, setCanShowDate ] = useState<boolean>(false)
+  const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const { feedback } = post;
 
   const { user } = useLoaderData();
@@ -124,7 +124,7 @@ export const PostCard: React.FC<{
     >
       <div className="postcard__time">
         <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
-          {canShowDate?<time dateTime={post.created.toString()}>{dayjs(post.created*1000).format('LLL')}</time>:""}
+          {canShowDate?<time dateTime={post.created.toString()}>{stampToTime(post.created)}</time>:""}
         </Link>
         <div style={{display: "flex"}}>
           {user?.role==="administrator"
