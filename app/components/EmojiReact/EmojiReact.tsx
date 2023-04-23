@@ -41,7 +41,7 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
   },[ emojiFetch ])
 
   return (
-    <>
+    <div className="emoji-parent">
       <div
         className={`click-away-bg${emojiVisibility?" click-away-bg--active":""}`} 
         onClick={() => setEmojiVisibility(false)}
@@ -82,6 +82,6 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
           :""
         }
       </div>
-    </>
+    </div>
   )
 }
