@@ -16,7 +16,7 @@ export const Composer: React.FC<{
       <b>To: </b> ${ email.To } <br />
       ${email.Cc?<><b>cc: </b> { email.Cc } <br /></>:""}
       <b>Subject:</b> ${ email?.Subject||"" } <br />
-      <p>${email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email.TextBody}</p>
+      <p>${email.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||email?.TextBody}</p>
   `
   :""
 

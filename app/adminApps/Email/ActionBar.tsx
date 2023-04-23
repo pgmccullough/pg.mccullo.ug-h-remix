@@ -162,7 +162,7 @@ export const ActionBar: React.FC<{
       cc,
       bcc:"",
       subject,
-      body: curEmail.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||curEmail.TextBody
+      body: curEmail.HtmlBody.replace(/(<style[\w\W]+style>)/g, "")||curEmail?.TextBody
     })
   } 
 

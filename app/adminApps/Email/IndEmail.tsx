@@ -22,7 +22,7 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
       .replaceAll(/width:(.*);/g,'')
       .replaceAll(/width="(.*)"/g,'width="100%"')
   } else {
-    emailBody = email.TextBody||"";
+    emailBody = email?.TextBody||"";
   }
 
   if(!emailBody.includes('style="')) {
