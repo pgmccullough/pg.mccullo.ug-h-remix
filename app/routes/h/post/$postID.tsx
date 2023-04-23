@@ -17,7 +17,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     [ post ] = await db.collection("myPosts").find({ _id: new ObjectId(postID) }).toArray();
   }
   if(!post) post = {error: 1}
-  return { post };
+  return { post, user };
 }
 
 export default function SinglePost() {
