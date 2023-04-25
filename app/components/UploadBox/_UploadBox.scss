@@ -1,6 +1,14 @@
 @use '../../styles/partials/mixins' as *;
 @use '../../styles/partials/variables' as *;
 
+.active-upload-background {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100vh;
+}
+
 .upload {
     position: absolute;
     background: #fff;
@@ -25,6 +33,11 @@
         right: auto;
         margin-left: calc(50% - 250px);
         width: 500px;
+    }
+
+    &--active {
+      overflow: unset;
+      height: auto;
     }
 
     &__url__preview {
@@ -54,9 +67,16 @@
         width: 100%;
         resize: none;
         line-height: 1.3em;
-        margin-top: -17px;
-        & .textEditor div[contenteditable=true] {
-          padding-top: 0!important;
+        & div[contenteditable=true] {
+          width: 100%;
+          min-height: 0;
+          & p:first-of-type {
+            margin: 0;
+          }
+        }
+        & .textEditor__placeholder {
+          margin-top: calc(-1rem - 8px);
+          margin-left: 4px;
         }
         &--drag {
             background: #d4e1ff;
