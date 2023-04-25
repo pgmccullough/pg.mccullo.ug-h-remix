@@ -3,7 +3,7 @@ import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from 'react';
 import { SiteData } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
-import { UploadBox } from '../UploadBox/UploadBox';
+import { PostCreator } from '../UploadBox/NEW_UploadBox';
 import { v4 as uuidv4 } from 'uuid';
 import { gps as getGPS } from 'exifr';
 import Pusher from "pusher-js";
@@ -328,7 +328,7 @@ export const Header: React.FC<{}> = () => {
         }
       </div>
       <div className="header__bar">
-        {user?.role==="administrator"?<UploadBox />:siteData.site_name}
+        {user?.role==="administrator"?<PostCreator />:siteData.site_name}
       </div>
       <Link to="/h/">
         <div 

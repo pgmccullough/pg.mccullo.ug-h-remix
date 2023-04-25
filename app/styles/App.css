@@ -1381,6 +1381,10 @@ button {
   width: 100%;
   resize: none;
   line-height: 1.3em;
+  margin-top: -17px;
+}
+.upload__editable .textEditor div[contenteditable=true] {
+  padding-top: 0 !important;
 }
 .upload__editable--drag {
   background: #d4e1ff;

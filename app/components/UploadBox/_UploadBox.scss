@@ -54,7 +54,10 @@
         width: 100%;
         resize: none;
         line-height: 1.3em;
-
+        margin-top: -17px;
+        & .textEditor div[contenteditable=true] {
+          padding-top: 0!important;
+        }
         &--drag {
             background: #d4e1ff;
 

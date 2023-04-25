@@ -6,6 +6,9 @@ import {
   $isRangeSelection,
   $createParagraphNode,
   $createTextNode,
+  BLUR_COMMAND,
+  COMMAND_PRIORITY_LOW,
+  FOCUS_COMMAND,
   FORMAT_TEXT_COMMAND,
   LexicalNode
 } from 'lexical';
@@ -32,6 +35,7 @@ export const TextEditor: React.FC<{
   contentStateSetter?: SetStateAction<any>, 
   htmlString?: string, 
   placeholderText?: string,
+  setIsFocused?: SetStateAction<any>,
   styleClass?: string,
   tbProps?: {hidden: boolean, sticky: boolean}
 }> = ({
@@ -41,6 +45,7 @@ export const TextEditor: React.FC<{
   contentStateSetter, 
   htmlString, 
   placeholderText,
+  setIsFocused,
   styleClass,
   tbProps
 }) => {
@@ -108,6 +113,31 @@ export const TextEditor: React.FC<{
     setLinkBox({ ...linkBox, isOpen: false });
   }
 
+  const DetectFocusPlugin = () => {
+    if(setIsFocused) {
+      const [ editor ] = useLexicalComposerContext();
+      editor.update(() => {
+        editor.registerCommand(
+          FOCUS_COMMAND,
+          () => {
+            setIsFocused(true)
+            return false
+          },
+          COMMAND_PRIORITY_LOW
+        )
+        editor.registerCommand(
+          BLUR_COMMAND,
+          () => {
+            setIsFocused(false)
+            return false
+          },
+          COMMAND_PRIORITY_LOW
+        )
+      })
+    }
+    return <></>
+  }
+
   const onChange = (_editorState: EditorState, editor: LexicalEditor) => {
     editor.update(() => {
       const html = $generateHtmlFromNodes(editor, null);
@@ -116,6 +146,8 @@ export const TextEditor: React.FC<{
         :console.error("State setter must be passed to access content");
     })
   }
+
+
   
   return (
     <div className={`textEditor ${styleClass||""}`}>
@@ -170,6 +202,8 @@ export const TextEditor: React.FC<{
         />
         {htmlString?<InitialText htmlString={htmlString} />:""}
         <NodeEventPlugin nodeType={LinkNode} eventType={'contextmenu'} eventListener={linkClicked} />
+        
+        {setIsFocused?<DetectFocusPlugin />:""}
         <OnChangePlugin onChange={onChange} ignoreSelectionChange />
         <HistoryPlugin />
         <ClearCommand clearContent={clearContent} />
@@ -252,7 +286,9 @@ const Toolbar = ({attachmentAction, tbProps}:{attachmentAction?:any, tbProps?:{h
   }, [updateToolbar, editor]);
 
   return (
-    <div className={`email__formatter${tbProps?.sticky?" email__formatter--sticky":""}`}>
+    tbProps?.hidden
+      ?<></>
+      :<div className={`email__formatter${tbProps?.sticky?" email__formatter--sticky":""}`}>
       <button 
         className={`email__format-button ${isBold?"email__format-button--active":""} email__format-button--bold`}
         onClick={() => {editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}}
