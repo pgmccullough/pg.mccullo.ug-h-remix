@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from 'react';
-import { SiteData } from '~/common/types';
+import { Post, SiteData } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
 import { PostCreator } from '../UploadBox/PostCreator';
 import { v4 as uuidv4 } from 'uuid';
 import { gps as getGPS } from 'exifr';
 import Pusher from "pusher-js";
 
-export const Header: React.FC<{}> = () => {
+export const Header: React.FC<{setNewPost?: any}> = ({ setNewPost }) => {
     
   const fetcher = useFetcher();
   const { user, siteData } = useLoaderData<{
@@ -328,7 +328,11 @@ export const Header: React.FC<{}> = () => {
         }
       </div>
       <div className="header__bar">
-        {user?.role==="administrator"?<PostCreator />:siteData.site_name}
+        {user?.role==="administrator"
+          ?<PostCreator
+            setNewPost={setNewPost}
+          />
+          :siteData.site_name}
       </div>
       <Link to="/h/">
         <div 

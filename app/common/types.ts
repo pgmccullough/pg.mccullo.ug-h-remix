@@ -27,6 +27,29 @@ export interface Post {
   privacy: "Public"|"Followers"|"Friends"|"Self"|"Save Media"
 }
 
+export let BlankPost: Post = {
+  _id: "",
+  content: "",
+  created: 0,
+  feedback: {
+      commentsOn: false,
+      comments: null,
+      sharesOn: false,
+      shares: null,
+      likesOn: false,
+      likes: null,
+  },
+  lastEdited: 0,
+  media: {
+      audio: null,
+      files: "",
+      images: "",
+      links: "",
+      videos: "",
+  },
+  privacy: "Self"
+}
+
 export interface Posts extends Array<Post>{}
 
 export interface dateForm {

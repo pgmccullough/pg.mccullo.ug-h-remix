@@ -1,11 +1,12 @@
 import { LoaderFunction } from "@remix-run/node";
-import { Outlet } from "@remix-run/react";
+import { Outlet, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from '~/components/Sidebar/Sidebar';
 import { clientPromise } from "~/lib/mongodb";
 import * as postmark from "postmark"
+import { Post } from "~/common/types";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await getUser(request);
@@ -39,14 +40,22 @@ export const loader: LoaderFunction = async ({ request }) => {
 }
 
 export default function Index() {
+  const { user } = useLoaderData();
+  const [ newPost, setNewPost ] = useState<Post>();
 
   return (
     <>
-      <Header />
+      {user?.role==="administrator"
+        ?<Header
+          setNewPost={setNewPost}
+        />
+        :<Header />}
       <div className="content">
         <Sidebar />
         <div className="right-column">
-          <Outlet />
+          {user?.role==="administrator"
+            ?<Outlet context={newPost} />
+            :<Outlet />}
         </div>
       </div>
     </>

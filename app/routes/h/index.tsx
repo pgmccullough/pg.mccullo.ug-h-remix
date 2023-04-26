@@ -45,6 +45,7 @@ export default function Index() {
   const { onThisDay, posts } = useLoaderData();
   const fetcher = useFetcher();
 
+  const newPost:Post = useOutletContext();
   const scrollerBottom = useRef<any>(null);
   const previousVisibility = useRef<any>(true);
 
@@ -72,6 +73,10 @@ export default function Index() {
   useEffect(() => {
     if(!localStorage.guestUUID) localStorage.guestUUID = uuidv4();
   },[])
+
+  useEffect(() => {
+    if(newPost) alterPostArray([newPost, ...postArray]);
+  },[newPost])
 
   useEffect(() => {
     const observer = new IntersectionObserver(cb, options);
