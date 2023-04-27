@@ -11,7 +11,6 @@ export const SignInModal: React.FC = () => {
 
   useEffect(() => {
     if(registerForm.data?.registered) {
-      console.log(registerForm.data.registered);
       registerForm.data.registered = null;
     }
   },[ registerForm ])

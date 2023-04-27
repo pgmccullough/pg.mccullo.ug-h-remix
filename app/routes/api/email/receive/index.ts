@@ -52,8 +52,6 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
     s3.upload(params, (err:any, data:any) => {
       if (err) {
         console.error("Email Attachment Error", err);
-      } if (data) {
-        console.log("Email Attachment Upload Success", data.Location);
       }
     });
   }

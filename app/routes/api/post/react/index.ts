@@ -29,7 +29,6 @@ export const action = async ({ request }: ActionArgs) => {
         if(!cloneTS[emoji].length) delete cloneTS[emoji];
       } else {
         cloneTS[emoji].push(userId);
-        console.log("adding first of one");
       }
     } else {
       cloneTS[emoji] = [ userId ];

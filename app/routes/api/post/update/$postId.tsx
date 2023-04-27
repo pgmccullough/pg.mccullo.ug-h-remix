@@ -22,7 +22,6 @@ export const action = async ({ params, request }: ActionArgs) => {
       prevFeedback = await db.collection('myPosts').find({_id : new ObjectId(postId)}).toArray();
       prevFeedback = prevFeedback[0].feedback;
       prevFeedback = { ...prevFeedback, commentsOn, likesOn, sharesOn };
-      console.log("HEY WAIT WAT ",prevFeedback)
       privacyUpdated = await db.collection('myPosts').updateOne({ _id : new ObjectId(postId)}, { $set: { privacy: postPrivacyData, feedback: prevFeedback } });
     } catch (err) {
       privacyUpdated = false;

@@ -25,7 +25,6 @@ export const EmojiReact: React.FC<{likes: any, postId: string}> = ({ likes, post
         if(!cloneTS[emoji].length) delete cloneTS[emoji];
       } else {
         cloneTS[emoji].push(guestUUID);
-        console.log("adding first of one");
       }
     } else {
       cloneTS[emoji] = [ guestUUID ];

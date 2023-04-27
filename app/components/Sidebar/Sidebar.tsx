@@ -22,7 +22,6 @@ export const Sidebar: React.FC<{}> = () => {
 
   useEffect(() => {
     if(bioFetch.data?.bioRes) {
-      console.log(bioFetch.data.bioRes);
       bioFetch.data.bioRes = null;
       setEditMode(false);
     }
