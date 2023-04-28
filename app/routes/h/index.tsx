@@ -115,7 +115,7 @@ export default function Index() {
           post={thisDay}
         />
     )}
-    {postArray?.map((post: Post) =>
+    {posts?.map((post: Post) =>
       <PostCard 
         key={post._id}
         editState={editState}
