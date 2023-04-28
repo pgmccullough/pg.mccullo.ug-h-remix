@@ -1,6 +1,6 @@
 export const PostOptions: React.FC<{
-  postObject: any, setPostPrivacy: any, submitPost: any
-}> = ({postObject, setPostPrivacy, submitPost}) => {
+  setPostPrivacy: any, submitPost: any
+}> = ({setPostPrivacy, submitPost}) => {
   return (
     <div className="upload__feedback">
       <div className='upload__feedback__checkbox'>
@@ -23,11 +23,11 @@ export const PostOptions: React.FC<{
       </div>
       <div className='upload__feedback__checkbox'>
         <label className="upload__feedback__checkbox__label">Shares
-            <input 
-              type="checkbox" 
-              className="upload__feedback__checkbox__input" 
-              onChange={(e) => setPostPrivacy("sharesOn",e.target.checked)}
-            />
+          <input 
+            type="checkbox" 
+            className="upload__feedback__checkbox__input" 
+            onChange={(e) => setPostPrivacy("sharesOn",e.target.checked)}
+          />
         </label>
       </div>
       <br />

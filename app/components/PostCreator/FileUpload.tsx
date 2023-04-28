@@ -2,8 +2,8 @@ import { UploadPreview } from ".";
 import type { SetStateAction } from "react";
 
 export const FileUpload: React.FC<{
-  fileInputRef: any, pendingUploads: {data: any, meta: any}[], setPendingUploads: SetStateAction<any>
-}> = ({ fileInputRef, pendingUploads, setPendingUploads }) => {
+  fileInputRef: any, imagesUploading: null|"uploading"|"done"|"error", pendingUploads: {data: any, meta: any}[], setPendingUploads: SetStateAction<any>
+}> = ({ fileInputRef, imagesUploading, pendingUploads, setPendingUploads }) => {
 
   const removeFile = (name: string) => {
     const filteredUploads = [...pendingUploads].filter((file:{data: any, meta: any}) => file.meta.name !== name);
@@ -21,6 +21,7 @@ export const FileUpload: React.FC<{
         setPendingUploads((prev:{data: any, meta: any}[]) => {
           const deDuplicated = prev.filter((file:{data: any, meta: any}) => file.data!==e.target!.result)
           const newFile = {data: e.target!.result, meta: value};
+          console.log(newFile);
           return [...deDuplicated, newFile];
         })
       }
@@ -40,6 +41,7 @@ export const FileUpload: React.FC<{
         <UploadPreview 
           key={file.meta.name}
           file={file} 
+          imagesUploading={imagesUploading}
           removeFile={removeFile}
         />
       )}

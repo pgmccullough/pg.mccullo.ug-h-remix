@@ -197,6 +197,13 @@
             vertical-align: top;
             padding: 4px;
             position: relative;
+            &--uploading {
+              opacity: 0.8;
+              filter: blur(3px);
+            }
+            &--done {
+
+            }
 
             &--close {
                 width: 14px;

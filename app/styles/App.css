@@ -1504,6 +1504,10 @@ button {
   padding: 4px;
   position: relative;
 }
+.upload__file-preview__file--uploading {
+  opacity: 0.8;
+  filter: blur(3px);
+}
 .upload__file-preview__file--close {
   width: 14px;
   height: 14px;

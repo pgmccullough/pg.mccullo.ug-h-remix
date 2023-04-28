@@ -3,7 +3,7 @@ import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from 'react';
 import { Post, SiteData } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
-import { PostCreator } from '../UploadBox/PostCreator';
+import { PostCreator } from '../PostCreator/PostCreator';
 import { v4 as uuidv4 } from 'uuid';
 import { gps as getGPS } from 'exifr';
 import Pusher from "pusher-js";

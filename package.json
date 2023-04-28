@@ -20,7 +20,6 @@
     "@remix-run/express": "*",
     "@remix-run/node": "*",
     "@remix-run/react": "*",
-    "axios": "^1.2.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cross-env": "^7.0.3",
