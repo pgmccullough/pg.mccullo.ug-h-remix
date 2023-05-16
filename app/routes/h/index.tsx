@@ -43,6 +43,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Index() {
   const { onThisDay, posts } = useLoaderData();
+
   const fetcher = useFetcher();
 
   const newPost:Post = useOutletContext();
@@ -55,7 +56,7 @@ export default function Index() {
 
   const [ siteNotification, setsiteNotification ] = useState<{ msg:string, visible:boolean }>({ msg: "Loading", visible: false })
 
-  const [ postArray, alterPostArray ] = useState<Post[]>(posts);
+  const [ postArray, alterPostArray ] = useState<Post[]>([]);
   const [ postCount, setPostCount ] = useState<number>(0);
   const [ loadMoreInView, setLoadMoreInView ] = useState(false);
 
@@ -74,9 +75,9 @@ export default function Index() {
     if(!localStorage.guestUUID) localStorage.guestUUID = uuidv4();
   },[])
 
-  useEffect(() => {
-    if(newPost) alterPostArray([newPost, ...postArray]);
-  },[newPost])
+  // useEffect(() => {
+  //   if(newPost) alterPostArray([newPost, ...postArray]);
+  // },[newPost])
 
   useEffect(() => {
     const observer = new IntersectionObserver(cb, options);
@@ -116,6 +117,16 @@ export default function Index() {
         />
     )}
     {posts?.map((post: Post) =>
+      <PostCard 
+        key={post._id}
+        editState={editState}
+        setEditState={setEditState}
+        post={post}
+      />
+    )}
+    // Using state here for infinite scroll loads. Ideally would push these into posts from loaderdata, but 
+    // rerender resets the count to 25
+    {postArray?.map((post: Post) =>
       <PostCard 
         key={post._id}
         editState={editState}
