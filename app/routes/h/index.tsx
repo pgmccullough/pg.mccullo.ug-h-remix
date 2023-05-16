@@ -124,8 +124,8 @@ export default function Index() {
         post={post}
       />
     )}
-    // Using state here for infinite scroll loads. Ideally would push these into posts from loaderdata, but 
-    // rerender resets the count to 25
+    {/* Using state here for infinite scroll loads. Ideally would push these into posts from loaderdata, but 
+    rerender resets the count to 25 */}
     {postArray?.map((post: Post) =>
       <PostCard 
         key={post._id}
