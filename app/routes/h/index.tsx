@@ -1,6 +1,6 @@
 import { LoaderFunction } from "@remix-run/node";
 import { useFetcher, useLoaderData, useOutletContext } from "@remix-run/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise } from "~/lib/mongodb";
@@ -43,10 +43,8 @@ export const loader: LoaderFunction = async ({ request }) => {
 
 export default function Index() {
   const { onThisDay, posts } = useLoaderData();
-
   const fetcher = useFetcher();
 
-  const newPost:Post = useOutletContext();
   const scrollerBottom = useRef<any>(null);
   const previousVisibility = useRef<any>(true);
 
@@ -75,10 +73,6 @@ export default function Index() {
     if(!localStorage.guestUUID) localStorage.guestUUID = uuidv4();
   },[])
 
-  // useEffect(() => {
-  //   if(newPost) alterPostArray([newPost, ...postArray]);
-  // },[newPost])
-
   useEffect(() => {
     const observer = new IntersectionObserver(cb, options);
     if(scrollerBottom.current) observer.observe(scrollerBottom.current);
@@ -100,6 +94,7 @@ export default function Index() {
     if(fetcher.data?.additionalPosts) {
       let newPosts:Post[] = [...fetcher.data.additionalPosts];
       alterPostArray(prev=>[...prev,...newPosts]);
+      // posts.push(...newPosts);
       fetcher.data.additionalPosts = null;
       setsiteNotification({ ...siteNotification, visible: false });
     }
