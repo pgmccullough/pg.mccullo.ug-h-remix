@@ -14,7 +14,8 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   const [ tbProps, setTbProps ] = useState<{hidden:boolean, sticky:boolean}>({hidden:true, sticky:false});
   const [ postObject, setPostObject ] = useState<Post>(BlankPost);
   const [ pendingUploads, setPendingUploads ] = useState<{data: any, meta: any}[]>([]);
-  const [ imagesUploading, setImagesUploading ] = useState<null|"uploading"|"done"|"error">(null);
+  // const [ imagesUploading, setImagesUploading ] = useState<null|"uploading"|"done"|"error">(null);
+  const [ imagesUploading, setImagesUploading ] = useState<number>(0);
   
   const fileUploadForm = useFetcher();
   const submitPostForm = useFetcher();
@@ -23,7 +24,8 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
 
   useEffect(() => {
     if(fileUploadForm.data?.uploaded) {
-      setImagesUploading("done");
+      // setImagesUploading("done");
+      setImagesUploading(imagesUploading-1)
       const uploadsServer = [...fileUploadForm.data.uploaded];
       const uploadsClient = [...pendingUploads].map((file:{data: any, meta: any}) => {
         return uploadsServer.find(
@@ -45,7 +47,7 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   const submitPost = () => {
     const filesToUpload: {fileData: string, fileMeta: string}[] = [];
     if(pendingUploads.length) {
-      setImagesUploading("uploading");
+      setImagesUploading(pendingUploads.length);
       pendingUploads.forEach((file: {data: any, meta: any}) => {
         filesToUpload.push({ fileData: file.data, fileMeta: JSON.stringify({name: file.meta.name, type: file.meta.type}) });
       })
