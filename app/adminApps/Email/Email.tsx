@@ -24,7 +24,7 @@ export const Email: React.FC<{}> = () => {
   const [ loadMoreOutboxInView, setLoadMoreOutboxInView ] = useState(false);
   const [ loadMoreInboxInView, setLoadMoreInboxInView ] = useState(false);
   const [ checkedSnippets, setCheckedSnippets ] = useState<string[]>([]);
-  const [ storeScroll, setStoreScroll ] = useState<Number>(0);
+  const [ storeScroll, setStoreScroll ] = useState<number>(0);
   const [ emailArray, alterEmailArray ] = useState<EmailInterface[]>(emails);
   const [ sentEmailArray, alterSentEmailArray ] = useState<EmailInterface[]>(sentEmails);
   const [ searchEmailArray, alterSearchEmailArray] = useState<EmailInterface[]>([]);
@@ -176,6 +176,14 @@ export const Email: React.FC<{}> = () => {
       emNotif(false);
     }
   }, [fetcher]);
+
+  useEffect(() => {
+    const unreadEmailCount = emailArray.filter((email: EmailInterface) => email.unread !== 0).length;
+    console.log("don't run too much...",unreadEmailCount);
+    unreadEmailCount
+      ?document.title =  `(${unreadEmailCount}) Patrick Glendon McCullough`
+      :document.title =  `Patrick Glendon McCullough`
+  },[emailArray])
 
   return (
     <>
