@@ -18,7 +18,10 @@ import styles from "~/styles/App.css";
 export const links: LinksFunction = () => {
   return [
     { rel: "stylesheet", href: styles },
-    { rel: 'icon', href: '/pgm-icon.svg' }
+    { rel: 'icon', href: '/pgm-icon.svg', type: 'image/svg+xml' },
+    { rel: 'icon', href: '/favicon.ico', sizes: '32x32' },
+    { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+    { rel: 'manifest', href: '/manifest.webmanifest' }
   ];
 }
 
