@@ -1,0 +1,40 @@
+<svg
+  xmlns:svg="http://www.w3.org/2000/svg"
+  xmlns="http://www.w3.org/2000/svg"
+  version="1.0"
+  viewBox="0 0 660 660"
+>
+  <circle 
+    cx="330"
+    cy="330"
+    r="330"
+    fill="#4a6dba"
+  />
+  <rect 
+    width="277"
+    height="277"
+    x="104"
+    y="174"
+    fill="white"
+  />
+  <polygon
+    points="94,163 391,163 241,370"
+    fill="#4a6dba"
+  />
+  <polygon
+    points="141,462 141,288 242.5,428 344,288 344,462"
+    fill="#4a6dba"
+  />
+  <circle 
+    cx="490"
+    cy="369"
+    r="64"
+    fill="none"
+    stroke="white"
+    stroke-width="36"
+  />
+  <polygon
+    points="576,268 490,369 576,470"
+    fill="#4a6dba"
+  />
+</svg>

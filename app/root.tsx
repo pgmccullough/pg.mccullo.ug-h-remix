@@ -16,7 +16,10 @@ import * as gtag from "~/utils/gtags.client";
 import styles from "~/styles/App.css";
 
 export const links: LinksFunction = () => {
-  return [{ rel: "stylesheet", href: styles }];
+  return [
+    { rel: "stylesheet", href: styles },
+    { rel: 'icon', href: '/pgm-icon.svg' }
+  ];
 }
 
 export const meta: MetaFunction = () => ({

@@ -4,10 +4,15 @@ import { Snippet } from './Snippet';
 import { IndEmail } from './IndEmail';
 import { Composer } from './Composer';
 import { EmailInterface } from '~/common/types';
-import { useEffect, useRef, useState } from 'react';
+import { AnchorHTMLAttributes, useEffect, useRef, useState } from 'react';
 import Pusher from "pusher-js";
 
 export const Email: React.FC<{}> = () => {
+
+  type HeadElement = Element & {
+    rel: string,
+    href: string
+  } | null;
 
   let { emails, sentEmails } = useLoaderData();  
   const fetcher = useFetcher();
@@ -179,10 +184,20 @@ export const Email: React.FC<{}> = () => {
 
   useEffect(() => {
     const unreadEmailCount = emailArray.filter((email: EmailInterface) => email.unread !== 0).length;
-    console.log("don't run too much...",unreadEmailCount);
-    unreadEmailCount
-      ?document.title =  `(${unreadEmailCount}) Patrick Glendon McCullough`
-      :document.title =  `Patrick Glendon McCullough`
+    let favIcon = "/pgm-icon.svg";
+    if(unreadEmailCount) {
+      document.title =  `(${unreadEmailCount}) Patrick Glendon McCullough`;
+      favIcon = "/pgm-icon-alert.svg";
+    } else {
+      document.title =  `Patrick Glendon McCullough`
+    }
+    let link: HeadElement = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = favIcon;
   },[emailArray])
 
   return (
