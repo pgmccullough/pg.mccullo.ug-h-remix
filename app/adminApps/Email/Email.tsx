@@ -190,7 +190,7 @@ export const Email: React.FC<{}> = () => {
       link.rel = 'icon';
       document.getElementsByTagName('head')[0].appendChild(link);
     }
-    const favIconRoot = link.href.split("/").at(-1);
+    const favIconRoot = link.href.split("/").at(-1)?.replace("-alert","");
     let favIcon = `/${favIconRoot}`;
     if(unreadEmailCount) {
       document.title =  `(${unreadEmailCount}) Patrick Glendon McCullough`;
