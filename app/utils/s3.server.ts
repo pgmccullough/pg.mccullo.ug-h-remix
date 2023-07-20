@@ -53,7 +53,6 @@ export const s3UploadHandler: UploadHandler = async ({
   }
 
   const uploadedFileLocation = await uploadStreamToS3(data, filename?.replaceAll("_","/")!);
-
   if(filename?.split("_")[1]==="user"
   && (filename?.split("_")[2]==="cover"
     || filename?.split("_")[2]==="profile"

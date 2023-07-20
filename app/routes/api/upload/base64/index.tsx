@@ -1,6 +1,7 @@
 import type { ActionArgs, ActionFunction } from "@remix-run/node";
 import AWS from "aws-sdk";
 import { v4 as uuidv4 } from 'uuid';
+const sharp = require('sharp');
 
 export const action: ActionFunction = async ({ request }: ActionArgs) => {
   
@@ -45,6 +46,27 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
         return data
       }
     }).promise();
+    console.log("HEE",uploadResponse);
+    /* insert attempt to resize */
+    s3.getObject({ Bucket: S3_BUCKET!, Key: `images/${contentID}.${contentExt}` }, (_err, data) => {
+      sharp(data.Body)
+      .resize(600)
+      .toBuffer()
+      .then((sharped: any) => {
+        const resizeAndUploadToS3 = async () => {
+          await s3.upload({
+            Bucket: S3_BUCKET!,
+            Key: `images/${contentID}_600w.${contentExt}`,
+            Body: sharped
+          }).promise();
+        }
+        resizeAndUploadToS3();
+      })
+      .catch((_err: any)  => {
+        console.error("Something went wrong with the resize.",);
+      });
+    });
+    /* end attempt to resize */
     return uploadResponse;
   }
 
