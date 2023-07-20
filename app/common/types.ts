@@ -151,3 +151,9 @@ export interface EmailInterface {
   unread: Number,
   created: String
 }
+
+export interface YouTubeVideo {
+  video: string, 
+  show: boolean, 
+  meta: {title: string, thumbnail: string}|null
+}

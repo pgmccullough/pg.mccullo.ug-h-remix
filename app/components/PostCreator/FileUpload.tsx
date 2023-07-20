@@ -1,9 +1,15 @@
-import { UploadPreview } from ".";
+import { LinkPreview, UploadPreview } from ".";
 import type { SetStateAction } from "react";
+import type { YouTubeVideo } from "~/common/types";
 
 export const FileUpload: React.FC<{
-  fileInputRef: any, imagesUploading: number, pendingUploads: {data: any, meta: any}[], setPendingUploads: SetStateAction<any>
-}> = ({ fileInputRef, imagesUploading, pendingUploads, setPendingUploads }) => {
+  fileInputRef: any,
+  imagesUploading: number,
+  pendingUploads: {data: any, meta: any}[],
+  setPendingUploads: SetStateAction<any>,
+  youTubePreviews: YouTubeVideo[],
+  setYouTubePreviews: SetStateAction<any>
+}> = ({ fileInputRef, imagesUploading, pendingUploads, setPendingUploads, youTubePreviews, setYouTubePreviews }) => {
 
   const removeFile = (name: string) => {
     const filteredUploads = [...pendingUploads].filter((file:{data: any, meta: any}) => file.meta.name !== name);
@@ -44,6 +50,16 @@ export const FileUpload: React.FC<{
           removeFile={removeFile}
         />
       )}
+      {youTubePreviews
+        .filter((file: YouTubeVideo) => file.meta?.title&&file.show)
+        .map((file: YouTubeVideo) =>
+          <LinkPreview 
+            key={file.meta?.title}
+            title={file.meta!.title}
+            thumbnail={file.meta!.thumbnail}
+            setYouTubePreviews={setYouTubePreviews}
+          />
+        )}
     </>
   )
 }

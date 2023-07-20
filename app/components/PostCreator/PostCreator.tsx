@@ -1,7 +1,7 @@
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef, useState } from "react";
 import { TextEditor } from "../TextEditor/TextEditor";
-import { BlankPost, Post } from "~/common/types";
+import { BlankPost, Post, YouTubeVideo } from "~/common/types";
 import { FileUpload, PostOptions } from ".";
 
 export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
@@ -16,7 +16,7 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   const [ pendingUploads, setPendingUploads ] = useState<{data: any, meta: any}[]>([]);
   // const [ imagesUploading, setImagesUploading ] = useState<null|"uploading"|"done"|"error">(null);
   const [ imagesUploading, setImagesUploading ] = useState<number>(0);
-  const [ youTubePreviews, setYouTubePreviews ] = useState<{video: string, show: boolean}[]>([]);
+  const [ youTubePreviews, setYouTubePreviews ] = useState<YouTubeVideo[]>([]);
   
   const fileUploadForm = useFetcher();
   const submitPostForm = useFetcher();
@@ -26,22 +26,49 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   useEffect(() => {
     const words = postText.split(" ");
     words.pop();
-    if(words.join("").includes('https://youtu.be/')) {
+    if((words.join("").includes('https://youtu.be/'))||(words.join("").includes('youtube.com/watch'))) {
       words.forEach(word => {
         if(word.includes("https://youtu.be/")) {
           word = "https://you"+word.split("https://you")[1];
-          setYouTubePreviews((prev: {video: string, show: boolean}[]) => 
-              prev.find((video: {video: string, show: boolean}) => video.video===word)
+          setYouTubePreviews((prev: YouTubeVideo[]) => 
+              prev.find((video: YouTubeVideo) => video.video===word)
                 ?[...prev]
-                :[...prev, {video: word, show: true}]
+                :[...prev, {video: word, show: true, meta: null}]
+          )
+        }
+        if(word.includes("youtube.com")) {
+          word = word.replace("://www.","://");
+          word = "https://you"+word.split("https://you")[1];
+          setYouTubePreviews((prev: YouTubeVideo[]) => 
+              prev.find((video: YouTubeVideo) => video.video===word)
+                ?[...prev]
+                :[...prev, {video: word, show: true, meta: null}]
           )
         }
       })
     }
   },[postText])
 
+  const getYouTubePreview = async (url: string) => {
+    let ytId = url.split("be/").at(-1);
+    if(!url.split("be/").at(1)) {
+      ytId = url.split("?v=").at(-1);
+    }
+    const raw = await fetch(`http://youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`);
+    const metadata = await raw.json();
+    const { title, thumbnail_url } = metadata;
+    let ytPrevClone = [...youTubePreviews];
+    const unscraped = ytPrevClone.find((video: YouTubeVideo) => video.video===url&&!video.meta)
+    if(unscraped) {
+      ytPrevClone = ytPrevClone.filter((preview: YouTubeVideo) => preview.video!==url);
+      setYouTubePreviews([...ytPrevClone, {video: url, show: true, meta: {title, thumbnail: thumbnail_url}}])
+    }
+  }
+
   useEffect(() => {
-    console.log(youTubePreviews);
+    const unscraped = youTubePreviews
+      .find((preview: YouTubeVideo) => preview.show&&!preview.meta);
+    if(unscraped) getYouTubePreview(unscraped.video);
   },[youTubePreviews])
 
   useEffect(() => {
@@ -146,6 +173,8 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
           imagesUploading={imagesUploading}
           pendingUploads={pendingUploads}
           setPendingUploads={setPendingUploads}
+          youTubePreviews={youTubePreviews}
+          setYouTubePreviews={setYouTubePreviews}
         />
         <PostOptions
           setPostPrivacy={setPostPrivacy}
