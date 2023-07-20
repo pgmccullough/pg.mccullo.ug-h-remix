@@ -114,7 +114,7 @@ export const Composer: React.FC<{
   useEffect(() => {
     setAttachments([]);
     setCleanEmail(attToImg(cleanEmail,newEmail.attachments));
-  },[])
+  },[]);
 
   useEffect(() => {
     if(attachFetch.state==="submitting") emNotif(true, "Uploading file")

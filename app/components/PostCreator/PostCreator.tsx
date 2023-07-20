@@ -16,11 +16,33 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   const [ pendingUploads, setPendingUploads ] = useState<{data: any, meta: any}[]>([]);
   // const [ imagesUploading, setImagesUploading ] = useState<null|"uploading"|"done"|"error">(null);
   const [ imagesUploading, setImagesUploading ] = useState<number>(0);
+  const [ youTubePreviews, setYouTubePreviews ] = useState<{video: string, show: boolean}[]>([]);
   
   const fileUploadForm = useFetcher();
   const submitPostForm = useFetcher();
   const focusedOverlay = useRef<HTMLDivElement>(null) // I would rather not use this
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const words = postText.split(" ");
+    words.pop();
+    if(words.join("").includes('https://youtu.be/')) {
+      words.forEach(word => {
+        if(word.includes("https://youtu.be/")) {
+          word = "https://you"+word.split("https://you")[1];
+          setYouTubePreviews((prev: {video: string, show: boolean}[]) => 
+              prev.find((video: {video: string, show: boolean}) => video.video===word)
+                ?[...prev]
+                :[...prev, {video: word, show: true}]
+          )
+        }
+      })
+    }
+  },[postText])
+
+  useEffect(() => {
+    console.log(youTubePreviews);
+  },[youTubePreviews])
 
   useEffect(() => {
     if(fileUploadForm.data?.uploaded) {
