@@ -146,6 +146,7 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
     if(submitPostForm.data?.newPost) {
       setNewPost(submitPostForm.data?.newPost);
       setPendingUploads([]);
+      setYouTubePreviews([]);
       setClearPostContent(true);
       setPostText("");
       submitPostForm.data.newPost = null;
