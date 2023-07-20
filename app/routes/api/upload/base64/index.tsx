@@ -46,7 +46,6 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
         return data
       }
     }).promise();
-    console.log("HEE",uploadResponse);
     s3.getObject({ Bucket: S3_BUCKET!, Key: `images/${contentID}.${contentExt}` }, (_err, data) => {
       sharp(data.Body)
       .resize(600)

@@ -2,6 +2,7 @@ import type { LoaderArgs, LoaderFunction } from '@remix-run/node';
 import { createReadableStreamFromReadable } from '@remix-run/node';
 import { getUser } from "~/utils/session.server";
 import AWS from "aws-sdk";
+const sharp = require('sharp');
 
 export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) => {
 
@@ -30,6 +31,29 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) =>
     });
   }
 
+  const imageResizer = () => {
+    const contentExt = fullPath?.split(".").at(-1);
+    const contentID = fullPath?.replace(`.${contentExt}`,'');
+    s3.getObject({ Bucket: S3_BUCKET!, Key: `${contentID}.${contentExt}` }, (_err, data) => {
+      sharp(data.Body)
+      .resize(600)
+      .toBuffer()
+      .then((sharped: any) => {
+        const resizeAndUploadToS3 = async () => {
+          await s3.upload({
+            Bucket: S3_BUCKET!,
+            Key: `${contentID}_600w.${contentExt}`,
+            Body: sharped
+          }).promise();
+        }
+        resizeAndUploadToS3();
+      })
+      .catch((_err: any)  => {
+        console.error("Something went wrong with the resize.",);
+      });
+    });
+  }
+
   const s3paramsOriginal = {
     Bucket: S3_BUCKET!,
     Key: fullPath!
@@ -40,7 +64,6 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) =>
     Key: desiredPath!
   }
 
-  let useParams;
   let originalImage;
   let resizeImage;
   try {
@@ -48,7 +71,13 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) =>
     try {
       resizeImage = await s3.headObject(s3paramsResize).promise();
     } catch(err) {
-      console.log("HAVE TO RESIZE!!!");
+      if(!(fullPath?.split("/")[1]==="user"
+      && (fullPath?.split("/")[2]==="cover"
+        || fullPath?.split("/")[2]==="profile"
+        )
+      )) {
+        imageResizer()
+      }
     }
   } catch(err) {}
   
