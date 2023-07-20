@@ -184,18 +184,20 @@ export const Email: React.FC<{}> = () => {
 
   useEffect(() => {
     const unreadEmailCount = emailArray.filter((email: EmailInterface) => email.unread !== 0).length;
-    let favIcon = "/pgm-icon.svg";
-    if(unreadEmailCount) {
-      document.title =  `(${unreadEmailCount}) Patrick Glendon McCullough`;
-      favIcon = "/pgm-icon-alert.svg";
-    } else {
-      document.title =  `Patrick Glendon McCullough`
-    }
     let link: HeadElement = document.querySelector("link[rel~='icon']");
     if (!link) {
       link = document.createElement('link');
       link.rel = 'icon';
       document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    const favIconRoot = link.href.split("/").at(-1);
+    let favIcon = `/${favIconRoot}`;
+    if(unreadEmailCount) {
+      document.title =  `(${unreadEmailCount}) Patrick Glendon McCullough`;
+      favIcon = `/${favIconRoot?.replace('.svg','-alert.svg')}`;
+    } else {
+      document.title =  `Patrick Glendon McCullough`;
+      favIcon = `/${favIconRoot}`;
     }
     link.href = favIcon;
   },[emailArray])
