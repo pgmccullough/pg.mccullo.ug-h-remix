@@ -83,7 +83,7 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
         ).uploadRes.key.split("/").pop();
       })
       fileUploadForm.data.uploaded = null;
-      const media = {directory: "images/", images: uploadsClient}
+      const media = {...postObject.media, directory: "images/", images: uploadsClient}
       // Not currently evaluating file types to organize into videos/images/autio/files
       // Just assuming images
       submitPostForm.submit(
@@ -95,6 +95,12 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
 
   const submitPost = () => {
     const filesToUpload: {fileData: string, fileMeta: string}[] = [];
+    const clonePostObject = {...postObject};
+    if(youTubePreviews.filter((video:YouTubeVideo) => video.show).length) {
+      const media = {...postObject.media, links: youTubePreviews.filter((video:YouTubeVideo) => video.show)}
+      clonePostObject.media = media;
+      setPostObject(postObject);
+    }
     if(pendingUploads.length) {
       setImagesUploading(pendingUploads.length);
       pendingUploads.forEach((file: {data: any, meta: any}) => {
@@ -106,7 +112,7 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
       );
     } else {
       submitPostForm.submit(
-        { newPost: JSON.stringify({...postObject, content: postText }) },
+        { newPost: JSON.stringify({...clonePostObject, content: postText }) },
         { method: "post", action: "/api/post/create?index" }
       );
     }

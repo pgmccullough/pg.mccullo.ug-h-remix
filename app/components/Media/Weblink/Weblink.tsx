@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useFetcher } from "@remix-run/react";
 
-export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
-
+export const Weblink: React.FC<{src:string|any,alt:string}>  = ({src,alt}) => {
+  if(!src.video) {
     const fetcher = useFetcher();
 
     let scrapeURL = src;
@@ -45,4 +45,11 @@ export const Weblink: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
         </a>
         :<></>
     );
+  } else {
+    return (
+      <div className="postcard__content__media__slider__weblink__video-container">
+        <iframe className="postcard__content__media__slider__weblink__video-container__iframe" src={`https://www.youtube.com/embed/${src.video.split("=")[1]}`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+      </div>
+    )
+  }
 }
