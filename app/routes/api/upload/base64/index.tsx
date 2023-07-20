@@ -47,7 +47,6 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
       }
     }).promise();
     console.log("HEE",uploadResponse);
-    /* insert attempt to resize */
     s3.getObject({ Bucket: S3_BUCKET!, Key: `images/${contentID}.${contentExt}` }, (_err, data) => {
       sharp(data.Body)
       .resize(600)
@@ -66,7 +65,6 @@ export const action: ActionFunction = async ({ request }: ActionArgs) => {
         console.error("Something went wrong with the resize.",);
       });
     });
-    /* end attempt to resize */
     return uploadResponse;
   }
 

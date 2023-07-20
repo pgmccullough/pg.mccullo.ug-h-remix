@@ -20,6 +20,9 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) =>
 
   const {filePath,['*']:rest} = params;
   const fullPath = rest?`${filePath}/${rest}`:filePath;
+  let desiredPath: string[] | string = fullPath?.split(".")!;
+  desiredPath = `${desiredPath[0]}_600w.${desiredPath[1]}`;
+
 
   if(fullPath?.split("/").includes("emailAttachments")&&!(user?.role==="administrator")) {
     throw new Response("Unauthorized", {
@@ -27,13 +30,31 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) =>
     });
   }
 
-  const s3params = {
+  const s3paramsOriginal = {
     Bucket: S3_BUCKET!,
     Key: fullPath!
   }
 
-  let baseOutput = s3.getObject(s3params)
-  .createReadStream()
+  const s3paramsResize = {
+    Bucket: S3_BUCKET!,
+    Key: desiredPath!
+  }
+
+  let useParams;
+  let originalImage;
+  let resizeImage;
+  try {
+    originalImage = await s3.headObject(s3paramsOriginal).promise();
+    try {
+      resizeImage = await s3.headObject(s3paramsResize).promise();
+    } catch(err) {
+      console.log("HAVE TO RESIZE!!!");
+    }
+  } catch(err) {}
+  
+  
+  const baseOutput = s3.getObject(resizeImage?s3paramsResize:s3paramsOriginal)
+  .createReadStream();
 
   return new Response(createReadableStreamFromReadable(baseOutput))
 }
