@@ -13,9 +13,11 @@ export const loader: LoaderFunction = async ({ request }) => {
   const client = await clientPromise;
   const db = client.db("user_posts");
   const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();  
+  let notes: any[] = [];
   let emails: any[] = [];
   let sentEmails: any[] = [];
   if(user?.role==="administrator") {
+    notes = await db.collection('myNotes').find().sort({created:-1}).toArray();
     emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
     sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
     if(!process.env.POSTMARK_TOKEN) return {response: "Postmark token required."};
@@ -36,7 +38,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     }) 
   }
-  return { emails, sentEmails, siteData:{...siteData[0]}, user };
+  return { emails, notes, sentEmails, siteData:{...siteData[0]}, user };
 }
 
 export default function Index() {

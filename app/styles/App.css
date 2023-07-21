@@ -1116,6 +1116,50 @@ button {
   background: #eee;
   color: #222;
 }
+.note {
+  padding: 0.75rem;
+  border-bottom: 1px #ccc solid;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.note__titles {
+  display: flex;
+  flex-wrap: wrap;
+}
+.note__title {
+  font-size: 0.85rem;
+  padding: 0 0.85rem;
+  border: 1px #ccc solid;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+.note__title:hover {
+  background: #f4f4f4;
+}
+.note__title--active {
+  background: #eee;
+}
+.note__input, .note__textarea {
+  border: 1px #ccc solid;
+  border-radius: 4px;
+  font-family: "PGM Sans", "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  padding: 0.5rem 0.25rem 0.25rem 0.5rem;
+  font-size: 1rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+.note__textarea {
+  resize: vertical;
+  height: 14rem;
+}
+.note__button {
+  margin: 0 0.25rem 0 0;
+}
+.note__button--delete {
+  background: #d87474;
+}
+
 .postcard__content__media__slider__weblink__anchor {
   text-decoration: none;
 }
