@@ -1,23 +1,31 @@
 import { Link } from 'react-router-dom';
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useRef, useState } from 'react';
-import { Post, SiteData } from '~/common/types';
+import { Post, SiteData, User } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
 import { PostCreator } from '../PostCreator/PostCreator';
 import { v4 as uuidv4 } from 'uuid';
 import { gps as getGPS } from 'exifr';
 import Pusher from "pusher-js";
 
-export const Header: React.FC<{setNewPost?: any}> = ({ setNewPost }) => {
+export const Header: React.FC<{
+  setNewPost?: any,
+  manualSiteData?: SiteData,
+  manualUser?: User
+}> = ({ setNewPost, manualSiteData, manualUser }) => {
     
   const fetcher = useFetcher();
-  const { user, siteData } = useLoaderData<{
-    user: {user_name: string,role: string},
-    siteData: SiteData
-  }>();
+
+  let loadData;
+  if(!manualSiteData) {
+    loadData = useLoaderData<{user: User, siteData: SiteData}>();
+  }
+  const user = loadData?.user||manualUser;
+  const siteData = loadData?.siteData||manualSiteData;
+
   const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
-  const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData.watchword.word });
+  const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData?.watchword.word });
   const watchWordRef = useRef<HTMLDivElement>(null);
 
   const storyImageSubmit = useRef<HTMLButtonElement>(null);
@@ -332,7 +340,7 @@ export const Header: React.FC<{setNewPost?: any}> = ({ setNewPost }) => {
           ?<PostCreator
             setNewPost={setNewPost}
           />
-          :siteData.site_name}
+          :siteData?.site_name}
       </div>
       <Link to="/h/">
         <div 

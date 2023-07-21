@@ -7,6 +7,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useCatch,
   useLoaderData,
   useLocation
 } from "@remix-run/react";
@@ -38,6 +39,10 @@ export const meta: MetaFunction = () => ({
 
 export const loader: LoaderFunction = async ({ request }: LoaderArgs) => {
   return {gaTrackingId: "G-48Y17ZTWTK"};
+}
+
+export function CatchBoundary() {
+
 }
 
 export default function App() {

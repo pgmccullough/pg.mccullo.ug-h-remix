@@ -37,7 +37,6 @@ function handleBotRequest(
 
   return new Promise((resolve, reject) => {
     let didError = false;
-
     const { pipe, abort } = renderToPipeableStream(
       <RemixServer context={remixContext} url={request.url} />,
       {
@@ -58,7 +57,6 @@ function handleBotRequest(
         },
         onError(error: unknown) {
           didError = true;
-
           console.error(error);
         },
       }
@@ -76,7 +74,6 @@ function handleBrowserRequest(
 ) {
   return new Promise((resolve, reject) => {
     let didError = false;
-
     const { pipe, abort } = renderToPipeableStream(
       <RemixServer context={remixContext} url={request.url} />,
       {

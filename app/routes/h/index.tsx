@@ -1,5 +1,5 @@
 import { LoaderFunction } from "@remix-run/node";
-import { useFetcher, useLoaderData, useOutletContext } from "@remix-run/react";
+import { useFetcher, useLoaderData, useCatch } from "@remix-run/react";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
@@ -109,7 +109,13 @@ export default function Index() {
       setPostSearchResults={setPostSearchResults}
     />
       {postSearchResults&&!postSearchResults.length
-        ?"Sorry, no matches :("
+        ?<PostCard 
+          post={null}
+          editState={null}
+          setEditState={null}
+          title="Error"
+          message="Sorry, no posts were found that matched your search. 😞"
+        />
         :""
       }
       {onThisDay.length&&!postSearchResults

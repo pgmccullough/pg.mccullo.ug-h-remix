@@ -28,7 +28,6 @@ export const action = async ({ request }: ActionArgs) => {
       const noteObj = JSON.parse(noteJSON||"");
       const noteToUpdate = await db.collection('myNotes').find({_id : new ObjectId(noteID)}).toArray();
       const { title, content } = noteObj;
-      console.log(content);
       note = await db.collection('myNotes').updateOne(noteToUpdate[0], {$set: { title, content }});
       return { note };
     }

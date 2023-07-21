@@ -1,9 +1,10 @@
 import { LoaderFunction } from "@remix-run/node";
-import { Outlet, useLoaderData } from "@remix-run/react";
+import { Outlet, useCatch, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from '~/components/Sidebar/Sidebar';
+import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise } from "~/lib/mongodb";
 import * as postmark from "postmark"
 import { Post } from "~/common/types";
@@ -39,6 +40,30 @@ export const loader: LoaderFunction = async ({ request }) => {
     }) 
   }
   return { emails, notes, sentEmails, siteData:{...siteData[0]}, user };
+}
+
+export function CatchBoundary() {
+  const caught = useCatch();
+  const caughtData = JSON.parse(caught.data);
+  const { siteData, user } = caughtData;
+  
+  return (
+    <>
+      <Header manualUser={user} manualSiteData={siteData[0]} />
+      <div className="content">
+        <Sidebar manualUser={user} manualSiteData={siteData[0]} />
+        <div className="right-column">
+          <PostCard 
+            post={null}
+            editState={null}
+            setEditState={null}
+            title={`${caught.status} Error`}
+            message={caught.statusText}
+          />
+        </div>
+      </div>
+    </>
+  );
 }
 
 export default function Index() {

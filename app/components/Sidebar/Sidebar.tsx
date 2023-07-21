@@ -5,17 +5,29 @@ import type { User, SiteData } from '../../common/types';
 import { Calendar, Email, Notes } from '~/adminApps';
 import { TextEditor } from '../TextEditor/TextEditor';
 
-export const Sidebar: React.FC<{}> = () => {
-  const { user, siteData } = useLoaderData<{user: User, siteData: SiteData}>();
+export const Sidebar: React.FC<{
+  manualSiteData?: SiteData,
+  manualUser?: User
+}> = ({manualSiteData, manualUser}) => {
+
+  let loadData;
+
+  if(!manualSiteData) {
+    loadData = useLoaderData<{user: User, siteData: SiteData}>();
+  }
+
+  const user = loadData?.user||manualUser;
+  const siteData = loadData?.siteData||manualSiteData;
+
   const [ editMode, setEditMode ] = useState<boolean>(false);
   const [ editPrompt, toggleEditPrompt ] = useState<boolean>(false);
-  const [ bioContent, setBioContent ] = useState<string>(siteData?.site_description);
+  const [ bioContent, setBioContent ] = useState<string|undefined>(siteData?.site_description);
 
   const bioFetch = useFetcher();
 
   const saveBio = () => {
     bioFetch.submit(
-      { bioData: bioContent },
+      { bioData: bioContent! },
       { method: "post", action: `/api/siteData/bio?index` }
     );
   }
@@ -26,13 +38,14 @@ export const Sidebar: React.FC<{}> = () => {
       setEditMode(false);
     }
   },[ bioFetch ])
+  
 
   return (
     <div id="sidebar">
       <article className="postcard--left">
         <div className="postcard__time" style={{ justifyContent: "center" }}>
           <div className="postcard__time__link--unlink">
-            <Link to="/h/">{siteData?.site_name}</Link>
+            <Link to="/h/">{!siteData?.site_name||"Patrick Glendon McCullough"}</Link>
           </div>
           {user?.role==="administrator"
             ?<div className="postcard__time__option" onClick={() => {toggleEditPrompt(!editPrompt)}}>
@@ -83,7 +96,7 @@ export const Sidebar: React.FC<{}> = () => {
           </div>
         </div>
       </article>
-      {user?.role==="administrator"?<><Email /><Calendar /><Notes /></>:""}
+      {!manualSiteData&&user?.role==="administrator"?<><Email /><Calendar /><Notes /></>:""}
     </div>
   )
 }
