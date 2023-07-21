@@ -3,6 +3,7 @@ import { useFetcher, useLoaderData, useOutletContext } from "@remix-run/react";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
+import { SearchBar } from "~/components/SearchBar/SearchBar";
 import { clientPromise } from "~/lib/mongodb";
 import { v4 as uuidv4 } from 'uuid';
 import type { Post } from "~/common/types";
@@ -52,6 +53,7 @@ export default function Index() {
     isOn: boolean, id: string|null
   }>({ isOn: false, id: null })
 
+  const [ postSearchResults, setPostSearchResults ] = useState<Post[]|null>(null)
   const [ siteNotification, setsiteNotification ] = useState<{ msg:string, visible:boolean }>({ msg: "Loading", visible: false })
 
   const [ postArray, alterPostArray ] = useState<Post[]>([]);
@@ -102,8 +104,18 @@ export default function Index() {
 
   return (
   <>
-    {onThisDay.length?<div className="onThisDay__label">On this Day</div>:""}
-    {onThisDay?.map((thisDay: Post) =>
+    <SearchBar
+      alterPostArray={alterPostArray}
+      setPostSearchResults={setPostSearchResults}
+    />
+      {postSearchResults&&!postSearchResults.length
+        ?"Sorry, no matches :("
+        :""
+      }
+      {onThisDay.length&&!postSearchResults
+        ?<div className="onThisDay__label">On this Day</div>
+        :""}
+      {!postSearchResults&&onThisDay?.map((thisDay: Post) =>
         <PostCard 
           key={thisDay._id}
           editState={editState}
@@ -111,7 +123,7 @@ export default function Index() {
           post={thisDay}
         />
     )}
-    {posts?.map((post: Post) =>
+    {!postSearchResults&&posts?.map((post: Post) =>
       <PostCard 
         key={post._id}
         editState={editState}
@@ -129,10 +141,13 @@ export default function Index() {
         post={post}
       />
     )}
-    <div ref={scrollerBottom}>&nbsp;</div>
-    <div className={`site-notifications ${siteNotification.visible?"site-notifications--active":""}`}>
-      <div className="loader"/>
-      {siteNotification.msg}
-    </div>
+    {!postSearchResults
+      ?<><div ref={scrollerBottom}>&nbsp;</div>
+        <div className={`site-notifications ${siteNotification.visible?"site-notifications--active":""}`}>
+        <div className="loader"/>
+          {siteNotification.msg}
+        </div></>
+      :""
+    }
   </>
 )};
