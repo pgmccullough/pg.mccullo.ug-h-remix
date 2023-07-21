@@ -1,0 +1,21 @@
+.search {
+  display: flex;
+  margin-bottom: 0.25rem;
+  &__input {
+    border: 1px #ccc solid;
+    border-radius: 4px;
+    font-family: PGM Sans, Gill Sans, Gill Sans MT, Calibri, Trebuchet MS, sans-serif;
+    padding: 0.5rem 0.25rem 0.25rem 0.5rem;
+    font-size: 1rem;
+    flex-grow: 2;
+  }
+  &__button {
+    height: auto;
+    align-items: center;
+    margin: 0 0.5rem;
+    &--clear {
+      background: #d87474;
+      margin: 0;
+    }
+  }
+}

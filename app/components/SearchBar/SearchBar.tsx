@@ -1,6 +1,5 @@
 import { SetStateAction, useEffect, useState } from "react"
 import { useFetcher } from "@remix-run/react"
-import type { Post } from "~/common/types"
 
 export const SearchBar: React.FC<{
   alterPostArray: SetStateAction<any>,
@@ -17,8 +16,7 @@ export const SearchBar: React.FC<{
     }
   },[mongoFetch])
 
-  const searchPosts = (e:React.FormEvent) => {
-    e.preventDefault();
+  const searchPosts = () => {
     mongoFetch.submit(
       { searchQuery },
       { method: "post", action: `/api/post/search?index` }
@@ -26,16 +24,27 @@ export const SearchBar: React.FC<{
   }
 
   return (
-    <div>
-      <form onSubmit={searchPosts}>
-        <input 
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {setSearchQuery(e.target.value)}} 
-        />
-        <div onClick={() => {setSearchQuery(""); alterPostArray([]); setPostSearchResults(null)}}>CLEAR</div>
-        <button>SEARCH</button>
-      </form>
+    <div className="search">
+      <input 
+        className="search__input"
+        type="text"
+        placeholder="Search posts"
+        value={searchQuery}
+        onChange={(e) => {setSearchQuery(e.target.value)}} 
+        onKeyDown={(e) => {if(e.key==="Enter") {e.preventDefault(); searchPosts()}}}
+      />
+      <button 
+        className="search__button"
+        onClick={searchPosts}
+      >SEARCH</button>
+      <button 
+        className="search__button search__button--clear"
+        onClick={() => {
+          setSearchQuery(""); 
+          alterPostArray([]); 
+          setPostSearchResults(null)
+        }}
+      >CLEAR</button>
     </div>
   )
 }
