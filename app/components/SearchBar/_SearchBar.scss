@@ -1,6 +1,13 @@
 .search {
   display: flex;
-  margin-bottom: 0.25rem;
+  background: #fff;
+  border: 1px solid #979997;
+  border-radius: 0.25rem;
+  box-sizing: border-box;
+  text-align: left;
+  line-height: 1.5em;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
   &__input {
     border: 1px #ccc solid;
     border-radius: 4px;
@@ -16,6 +23,9 @@
     &--clear {
       background: #d87474;
       margin: 0;
+    }
+    &--disabled {
+      opacity: 0.75;
     }
   }
 }

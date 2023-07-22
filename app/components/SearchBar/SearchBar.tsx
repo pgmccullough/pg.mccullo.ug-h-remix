@@ -17,6 +17,7 @@ export const SearchBar: React.FC<{
   },[mongoFetch])
 
   const searchPosts = () => {
+    if(searchQuery.length===0) return;
     mongoFetch.submit(
       { searchQuery },
       { method: "post", action: `/api/post/search?index` }
@@ -34,11 +35,11 @@ export const SearchBar: React.FC<{
         onKeyDown={(e) => {if(e.key==="Enter") {e.preventDefault(); searchPosts()}}}
       />
       <button 
-        className="search__button"
+        className={`search__button${searchQuery.length===0?" search__button--disabled":""}`}
         onClick={searchPosts}
       >SEARCH</button>
       <button 
-        className="search__button search__button--clear"
+        className={`search__button search__button--clear${searchQuery.length===0?" search__button--disabled":""}`}
         onClick={() => {
           setSearchQuery(""); 
           alterPostArray([]); 
