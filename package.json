@@ -21,6 +21,7 @@
     "@remix-run/node": "*",
     "@remix-run/react": "*",
     "bcryptjs": "^2.4.3",
+    "browser-image-resizer": "^2.4.1",
     "compression": "^1.7.4",
     "cross-env": "^7.0.3",
     "dayjs": "^1.11.7",
