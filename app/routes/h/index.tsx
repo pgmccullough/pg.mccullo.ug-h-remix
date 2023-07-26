@@ -121,14 +121,16 @@ export default function Index() {
       {onThisDay.length&&!postSearchResults
         ?<div className="onThisDay__label">On this Day</div>
         :""}
-      {!postSearchResults&&onThisDay?.map((thisDay: Post) =>
-        <PostCard 
-          key={thisDay._id}
-          editState={editState}
-          setEditState={setEditState}
-          post={thisDay}
-        />
-    )}
+      <div className={`onThisDay__wrapper ${onThisDay.length?"onThisDay__wrapper--display":""}`}>
+        {!postSearchResults&&onThisDay?.map((thisDay: Post) =>
+          <PostCard 
+            key={thisDay._id}
+            editState={editState}
+            setEditState={setEditState}
+            post={thisDay}
+          />
+        )}
+      </div>
     {!postSearchResults&&posts?.map((post: Post) =>
       <PostCard 
         key={post._id}

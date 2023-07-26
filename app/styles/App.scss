@@ -96,11 +96,33 @@ body {
   animation: loaderSpin 0.75s infinite linear;
 }
 
-.onThisDay__label {
-  background: #4A6CBA;
-  color: #fff;
-  display: inline-block;
-  padding: 6px 12px 4px 12px;
-  border-radius: 4px;
-  margin-bottom: 6px;
+.onThisDay {
+  &__label {
+    background: #4A6CBA;
+    color: #fff;
+    display: inline-block;
+    padding: 6px 12px 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  &__wrapper {
+    &--display {
+      padding-left: 1rem;
+      margin-left: 1rem;
+      border-left: 0.5rem #4A6CBA solid;
+      margin-top: -0.5rem;
+      padding-top: 0.5rem;
+      margin-bottom: 1rem;
+      &::after {
+        content: "Thanks for the memories!";
+        background: #4A6CBA;
+        color: #fff;
+        display: inline-block;
+        padding: 6px 12px 4px;
+        border-radius: 4px;
+        margin-bottom: -1rem;
+        margin-left: -2rem;
+      }
+    }
+  }
 }
