@@ -1,0 +1,174 @@
+@use '../../styles/partials/variables' as *;
+
+.calendar {
+    &__header {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+
+        &--previous {
+            cursor: pointer;
+        }
+
+        &--current {
+            padding: 0px 20px;
+        }
+
+        &--next {
+            cursor: pointer;
+        }
+
+        &--close {
+            position: absolute; 
+            top: 8px;
+            right: 8px;
+            background: #fff;
+            width: 26px;
+            height: 26px;
+            border-radius: 100%;
+            box-shadow: 0 0 6px 0 #666;
+            cursor: pointer;
+            font-size: 44px;
+            transform: rotate(45deg);
+            text-align: center;
+
+        }
+
+    }
+
+    &__days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        margin-bottom: 1px;
+
+        &--day {
+            margin: -1px 0 0 -1px;
+            font-size: 12px;
+            text-align: center;
+            border: 1px #fff solid;
+            background: #ccc;
+            border-radius: 4px;
+        }
+    }
+
+    &__dates {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+
+        &__block {
+            border: 1px #ccc solid;
+            margin: -1px 0 0 -1px;
+            padding: 3px;
+            font-size: 12px;
+            cursor: pointer;
+            min-height: 60px;
+            &:hover {
+                background: #eee;
+            }
+            &--current {
+                border: 1px #ccc solid;
+                margin: -1px 0 0 -1px;
+                padding: 3px;
+                font-size: 12px;
+                cursor: pointer;
+                background: #eee;
+                padding: 3px;
+                font-size: 12px;
+            }
+            &--label {
+                margin-top: -4px;
+            }
+            &--count {
+                position: relative;
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                line-height: 1.85em;
+                margin-left: calc(50% - 10px);
+                border-radius: 100%;
+                text-align: center;
+                background: #4A6CBA;
+                color: #fff;
+            }
+        }
+    }
+
+    &__appointments__ind {
+        display: flex;
+        align-items: center;
+        border: 2px #ccc solid;
+        margin-bottom: 4px;
+
+        &--time {
+            align-self:stretch;
+            display:flex;
+            align-items:center;
+            padding: 0px 10px;
+            color: #fff;
+            background: #4A6CBA;
+        }
+        
+        &--event {
+            border-left: 2px #ccc solid;
+            padding-left: 10px;
+            &--details {
+                color: #999;
+                font-size: 13px;
+                margin-top: -2px;
+                line-height: 1.25em;
+                font-style: italic;
+            }
+        }
+    }
+
+    &__form {
+        &--field {
+            border: 0;
+            font: 14px $sans;
+            border-bottom: 2px solid #4A6CBA;
+            width: calc(16% - 4px);
+            margin: 8px 2px;
+            resize: none;
+            &--start-end-group--label {
+                font-size: 13px;
+                text-shadow: 0 0 1px #000;
+                margin-top: 8px;
+            }   
+            &--full-width {
+                border: 0;
+                font: 14px $sans;
+                border-bottom: 2px solid #4A6CBA;
+                width: calc(100% - 4px);
+                margin: 8px 2px;
+                resize: none;
+           }
+        }
+        &--submit {
+            background: #4A6CBA;
+            color: #fff;
+            text-transform: uppercase;
+            display: inline-block;
+            font-size: 14px;
+            height: 20px;
+            padding-top: 4px;
+            cursor: pointer;
+            padding: 0px 5px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        &--addEvent {
+            background: #4A6CBA;
+            color: #fff;
+            width: 26px;
+            height: 26px;
+            border-radius: 100%;
+            box-shadow: 0 0 6px 0 #666;
+            cursor: pointer;
+            font-size: 44px;
+            text-align: center;          
+            margin-top: 12px; 
+        }
+    }
+}
