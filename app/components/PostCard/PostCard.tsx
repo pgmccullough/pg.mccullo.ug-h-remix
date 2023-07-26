@@ -112,7 +112,7 @@ export const PostCard: React.FC<{
 
     useEffect(() => {
       setMediaSlides((prev: {currentSlide: number, itemLength: number}) => {
-        return {...prev, itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length).reduce((a, b) => a + b, 0)}
+        return {...prev, itemLength: Object.keys(post.media).map((key:any) => post.media[key]?.length||0).reduce((a, b) => a + b, 0)}
       })
       setCanShowDate(true);
     },[])

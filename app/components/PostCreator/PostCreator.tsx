@@ -73,7 +73,6 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
 
   useEffect(() => {
     if(fileUploadForm.data?.uploaded) {
-      // setImagesUploading("done");
       setImagesUploading(imagesUploading-1)
       const uploadsServer = [...fileUploadForm.data.uploaded];
       const uploadsClient = [...pendingUploads].map((file:{data: any, meta: any}) => {
@@ -106,6 +105,8 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
       pendingUploads.forEach((file: {data: any, meta: any}) => {
         filesToUpload.push({ fileData: file.data, fileMeta: JSON.stringify({name: file.meta.name, type: file.meta.type}) });
       })
+      /* eventually these need to be done individually, one file per request, so
+      I can better track progress/errors */
       fileUploadForm.submit(
         { uploads: JSON.stringify(filesToUpload) },
         { method: "post", encType: "multipart/form-data", action: "/api/upload/base64?index" }

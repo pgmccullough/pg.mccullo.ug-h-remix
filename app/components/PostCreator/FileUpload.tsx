@@ -12,7 +12,7 @@ export const FileUpload: React.FC<{
   setYouTubePreviews: SetStateAction<any>
 }> = ({ fileInputRef, imagesUploading, pendingUploads, setPendingUploads, youTubePreviews, setYouTubePreviews }) => {
 
-  const imgResize = useCallback(async(file:any, config?:any) => {
+  const imgResize = useCallback(async(file:File, config: {maxWidth: number}) => {
     const resize = require('browser-image-resizer');
     return await resize.readAndCompressImage(file,config);
   },[])
@@ -26,7 +26,6 @@ export const FileUpload: React.FC<{
     e.preventDefault();
     let files = e.target.files;
     for(const file of Object.entries(files!)) {
-      //console.log(file[1].type.split("/")[0]);
       const reader = new FileReader();
       const [,value] = file;
       let resizedImage = await imgResize(value,{maxWidth:600});
