@@ -39,7 +39,6 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
         if(word.includes("youtube.com")) {
           word = word.replace("://www.","://");
           word = word.replace("://music.","://");
-          console.log("@",word);
           word = "https://you"+word.split("https://you")[1];
           setYouTubePreviews((prev: YouTubeVideo[]) => 
               prev.find((video: YouTubeVideo) => video.video===word)
@@ -52,7 +51,6 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   },[postText])
 
   const getYouTubePreview = async (url: string) => {
-    console.log("1",url);
     let ytId = url.split("be/").at(-1);
     if(!url.split("be/").at(1)) {
       ytId = url.split("?v=").at(-1);
