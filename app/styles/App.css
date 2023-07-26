@@ -1284,6 +1284,7 @@ button {
 .note__title {
   font-size: 0.85rem;
   padding: 0 0.85rem;
+  background: #eee;
   border: 1px #ccc solid;
   border-bottom: none;
   border-radius: 4px 4px 0 0;
@@ -1293,7 +1294,7 @@ button {
   background: #f4f4f4;
 }
 .note__title--active {
-  background: #eee;
+  background: #fff;
 }
 .note__input, .note__textarea {
   border: 1px #ccc solid;
