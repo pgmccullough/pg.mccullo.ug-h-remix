@@ -1,4 +1,4 @@
-import { useLoaderData } from '@remix-run/react';
+import { useFetcher, useLoaderData } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { month } from '../../common/types';
 
@@ -20,7 +20,6 @@ export const Calendar: React.FC<{}> = () => {
     })
     monthArr.push({i,fulldate,day_events});
   }
-  console.log(monthArr);
     
   const [curMonth, setCurMonth] = useState<month>({
     curDate: "20230726",
@@ -63,7 +62,7 @@ export const Calendar: React.FC<{}> = () => {
               <div className="calendar__dates">
                 {curMonth?.monthArr.map((dateBlock:any) =>                                 
                   <div 
-                    key={`xx_${dateBlock.i}`} 
+                    key={dateBlock.i} 
                     onClick={() => {console.log(dateBlock.fulldate)}} 
                     id={dateBlock.fulldate}
                     className={`calendar__dates__block${curMonth.curDate===dateBlock.fulldate?"--current":""}`} 
