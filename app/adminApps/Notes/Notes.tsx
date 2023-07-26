@@ -7,21 +7,24 @@ export const Notes: React.FC<{}> = () => {
   interface Note {
     _id: string,
     title: string,
-    content: string
+    content: string,
+    order: number
   }
 
-  const [noteTitles, setNoteTitles] = useState<Note[]>(notes);
-  const [activeNote, setActiveNote] = useState<Note>(notes[0]);
+  const [noteTitles, setNoteTitles] = useState<Note[]>(notes.sort((a:Note,b:Note)=>a.order-b.order));
+  const [activeNote, setActiveNote] = useState<Note>(notes.sort((a:Note,b:Note)=>a.order-b.order)[0]);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   const fetcher = useFetcher();
 
   useEffect(() => {
     if(fetcher.type==="done") {
       if(fetcher.data.note.insertedId) {
-        const newNote = {_id: fetcher.data.note.insertedId, title: "Untitled", content: ""};
+        const newNote = {_id: fetcher.data.note.insertedId, title: "Untitled", content: "", order: noteTitles.length+1};
         setNoteTitles(prev => [...prev, newNote]);
         setActiveNote(newNote);
       }
+      if(fetcher.data.note.modifiedCount) setIsUpdating(false);
     }
   },[fetcher])
 
@@ -44,6 +47,7 @@ export const Notes: React.FC<{}> = () => {
   }
 
   const saveNoteUpdate = () => {
+    setIsUpdating(true);
     const noteID = activeNote._id;
     fetcher.submit(
       { noteAction: "saveNoteUpdate", noteID, noteData: JSON.stringify(activeNote) },
@@ -97,7 +101,7 @@ export const Notes: React.FC<{}> = () => {
               value={activeNote.title}
             />
             <textarea 
-              className="note__textarea"
+              className={`note__textarea${isUpdating?" note__textarea--blur":""}`}
               name="content"
               onChange={updateNote}
               value={activeNote.content}
@@ -105,11 +109,11 @@ export const Notes: React.FC<{}> = () => {
             </textarea>
             <button
               onClick={saveNoteUpdate} 
-              className="note__button"
+              className={`note__button${isUpdating?" note__button--disabled":""}`}
             >UPDATE</button>
             <button 
               onClick={() => deleteNote(activeNote._id)}
-              className="note__button note__button--delete"
+              className={`note__button note__button--delete${isUpdating?" note__button--disabled":""}`}
             >DELETE</button>
           </div>
         </div>

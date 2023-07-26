@@ -1153,11 +1153,18 @@ button {
   resize: vertical;
   height: 14rem;
 }
+.note__textarea--blur {
+  filter: blur(2px);
+}
 .note__button {
   margin: 0 0.25rem 0 0;
 }
 .note__button--delete {
   background: #d87474;
+}
+.note__button--disabled {
+  pointer-events: none;
+  opacity: 0.5;
 }
 
 .postcard__content__media__slider__weblink__anchor {
