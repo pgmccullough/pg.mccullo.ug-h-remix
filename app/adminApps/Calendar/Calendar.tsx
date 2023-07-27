@@ -32,6 +32,21 @@ export const Calendar: React.FC<{}> = () => {
     monthArr,
     year: 2023
   });
+
+  const scrapeGoogleCal = async (token: string) => {
+    const rawData = await fetch(`https://www.googleapis.com/calendar/v3/calendars/patrick.g.mccullough@gmail.com/events?access_token=${token}`);
+    const calendarData = await rawData.json();
+    const { items } = calendarData;
+    // care about items[i].start & .end which include dateTime: "2023-06-25T20:41:00-04:00"
+    console.log(calendarData);
+  }
+
+  useEffect(() => {
+    let tokenCheck = window.location.hash.split("&");
+    const paramObject: {[key: string]: string} = {};
+    tokenCheck.forEach(keyVal => {paramObject[keyVal.split("=")[0]] = keyVal.split("=")[1]})
+    scrapeGoogleCal(paramObject.access_token);
+  },[])
   
   return (
     <>
@@ -49,6 +64,7 @@ export const Calendar: React.FC<{}> = () => {
                 <div onClick={() => {console.log("prev")}} className="calendar__header--previous">&lt;</div>
                 <div className="calendar__header--current">{curMonth.monthName}, {curMonth.year}</div>
                 <div onClick={() => {console.log("next")}} className="calendar__header--next">&gt;</div>
+                <a href="https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/calendar&include_granted_scopes=true&response_type=token&state=unused&redirect_uri=https%3A//pg.mccullo.ug/h&client_id=663051266767-jjl8shsljmqonrvvb74k6g5p9ejppv5e.apps.googleusercontent.com">google</a>
               </div>
               <div className="calendar__days">
                 <div className="calendar__days--day">Sun</div>

@@ -32,26 +32,32 @@ export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) =>
   }
 
   const imageResizer = () => {
-    const contentExt = fullPath?.split(".").at(-1);
-    const contentID = fullPath?.replace(`.${contentExt}`,'');
-    s3.getObject({ Bucket: S3_BUCKET!, Key: `${contentID}.${contentExt}` }, (_err, data) => {
-      sharp(data.Body)
-      .resize(600)
-      .toBuffer()
-      .then((sharped: any) => {
-        const resizeAndUploadToS3 = async () => {
-          await s3.upload({
-            Bucket: S3_BUCKET!,
-            Key: `${contentID}_600w.${contentExt}`,
-            Body: sharped
-          }).promise();
-        }
-        resizeAndUploadToS3();
-      })
-      .catch((_err: any)  => {
-        console.error("Something went wrong with the resize.",);
+    try {
+      const contentExt = fullPath?.split(".").at(-1);
+      const contentID = fullPath?.replace(`.${contentExt}`,'');
+      s3.getObject({ Bucket: S3_BUCKET!, Key: `${contentID}.${contentExt}` }, (_err, data) => {
+        data
+        ?sharp(data?.Body)
+        .resize(600)
+        .toBuffer()
+        .then((sharped: any) => {
+          const resizeAndUploadToS3 = async () => {
+            await s3.upload({
+              Bucket: S3_BUCKET!,
+              Key: `${contentID}_600w.${contentExt}`,
+              Body: sharped
+            }).promise();
+          }
+          resizeAndUploadToS3();
+        })
+        .catch((_err: any)  => {
+          console.error("Something went wrong with the resize.",);
+        })
+        :console.error("no data returned from S3");
       });
-    });
+    } catch(_err) {
+      console.error("No file returned.");
+    }
   }
 
   const s3paramsOriginal = {

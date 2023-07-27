@@ -32,6 +32,8 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [cleanEmail, setCleanEmail] = useState<string>(emailBody);
 
+  console.log(emailBody);
+
   useEffect(() => {
     if(!email.unread || email.unread !== 0) {
       fetcher.submit(
