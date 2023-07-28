@@ -1,123 +1,120 @@
-import './Calendar.scss';
 import { useEffect, useState } from 'react';
 import { dateForm, niceDay } from '../../common/types';
 
-const SERVER_URI = process.env.REACT_APP_SERVER_URI;
+export const CalendarModal: React.FC<{ setModalDisplay: any}> = ({setModalDisplay}) => {
+    // const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    // const niceDay: niceDay = {year: null, month: null, niceMonth: null, date: null, full: null};
+    // niceDay.year = fullDay.substring(0,4);
+    // niceDay.month = fullDay.substring(4,6);
+    // niceDay.niceMonth = months[Number(niceDay.month)-1];
+    // niceDay.date = fullDay.substring(6,8);
+    // niceDay.full = new Date(niceDay.month+"-"+niceDay.date+"-"+niceDay.year);
 
-export default function CalendarModal({ closeModal, fullDay }) {
-    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    const niceDay: niceDay = {year: null, month: null, niceMonth: null, date: null, full: null};
-    niceDay.year = fullDay.substring(0,4);
-    niceDay.month = fullDay.substring(4,6);
-    niceDay.niceMonth = months[Number(niceDay.month)-1];
-    niceDay.date = fullDay.substring(6,8);
-    niceDay.full = new Date(niceDay.month+"-"+niceDay.date+"-"+niceDay.year);
-
-    const [addForm, toggleAddForm] = useState(false);
-    const [appointments, getAppointments] = useState([]);
-    const [dateForm, upDateForm] = useState<dateForm>({
-        start_code: fullDay,
-        event_title: "",
-        event_details: "",
-        start_hour: 12,
-        start_minute: "00",
-        start_ampm: "PM", 
-        end_month: niceDay.niceMonth, 
-        end_date: niceDay.date, 
-        end_year: niceDay.year,
-        end_hour: 12, 
-        end_minute: 30, 
-        end_ampm: "PM"
-    });
+    // const [addForm, toggleAddForm] = useState(false);
+    // const [appointments, getAppointments] = useState([]);
+    // const [dateForm, upDateForm] = useState<dateForm>({
+    //     start_code: fullDay,
+    //     event_title: "",
+    //     event_details: "",
+    //     start_hour: 12,
+    //     start_minute: "00",
+    //     start_ampm: "PM", 
+    //     end_month: niceDay.niceMonth, 
+    //     end_date: niceDay.date, 
+    //     end_year: niceDay.year,
+    //     end_hour: 12, 
+    //     end_minute: 30, 
+    //     end_ampm: "PM"
+    // });
     
-    const updateForm = (e) => {
-        upDateForm({...dateForm,[e.target.name]: e.target.value});
-    }
+    // const updateForm = (e) => {
+    //     upDateForm({...dateForm,[e.target.name]: e.target.value});
+    // }
 
-    const getTodayDates = () => {
-        const token = localStorage.getItem('token') || 0;
-        axios(
-            `${SERVER_URI}calendar/${fullDay}`, {
-                headers: {
-                    Authorization: 'Bearer ' + token
-                }
-            }).then((result) => {
-                getAppointments(result.data);
-            })
-    }
+    // const getTodayDates = () => {
+    //     const token = localStorage.getItem('token') || 0;
+    //     axios(
+    //         `${SERVER_URI}calendar/${fullDay}`, {
+    //             headers: {
+    //                 Authorization: 'Bearer ' + token
+    //             }
+    //         }).then((result) => {
+    //             getAppointments(result.data);
+    //         })
+    // }
 
-    const postNewEvent = () => {
-        const token = localStorage.getItem('token') || 0;
-        axios.post(
-            `${SERVER_URI}calendar/add`, {
-                headers: {
-                    Authorization: 'Bearer ' + token
-                },
-                dateForm
-            }).then((_result) => {
-                getTodayDates();
-                upDateForm({
-                    start_code: fullDay,
-                    event_title: "",
-                    event_details: "",
-                    start_hour: 12,
-                    start_minute: "00",
-                    start_ampm: "PM", 
-                    end_month: niceDay.niceMonth, 
-                    end_date: niceDay.date, 
-                    end_year: niceDay.year,
-                    end_hour: 12, 
-                    end_minute: 30, 
-                    end_ampm: "PM"
-                });
-                toggleAddForm(!addForm);
-            })
-    }
+    // const postNewEvent = () => {
+    //     const token = localStorage.getItem('token') || 0;
+    //     axios.post(
+    //         `${SERVER_URI}calendar/add`, {
+    //             headers: {
+    //                 Authorization: 'Bearer ' + token
+    //             },
+    //             dateForm
+    //         }).then((_result) => {
+    //             getTodayDates();
+    //             upDateForm({
+    //                 start_code: fullDay,
+    //                 event_title: "",
+    //                 event_details: "",
+    //                 start_hour: 12,
+    //                 start_minute: "00",
+    //                 start_ampm: "PM", 
+    //                 end_month: niceDay.niceMonth, 
+    //                 end_date: niceDay.date, 
+    //                 end_year: niceDay.year,
+    //                 end_hour: 12, 
+    //                 end_minute: 30, 
+    //                 end_ampm: "PM"
+    //             });
+    //             toggleAddForm(!addForm);
+    //         })
+    // }
 
-    const addFormShowHide = () => {
-        toggleAddForm(!addForm);
-    }
+    // const addFormShowHide = () => {
+    //     toggleAddForm(!addForm);
+    // }
 
-    useEffect(() => {
-        getTodayDates();
-    },[]);
+    // useEffect(() => {
+    //     getTodayDates();
+    // },[]);
     
 
     return (
-        <div className="calendar">
+        <div className="calendar calendar__modal">
             <div className="calendar__header">
-                {niceDay.full.toLocaleDateString([], {
+                {/* {niceDay.full.toLocaleDateString([], {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                     weekday: 'long'
-                })} 
-                <div onClick={() => closeModal("")} className="calendar__header--close">+</div>
+                })}  */}
+                <div onClick={() => setModalDisplay(null)} className="calendar__header--close">+</div>
             </div>
             <div className="calendar__appointments">
-                {appointments.length>0?appointments.map(appt => (
-                    <div className="calendar__appointments__ind" key={appt._id}>
+                {/* {appointments.length>0?appointments.map(appt => ( */}
+                    <div className="calendar__appointments__ind" key={1}>
                         <div className="calendar__appointments__ind--time">
-                            {appt.datesArr.length===1?
+                            {/* {appt.datesArr.length===1?
                             <>{appt.start_time_formatted} - {appt.end_time_formatted}</>
                             :(appt.datesArr[0]===Number(fullDay))?<>{appt.start_time_formatted}</>
                             :(appt.datesArr[appt.datesArr.length-1]===Number(fullDay))?<>Until {appt.end_time_formatted}</>
-                            :"All Day"}
+                            :"All Day"} */}
                         </div>
                         <div className="calendar__appointments__ind--event">
-                            <div className="calendar__appointments__ind--event--title">{appt.event_title}</div>
-                            <div className="calendar__appointments__ind--event--details">{appt.event_details}</div>
+                            <div className="calendar__appointments__ind--event--title">title</div>
+                            <div className="calendar__appointments__ind--event--details">details</div>
                         </div>
                     </div>
-                )):"No events for this date."}
+                {/* )):"No events for this date."} */}
             </div>
             <div className="calendar__form">
-                {addForm?<>
-                <input className="calendar__form--field--full-width" name="event_title" value={dateForm.event_title} onChange={updateForm} type="text" placeholder="Event Title" />
-                <textarea className="calendar__form--field--full-width" name="event_details" value={dateForm.event_details} onChange={updateForm} placeholder="Event Details"></textarea>
+                {/* {addForm?<> */}
+                <input className="calendar__form--field--full-width" name="event_title" value={0} type="text" placeholder="Event Title" />
+                <textarea className="calendar__form--field--full-width" name="event_details" value={0} placeholder="Event Details"></textarea>
                 <div className="calendar__form--field--start-end-group">
                     <div className="calendar__form--field--start-end-group--label">Start Time</div>
-                    <select className="calendar__form--field" name="start_hour" value={dateForm.start_hour} onChange={updateForm}>
+                    <select className="calendar__form--field" name="start_hour" value={0}>
                         <option>1</option>
                         <option>2</option>
                         <option>3</option>
@@ -132,7 +129,7 @@ export default function CalendarModal({ closeModal, fullDay }) {
                         <option>12</option>
                     </select>
                     :
-                    <select className="calendar__form--field" name="start_minute" value={dateForm.start_minute} onChange={updateForm}>
+                    <select className="calendar__form--field" name="start_minute" value={0}>
                         <option>00</option>
                         <option>01</option>
                         <option>02</option>
@@ -194,14 +191,14 @@ export default function CalendarModal({ closeModal, fullDay }) {
                         <option>58</option>
                         <option>59</option>
                     </select>     
-                    <select className="calendar__form--field" name="start_ampm" value={dateForm.start_ampm} onChange={updateForm}>
+                    <select className="calendar__form--field" name="start_ampm" value={0}>
                         <option>AM</option>
                         <option>PM</option>
                     </select>
                 </div>
                 <div className="calendar__form--field--start-end-group">
                     <div className="calendar__form--field--start-end-group--label">End Date / Time</div>
-                    <select className="calendar__form--field" name="end_month" value={dateForm.end_month} onChange={updateForm}>
+                    <select className="calendar__form--field" name="end_month" value={0}>
                         <option>January</option>
                         <option>February</option>
                         <option>March</option>
@@ -215,7 +212,7 @@ export default function CalendarModal({ closeModal, fullDay }) {
                         <option>November</option>
                         <option>December</option>
                     </select>
-                    <select className="calendar__form--field" name="end_date" value={dateForm.end_date} onChange={updateForm}>
+                    <select className="calendar__form--field" name="end_date" value={0}>
                         <option>1</option>
                         <option>2</option>
                         <option>3</option>
@@ -248,15 +245,15 @@ export default function CalendarModal({ closeModal, fullDay }) {
                         <option>30</option>
                         <option>31</option>
                     </select>
-                    <select className="calendar__form--field" name="end_year" value={dateForm.end_year} onChange={updateForm}>
-                        <option>{niceDay.year}</option>
-                        <option>{Number(niceDay.year)+1}</option>
-                        <option>{Number(niceDay.year)+2}</option>
-                        <option>{Number(niceDay.year)+3}</option>
-                        <option>{Number(niceDay.year)+4}</option>
-                        <option>{Number(niceDay.year)+5}</option>
+                    <select className="calendar__form--field" name="end_year" value={0} >
+                        <option>{2023}</option>
+                        <option>{2024}</option>
+                        <option>{2025}</option>
+                        <option>{2026}</option>
+                        <option>{2027}</option>
+                        <option>{2028}</option>
                     </select>
-                    <select className="calendar__form--field" name="end_hour" value={dateForm.end_hour} onChange={updateForm}>
+                    <select className="calendar__form--field" name="end_hour" value={0} >
                         <option>1</option>
                         <option>2</option>
                         <option>3</option>
@@ -271,7 +268,7 @@ export default function CalendarModal({ closeModal, fullDay }) {
                         <option>12</option>
                     </select>
                     :
-                    <select className="calendar__form--field" name="end_minute" value={dateForm.end_minute} onChange={updateForm}>
+                    <select className="calendar__form--field" name="end_minute" value={0}>
                         <option>00</option>
                         <option>01</option>
                         <option>02</option>
@@ -333,13 +330,13 @@ export default function CalendarModal({ closeModal, fullDay }) {
                         <option>58</option>
                         <option>59</option>
                     </select>     
-                    <select className="calendar__form--field" name="end_ampm" value={dateForm.end_ampm} onChange={updateForm}>
+                    <select className="calendar__form--field" name="end_ampm" value={0} >
                         <option>AM</option>
                         <option>PM</option>
                     </select>
                 </div>
-                <div className="calendar__form--submit" onClick={postNewEvent}>SUBMIT</div>
-                </>:<div className="calendar__form--addEvent" onClick={addFormShowHide}>+</div>}
+                <div className="calendar__form--submit">SUBMIT</div>
+                <div className="calendar__form--addEvent">+</div>
             </div>
         </div>
     )

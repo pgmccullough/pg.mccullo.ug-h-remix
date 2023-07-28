@@ -1,5 +1,6 @@
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import { useEffect, useState } from 'react';
+import { CalendarModal } from './CalendarModal';
 import type { DBEvent, month, GoogleEvent } from '../../common/types';
 
 export const Calendar: React.FC<{}> = () => {
@@ -31,6 +32,8 @@ export const Calendar: React.FC<{}> = () => {
     active: boolean, message: string, completed: boolean
   }>({active: false, message: "", completed: false})
   
+  const [ modalDisplay, setModalDisplay ] = useState<{}|null>(null)
+
   const [ curMonth, setCurMonth ] = useState<month>({
     curDate: yearNow+monthNow+dateNow,
     firstDay: new Date(yearNow, Number(monthNow)-1, 1).getDay(),
@@ -169,73 +172,74 @@ export const Calendar: React.FC<{}> = () => {
   
   return (
     <>
-      <article className="postcard--left">
-        <div className="postcard__time">
-          <div className="postcard__time__link--unlink">
-            Calendar
-          </div>
+    <article className="postcard--left">
+      <div className="postcard__time">
+        <div className="postcard__time__link--unlink">
+          Calendar
         </div>
-        <div className="postcard__content calendar__content">
-          <div className="postcard__content__media" />
-          <div className="postcard__content__text">
-            <div className="calendar">
-              <div className="calendar__header">
-                <div className="calendar__headGroup" />
-                <div className="calendar__headGroup calendar__headGroup--center">
-                  <div onClick={() => changeMonth("prev")} className="calendar__header--previous">^</div>
-                  <div className="calendar__header--current">{curMonth.monthName} {curMonth.year}</div>
-                  <div onClick={() => changeMonth("next")} className="calendar__header--next">^</div>
-                </div>
-                <div className="calendar__headGroup calendar__headGroup--right">
-                  <a href={gSyncLink} onClick={(e) => {
-                    if(gSyncLink==="/h/#gsync") {
-                      e.preventDefault();
-                      scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
-                    }
-                  }}>
-                    <button className="postcard__time__option calendar__sync">
-                      <img className="calendar__googleLogo" src="/googlelogo.svg" /> Sync
-                    </button>
-                  </a>
-                </div>
+      </div>
+      <div className="postcard__content calendar__content">
+        <div className="postcard__content__media" />
+        <div className="postcard__content__text">
+          <div className="calendar">
+            {modalDisplay?<CalendarModal setModalDisplay={setModalDisplay} />:""}
+            <div className="calendar__header">
+              <div className="calendar__headGroup" />
+              <div className="calendar__headGroup calendar__headGroup--center">
+                <div onClick={() => changeMonth("prev")} className="calendar__header--previous">^</div>
+                <div className="calendar__header--current">{curMonth.monthName} {curMonth.year}</div>
+                <div onClick={() => changeMonth("next")} className="calendar__header--next">^</div>
               </div>
-              <div className="calendar__days">
-                <div className="calendar__days--day">Sun</div>
-                <div className="calendar__days--day">Mon</div>
-                <div className="calendar__days--day">Tue</div>
-                <div className="calendar__days--day">Wed</div>
-                <div className="calendar__days--day">Thu</div>
-                <div className="calendar__days--day">Fri</div>
-                <div className="calendar__days--day">Sat</div>
-              </div>
-              <div className="calendar__dates">
-                {curMonth?.monthArr.map((dateBlock:{i:number, fulldate:string, day_events: string[]}) =>                                 
-                  <div 
-                    key={dateBlock.i} 
-                    onClick={() => {console.log(dateBlock.fulldate)}} 
-                    id={dateBlock.fulldate}
-                    className={`calendar__dates__block${curMonth.curDate===dateBlock.fulldate?"--current":""}`} 
-                    style={dateBlock.i===1?{gridColumn: curMonth.firstDay+1}:{}}
-                  >
-                    <div className="calendar__dates__block--label">
-                      {dateBlock.i}
-                    </div>
-                    {dateBlock.day_events?.length
-                      ?<div className="calendar__dates__block--count">
-                        {dateBlock.day_events?.length}
-                      </div>
-                      :""
-                    }  
-                  </div>
-                )}
+              <div className="calendar__headGroup calendar__headGroup--right">
+                <a href={gSyncLink} onClick={(e) => {
+                  if(gSyncLink==="/h/#gsync") {
+                    e.preventDefault();
+                    scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
+                  }
+                }}>
+                  <button className="postcard__time__option calendar__sync">
+                    <img className="calendar__googleLogo" src="/googlelogo.svg" /> Sync
+                  </button>
+                </a>
               </div>
             </div>
-          </div>
-          <div className={`calendar__notif ${calendarNotif.active&&" calendar__notif--active"}`}>
-            <div className="loader" /> <p>{calendarNotif.message}</p>
+            <div className="calendar__days">
+              <div className="calendar__days--day">Sun</div>
+              <div className="calendar__days--day">Mon</div>
+              <div className="calendar__days--day">Tue</div>
+              <div className="calendar__days--day">Wed</div>
+              <div className="calendar__days--day">Thu</div>
+              <div className="calendar__days--day">Fri</div>
+              <div className="calendar__days--day">Sat</div>
+            </div>
+            <div className="calendar__dates">
+              {curMonth?.monthArr.map((dateBlock:{i:number, fulldate:string, day_events: string[]}) =>                                 
+                <div 
+                  key={dateBlock.i} 
+                  onClick={() => setModalDisplay(dateBlock)} 
+                  id={dateBlock.fulldate}
+                  className={`calendar__dates__block${curMonth.curDate===dateBlock.fulldate?"--current":""}`} 
+                  style={dateBlock.i===1?{gridColumn: curMonth.firstDay+1}:{}}
+                >
+                  <div className="calendar__dates__block--label">
+                    {dateBlock.i}
+                  </div>
+                  {dateBlock.day_events?.length
+                    ?<div className="calendar__dates__block--count">
+                      {dateBlock.day_events?.length}
+                    </div>
+                    :""
+                  }  
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </article>
-    </>
+        <div className={`calendar__notif ${calendarNotif.active&&" calendar__notif--active"}`}>
+          <div className="loader" /> <p>{calendarNotif.message}</p>
+        </div>
+      </div>
+    </article>
+  </>
   )
 }

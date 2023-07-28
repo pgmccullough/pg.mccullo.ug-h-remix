@@ -1246,6 +1246,16 @@ button {
   line-height: 1.25em;
   font-style: italic;
 }
+.calendar__modal {
+  position: absolute;
+  background: white;
+  box-shadow: 0 0 6px 0 #000;
+  width: 90%;
+  height: 90%;
+  margin-top: 2%;
+  margin-left: 2%;
+  z-index: 100;
+}
 .calendar__form--field {
   border: 0;
   font: 14px "PGM Sans";
@@ -1329,6 +1339,52 @@ button {
 }
 .calendar__notif--active {
   margin-top: -3.5rem;
+}
+.calendar__form--field {
+  border: 0;
+  font: 14px "PGM Sans";
+  border-bottom: 2px solid #4A6CBA;
+  width: calc(16% - 4px);
+  margin: 8px 2px;
+  resize: none;
+}
+.calendar__form--field--start-end-group--label {
+  font-size: 13px;
+  text-shadow: 0 0 1px #000;
+  margin-top: 8px;
+}
+.calendar__form--field--full-width {
+  border: 0;
+  font: 14px "PGM Sans";
+  border-bottom: 2px solid #4A6CBA;
+  width: calc(100% - 4px);
+  margin: 8px 2px;
+  resize: none;
+}
+.calendar__form--submit {
+  background: #4A6CBA;
+  color: #fff;
+  text-transform: uppercase;
+  display: inline-block;
+  font-size: 14px;
+  height: 20px;
+  padding-top: 4px;
+  cursor: pointer;
+  padding: 0px 5px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+.calendar__form--addEvent {
+  background: #4A6CBA;
+  color: #fff;
+  width: 26px;
+  height: 26px;
+  border-radius: 100%;
+  box-shadow: 0 0 6px 0 #666;
+  cursor: pointer;
+  font-size: 44px;
+  text-align: center;
+  margin-top: 12px;
 }
 
 .note {
