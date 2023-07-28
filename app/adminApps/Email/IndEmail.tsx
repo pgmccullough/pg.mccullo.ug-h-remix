@@ -30,9 +30,7 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
   }
 
   const [attachments, setAttachments] = useState<any[]>([]);
-  const [cleanEmail, setCleanEmail] = useState<string>(emailBody);
-
-  console.log(emailBody);
+  const [cleanEmail, setCleanEmail] = useState<string>(emailBody.replaceAll('<!--',''));
 
   useEffect(() => {
     if(!email.unread || email.unread !== 0) {
