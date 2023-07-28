@@ -165,10 +165,19 @@ export const Calendar: React.FC<{}> = () => {
           <div className="postcard__content__text">
             <div className="calendar">
               <div className="calendar__header">
-                <div onClick={() => changeMonth("prev")} className="calendar__header--previous">&lt;</div>
-                <div className="calendar__header--current">{curMonth.monthName}, {curMonth.year}</div>
-                <div onClick={() => changeMonth("next")} className="calendar__header--next">&gt;</div>
-                <a href={gSyncLink}>google</a>
+                <div className="calendar__headGroup" />
+                <div className="calendar__headGroup calendar__headGroup--center">
+                  <div onClick={() => changeMonth("prev")} className="calendar__header--previous">^</div>
+                  <div className="calendar__header--current">{curMonth.monthName} {curMonth.year}</div>
+                  <div onClick={() => changeMonth("next")} className="calendar__header--next">^</div>
+                </div>
+                <div className="calendar__headGroup calendar__headGroup--right">
+                  <a href={gSyncLink}>
+                    <button className="postcard__time__option calendar__sync">
+                      <img className="calendar__googleLogo" src="/googlelogo.svg" /> Sync
+                    </button>
+                  </a>
+                </div>
               </div>
               <div className="calendar__days">
                 <div className="calendar__days--day">Sun</div>

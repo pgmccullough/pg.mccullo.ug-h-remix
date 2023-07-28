@@ -8,16 +8,34 @@
         justify-content: center;
         margin-bottom: 10px;
 
+        &--previous,&--next {
+          color: #fff;
+          background: #4A6CBA;
+          font: 2.5rem PGM Sans;
+          margin: 0 8px;
+          border: 0;
+          border-radius: 4px;
+          padding-top: 2px;
+          padding-left: 1px;
+          box-sizing: border-box;
+          height: 20px;
+          width: 20px;
+          display: inline-flex;
+          cursor: pointer;
+          transform: rotate(90deg);
+        }
+
         &--previous {
-            cursor: pointer;
+          transform: rotate(-90deg);
+          padding-top: 3px;
+          padding-left: 0px;
         }
 
         &--current {
             padding: 0px 20px;
-        }
-
-        &--next {
-            cursor: pointer;
+            text-align: center;
+            white-space: nowrap;
+            min-width:10.25rem;
         }
 
         &--close {
@@ -171,4 +189,27 @@
             margin-top: 12px; 
         }
     }
+  &__sync {
+    width: auto;
+    color: #000;
+    position: relative;
+    right: -.375rem;
+  }
+  &__googleLogo {
+    height: 1.15rem;
+  }
+  &__headGroup {
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+    max-width: 6rem;
+    &--center {
+      justify-content: center;
+      max-width: none;
+    }
+    &--right {
+      margin-top: -7px;
+    }
+  }
+   
 }

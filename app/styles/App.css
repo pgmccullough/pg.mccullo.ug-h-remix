@@ -1123,14 +1123,32 @@ button {
   justify-content: center;
   margin-bottom: 10px;
 }
-.calendar__header--previous {
+.calendar__header--previous, .calendar__header--next {
+  color: #fff;
+  background: #4A6CBA;
+  font: 2.5rem PGM Sans;
+  margin: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  padding-top: 2px;
+  padding-left: 1px;
+  box-sizing: border-box;
+  height: 20px;
+  width: 20px;
+  display: inline-flex;
   cursor: pointer;
+  transform: rotate(90deg);
+}
+.calendar__header--previous {
+  transform: rotate(-90deg);
+  padding-top: 3px;
+  padding-left: 0px;
 }
 .calendar__header--current {
   padding: 0px 20px;
-}
-.calendar__header--next {
-  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  min-width: 10.25rem;
 }
 .calendar__header--close {
   position: absolute;
@@ -1269,6 +1287,28 @@ button {
   font-size: 44px;
   text-align: center;
   margin-top: 12px;
+}
+.calendar__sync {
+  width: auto;
+  color: #000;
+  position: relative;
+  right: -0.375rem;
+}
+.calendar__googleLogo {
+  height: 1.15rem;
+}
+.calendar__headGroup {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  max-width: 6rem;
+}
+.calendar__headGroup--center {
+  justify-content: center;
+  max-width: none;
+}
+.calendar__headGroup--right {
+  margin-top: -7px;
 }
 
 .note {
