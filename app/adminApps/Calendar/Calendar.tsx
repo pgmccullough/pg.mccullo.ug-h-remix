@@ -100,22 +100,25 @@ export const Calendar: React.FC<{}> = () => {
   }
 
   useEffect(() => {
-    setGSyncLink(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!)?.expTime>Math.floor(new Date().getTime() / 1000)?"/h/#gsync":"https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/calendar&include_granted_scopes=true&response_type=token&state=unused&redirect_uri=https%3A//pg.mccullo.ug/h&client_id=663051266767-jjl8shsljmqonrvvb74k6g5p9ejppv5e.apps.googleusercontent.com")
-    let tokenCheck = window.location.hash.split("&");
-    const paramObject: {[key: string]: string} = {};
-    tokenCheck.forEach(keyVal => {paramObject[keyVal.split("=")[0]] = keyVal.split("=")[1]})
-    if(paramObject.access_token) {
-      scrapeGoogleCal(paramObject.access_token);
-      const expTime = Number(paramObject.expires_in) + Math.floor(new Date().getTime() / 1000);
-      const token = paramObject.access_token
-      localStorage.setItem("gcal",JSON.stringify({expTime,token}));
-      history.replaceState(null, "", window.location.origin+window.location.pathname);
+    console.log("infinite????");
+    if(!(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!)?.expTime>Math.floor(new Date().getTime() / 1000)&&gSyncLink==="/h/#gsync")) {
+      setGSyncLink(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!)?.expTime>Math.floor(new Date().getTime() / 1000)?"/h/#gsync":"https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/calendar&include_granted_scopes=true&response_type=token&state=unused&redirect_uri=https%3A//pg.mccullo.ug/h&client_id=663051266767-jjl8shsljmqonrvvb74k6g5p9ejppv5e.apps.googleusercontent.com")
+      let tokenCheck = window.location.hash.split("&");
+      const paramObject: {[key: string]: string} = {};
+      tokenCheck.forEach(keyVal => {paramObject[keyVal.split("=")[0]] = keyVal.split("=")[1]})
+      if(paramObject.access_token) {
+        scrapeGoogleCal(paramObject.access_token);
+        const expTime = Number(paramObject.expires_in) + Math.floor(new Date().getTime() / 1000);
+        const token = paramObject.access_token
+        localStorage.setItem("gcal",JSON.stringify({expTime,token}));
+        history.replaceState(null, "", window.location.origin+window.location.pathname);
+      }
+      if(window.location.hash==="#gsync") {
+        scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
+        history.replaceState(null, "", window.location.origin+window.location.pathname);
+      }
     }
-    if(window.location.hash==="#gsync") {
-      scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
-      history.replaceState(null, "", window.location.origin+window.location.pathname);
-    }
-  },[])
+  },[gSyncLink])
 
   useEffect(() => {
     if(saveGoogleEvents.type==="done") {
