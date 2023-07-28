@@ -1164,6 +1164,10 @@ button {
   transform: rotate(45deg);
   text-align: center;
 }
+.calendar__content {
+  overflow: hidden;
+  position: relative;
+}
 .calendar__days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -1289,7 +1293,7 @@ button {
   margin-top: 12px;
 }
 .calendar__sync {
-  width: auto;
+  width: 4.25rem;
   color: #000;
   position: relative;
   right: -0.375rem;
@@ -1309,6 +1313,22 @@ button {
 }
 .calendar__headGroup--right {
   margin-top: -7px;
+}
+.calendar__notif {
+  position: absolute;
+  width: 100%;
+  background: #4A6CBA;
+  margin-top: 0.5rem;
+  position: absolute;
+  color: #fff;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: 0.5s;
+}
+.calendar__notif--active {
+  margin-top: -3.5rem;
 }
 
 .note {

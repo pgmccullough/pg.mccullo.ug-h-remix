@@ -26,6 +26,10 @@ export const Calendar: React.FC<{}> = () => {
     }
     return monthArr;
   }
+
+  const [ calendarNotif, setCalendarNotif ] = useState<{
+    active: boolean, message: string, completed: boolean
+  }>({active: false, message: "", completed: false})
   
   const [ curMonth, setCurMonth ] = useState<month>({
     curDate: yearNow+monthNow+dateNow,
@@ -89,11 +93,13 @@ export const Calendar: React.FC<{}> = () => {
           console.error(item);
         }
       })
+      setCalendarNotif({active: true, message: "Syncing with Google", completed: false})
       saveGoogleEvents.submit(
         { events: JSON.stringify(dbEvents) },
         { method: "post", action: `/api/calendar?index` }
       );
     } catch(err) {
+      setCalendarNotif({active: true, message: "Unable to sync", completed: true})
       localStorage.removeItem("gcal");
       setGSyncLink("https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/calendar&include_granted_scopes=true&response_type=token&state=unused&redirect_uri=https%3A//pg.mccullo.ug/h&client_id=663051266767-jjl8shsljmqonrvvb74k6g5p9ejppv5e.apps.googleusercontent.com")
     }
@@ -120,8 +126,17 @@ export const Calendar: React.FC<{}> = () => {
   },[gSyncLink])
 
   useEffect(() => {
+    if(calendarNotif.completed) {
+      setTimeout(() => {
+        setCalendarNotif({...calendarNotif, active: false, completed: false})
+      },2000)
+    };
+  },[calendarNotif])
+
+  useEffect(() => {
     if(saveGoogleEvents.type==="done") {
       console.log(saveGoogleEvents.data.events);
+      setCalendarNotif({active: true, message: `Succesfully updated ${saveGoogleEvents.data.events.updated} events, created ${saveGoogleEvents.data.events.added} events`, completed: true})
     }
   },[saveGoogleEvents])
 
@@ -160,7 +175,7 @@ export const Calendar: React.FC<{}> = () => {
             Calendar
           </div>
         </div>
-        <div className="postcard__content">
+        <div className="postcard__content calendar__content">
           <div className="postcard__content__media" />
           <div className="postcard__content__text">
             <div className="calendar">
@@ -172,7 +187,12 @@ export const Calendar: React.FC<{}> = () => {
                   <div onClick={() => changeMonth("next")} className="calendar__header--next">^</div>
                 </div>
                 <div className="calendar__headGroup calendar__headGroup--right">
-                  <a href={gSyncLink}>
+                  <a href={gSyncLink} onClick={(e) => {
+                    if(gSyncLink==="/h/#gsync") {
+                      e.preventDefault();
+                      scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
+                    }
+                  }}>
                     <button className="postcard__time__option calendar__sync">
                       <img className="calendar__googleLogo" src="/googlelogo.svg" /> Sync
                     </button>
@@ -210,6 +230,9 @@ export const Calendar: React.FC<{}> = () => {
                 )}
               </div>
             </div>
+          </div>
+          <div className={`calendar__notif ${calendarNotif.active&&" calendar__notif--active"}`}>
+            <div className="loader" /> <p>{calendarNotif.message}</p>
           </div>
         </div>
       </article>

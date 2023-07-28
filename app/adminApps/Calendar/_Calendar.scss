@@ -56,6 +56,11 @@
 
     }
 
+    &__content {
+      overflow: hidden;
+      position: relative;
+    }
+
     &__days {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
@@ -190,7 +195,7 @@
         }
     }
   &__sync {
-    width: auto;
+    width: 4.25rem;
     color: #000;
     position: relative;
     right: -.375rem;
@@ -211,5 +216,20 @@
       margin-top: -7px;
     }
   }
-   
+  &__notif {
+    position: absolute;
+    width: 100%;
+    background: #4A6CBA;
+    margin-top: 0.5rem;
+    position: absolute;
+    color: #fff;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: 0.5s;
+    &--active {
+      margin-top: -3.5rem;
+    }
+  }
 }
