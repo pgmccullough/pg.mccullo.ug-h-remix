@@ -20,8 +20,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   let calDates: any[] = [];
   if(user?.role==="administrator") {
     notes = await db.collection('myNotes').find().sort({created:-1}).toArray();
-    const monthSearch = new Date().getFullYear()+((new Date().getMonth()+1).toString().padStart(2, '0'));
-    calDates = await db.collection('myDates').find({datesArr: new RegExp(monthSearch)}).sort({created:-1}).toArray();
+    calDates = await db.collection('myDates').find().sort({created:-1}).toArray();
     emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
     sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
     if(!process.env.POSTMARK_TOKEN) return {response: "Postmark token required."};

@@ -157,3 +157,34 @@ export interface YouTubeVideo {
   show: boolean, 
   meta: {title: string, thumbnail: string}|null
 }
+
+export interface GoogleEvent {
+  created: string, 
+  creator: {email: string, displayName: string, self: boolean},
+  end: {dateTime: string, timeZone: string, date?: string},
+  etag: string,
+  eventType: string,
+  htmlLink: string,
+  iCalUID: string,
+  id: string,
+  kind: string,
+  location: string,
+  organizer: {email: string, displayName: string, self: boolean},
+  reminders: {useDefault: boolean},
+  sequence: number,
+  start: {dateTime: string, timeZone: string, date?:string},
+  status: string,
+  summary: string,
+  updated: string,
+}
+
+export interface DBEvent {
+  event_title: string,
+  event_details: string,
+  datesArr: string[],
+  start_time_string: string,
+  start_time_formatted: string,
+  end_time_formatted: string,
+  end_time_string: string,
+  gId?: string
+}
