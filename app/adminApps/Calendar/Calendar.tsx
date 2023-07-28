@@ -16,19 +16,14 @@ export const Calendar: React.FC<{}> = () => {
     const monthArr:any[] = [];
     for(let i=1; i <= new Date(year, month, 0).getDate(); i++) {
       const day_events:string[] = [];
-      console.log("LOOP ITER");
       const fulldate = year+month.toString().padStart(2,'0')+i.toString().padStart(2,'0');
-      console.log("DATE",fulldate)
       calDates.map((event:any) => {
         if(event.datesArr.includes(fulldate)) {
-          console.log("MATCH! PUSHING",event.event_title);
           day_events.push(event.event_title);
         }
       })
-      console.log(day_events);
       monthArr.push({i,fulldate,day_events});
     }
-    console.log("RETURNING MONTHARR:",monthArr);
     return monthArr;
   }
   
@@ -114,11 +109,11 @@ export const Calendar: React.FC<{}> = () => {
       const expTime = Number(paramObject.expires_in) + Math.floor(new Date().getTime() / 1000);
       const token = paramObject.access_token
       localStorage.setItem("gcal",JSON.stringify({expTime,token}));
-      history.replaceState(null, "", "http://localhost:3000");
+      history.replaceState(null, "", window.location.origin+window.location.pathname);
     }
     if(window.location.hash==="#gsync") {
-        scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
-        history.replaceState(null, "", "http://localhost:3000");
+      scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
+      history.replaceState(null, "", window.location.origin+window.location.pathname);
     }
   },[])
 
