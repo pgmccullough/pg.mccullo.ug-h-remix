@@ -100,8 +100,7 @@ export const Calendar: React.FC<{}> = () => {
   }
 
   useEffect(() => {
-    console.log("infinite????");
-    if(!(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!)?.expTime>Math.floor(new Date().getTime() / 1000)&&gSyncLink==="/h/#gsync")) {
+    if(!(JSON.parse(localStorage.getItem("gcal")!)?.expTime>Math.floor(new Date().getTime() / 1000)&&gSyncLink==="/h/#gsync")) {
       setGSyncLink(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!)?.expTime>Math.floor(new Date().getTime() / 1000)?"/h/#gsync":"https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/calendar&include_granted_scopes=true&response_type=token&state=unused&redirect_uri=https%3A//pg.mccullo.ug/h&client_id=663051266767-jjl8shsljmqonrvvb74k6g5p9ejppv5e.apps.googleusercontent.com")
       let tokenCheck = window.location.hash.split("&");
       const paramObject: {[key: string]: string} = {};
