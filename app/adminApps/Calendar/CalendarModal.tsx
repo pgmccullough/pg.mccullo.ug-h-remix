@@ -5,19 +5,20 @@ import type { DateForm, DayEvent, niceDay } from '../../common/types';
 export const CalendarModal: React.FC<{
   accessToken: string,
   modalDisplay: {i: number, fulldate: string, day_events: DayEvent[]},
+  setCurMonth: any,
   setModalDisplay: any
-}> = ({ accessToken, modalDisplay, setModalDisplay }) => {
+}> = ({ accessToken, modalDisplay, setCurMonth, setModalDisplay }) => {
   
   const addEvent = useFetcher();
 
   const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   
   const niceDay: niceDay = {
-    year: modalDisplay.fulldate.substring(0,4),
-    month: modalDisplay.fulldate.substring(4,6), 
-    niceMonth: months[Number(modalDisplay.fulldate.substring(4,6))-1], 
-    date: modalDisplay.fulldate.substring(6,8), 
-    full: new Date(modalDisplay.fulldate.substring(4,6)+"-"+modalDisplay.fulldate.substring(6,8)+"-"+modalDisplay.fulldate.substring(0,4))
+    year: modalDisplay.fulldate?.substring(0,4),
+    month: modalDisplay.fulldate?.substring(4,6), 
+    niceMonth: months[Number(modalDisplay.fulldate?.substring(4,6))-1], 
+    date: modalDisplay.fulldate?.substring(6,8), 
+    full: new Date(modalDisplay.fulldate?.substring(4,6)+"-"+modalDisplay.fulldate?.substring(6,8)+"-"+modalDisplay.fulldate?.substring(0,4))
   };
 
   const [ newEvent, setNewEvent ] = useState<DateForm>({
@@ -41,6 +42,33 @@ export const CalendarModal: React.FC<{
 
   useEffect(() => {
     console.log(addEvent)
+    if(addEvent.data?.deletedEvent?.error) {
+      console.log("Something went wrong with deletion");
+    }
+    if(addEvent.data?.deletedEvent?.dbId) {
+      setModalDisplay((prev: any) => {
+        const filteredEvents = prev.day_events
+          .filter((event: DayEvent) => event._id !== addEvent.data?.deletedEvent?.dbId);
+          return {...prev, day_events: filteredEvents};
+      })
+      // setCurMonth((prev: any) => {
+      //   console.log(prev.monthArr);
+      //   const filtered = prev.monthArr?.map((day:any) =>
+      //     day.day_events?.map((event:any)=> {
+      //       if(event._id===addEvent.data?.deletedEvent?.dbId) {
+      //         console.log("FOUND THE MATCH TO REMOVE!",event);
+      //         return;
+      //       } else {
+      //         console.log("FOUND ONE TO KEEP!",event);
+      //         return event;
+      //       }
+      //     })
+      //   )
+      //   console.log("OLD!",prev);
+      //   console.log("NEW!",{...prev, monthArr: filtered});
+      //   return {...prev, monthArr: filtered};
+      // })
+    }
   },[addEvent])
 
   const submitForm = () => {
@@ -52,6 +80,17 @@ export const CalendarModal: React.FC<{
       { method: "post", action: `/api/calendar/create?index` }
     );
   }
+
+  const deleteEvent = (dbId:string, gId:string) => {
+    addEvent.submit(
+      { 
+        deleteDbId: dbId,
+        deleteGId: gId,
+        accessToken
+      },
+      { method: "post", action: `/api/calendar/delete?index` }
+    );
+  } 
 
   const updateForm = (e:any) => {
     setNewEvent({...newEvent, [e.target.name]: e.target.value})
@@ -87,11 +126,11 @@ export const CalendarModal: React.FC<{
             <div onClick={() => setModalDisplay(null)} className="calendar__header--close">+</div>
         </div>
         <div className="calendar__appointments">
-            {modalDisplay.day_events.length>0
+            {modalDisplay.day_events?.length>0
               ?modalDisplay.day_events
                 .sort((a: DayEvent,b: DayEvent) => 
                   Number(a.start_time_string) - Number(b.start_time_string)
-                ).map((event: DayEvent) => (
+                )?.map((event: DayEvent) => (
                   <div className="calendar__appointments__ind" key={event._id}>
                     <div className="calendar__appointments__ind--time">
                       <>{event.start_time_formatted} - {event.end_time_formatted}</>
@@ -99,6 +138,7 @@ export const CalendarModal: React.FC<{
                     <div className="calendar__appointments__ind--event">
                       <div className="calendar__appointments__ind--event--title">{event.event_title}</div>
                       <div className="calendar__appointments__ind--event--details">{event.event_details||""}</div>
+                      <button onClick={() => deleteEvent(event._id, event.gId)}>Delete</button>
                     </div>
                   </div>
             )):"No events for this date."}

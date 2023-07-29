@@ -194,6 +194,7 @@ export const Calendar: React.FC<{}> = () => {
               ?<CalendarModal 
                 accessToken={accessToken}
                 modalDisplay={modalDisplay}
+                setCurMonth={setCurMonth}
                 setModalDisplay={setModalDisplay}
               />
               :""
@@ -228,12 +229,12 @@ export const Calendar: React.FC<{}> = () => {
               <div className="calendar__days--day">Sat</div>
             </div>
             <div className="calendar__dates">
-              {curMonth?.monthArr.map((dateBlock:{i:number, fulldate:string, day_events: string[]}) =>                                 
+              {curMonth?.monthArr?.map((dateBlock:{i:number, fulldate:string, day_events: string[]}) =>                                 
                 <div 
                   key={dateBlock.i} 
                   onClick={() => setModalDisplay(dateBlock)} 
-                  id={dateBlock.fulldate}
-                  className={`calendar__dates__block${curMonth.curDate===dateBlock.fulldate?"--current":""}`} 
+                  id={dateBlock?.fulldate}
+                  className={`calendar__dates__block${curMonth.curDate===dateBlock?.fulldate?"--current":""}`} 
                   style={dateBlock.i===1?{gridColumn: curMonth.firstDay+1}:{}}
                 >
                   <div className="calendar__dates__block--label">
