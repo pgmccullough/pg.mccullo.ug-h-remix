@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
-import { dateForm, niceDay } from '../../common/types';
+import type { DayEvent, dateForm, niceDay } from '../../common/types';
 
-export const CalendarModal: React.FC<{ setModalDisplay: any}> = ({setModalDisplay}) => {
-    // const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    // const niceDay: niceDay = {year: null, month: null, niceMonth: null, date: null, full: null};
-    // niceDay.year = fullDay.substring(0,4);
-    // niceDay.month = fullDay.substring(4,6);
-    // niceDay.niceMonth = months[Number(niceDay.month)-1];
-    // niceDay.date = fullDay.substring(6,8);
-    // niceDay.full = new Date(niceDay.month+"-"+niceDay.date+"-"+niceDay.year);
+export const CalendarModal: React.FC<{ 
+  modalDisplay: {i: number, fulldate: string, day_events: DayEvent[]},
+  setModalDisplay: any
+}> = ({ modalDisplay, setModalDisplay }) => {
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const niceDay: niceDay = {
+      year: modalDisplay.fulldate.substring(0,4),
+      month: modalDisplay.fulldate.substring(4,6), 
+      niceMonth: months[Number(modalDisplay.fulldate.substring(4,6))-1], 
+      date: modalDisplay.fulldate.substring(6,8), 
+      full: new Date(modalDisplay.fulldate.substring(4,6)+"-"+modalDisplay.fulldate.substring(6,8)+"-"+modalDisplay.fulldate.substring(0,4))
+    };
+    
 
     // const [addForm, toggleAddForm] = useState(false);
     // const [appointments, getAppointments] = useState([]);
@@ -83,30 +88,30 @@ export const CalendarModal: React.FC<{ setModalDisplay: any}> = ({setModalDispla
     return (
         <div className="calendar calendar__modal">
             <div className="calendar__header">
-                {/* {niceDay.full.toLocaleDateString([], {
+                {niceDay.full.toLocaleDateString([], {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                     weekday: 'long'
-                })}  */}
+                })} 
                 <div onClick={() => setModalDisplay(null)} className="calendar__header--close">+</div>
             </div>
             <div className="calendar__appointments">
-                {/* {appointments.length>0?appointments.map(appt => ( */}
-                    <div className="calendar__appointments__ind" key={1}>
+                {modalDisplay.day_events.length>0
+                  ?modalDisplay.day_events
+                    .sort((a: DayEvent,b: DayEvent) => 
+                      Number(a.start_time_string) - Number(b.start_time_string)
+                    ).map((event: DayEvent) => (
+                      <div className="calendar__appointments__ind" key={event._id}>
                         <div className="calendar__appointments__ind--time">
-                            {/* {appt.datesArr.length===1?
-                            <>{appt.start_time_formatted} - {appt.end_time_formatted}</>
-                            :(appt.datesArr[0]===Number(fullDay))?<>{appt.start_time_formatted}</>
-                            :(appt.datesArr[appt.datesArr.length-1]===Number(fullDay))?<>Until {appt.end_time_formatted}</>
-                            :"All Day"} */}
+                          <>{event.start_time_formatted} - {event.end_time_formatted}</>
                         </div>
                         <div className="calendar__appointments__ind--event">
-                            <div className="calendar__appointments__ind--event--title">title</div>
-                            <div className="calendar__appointments__ind--event--details">details</div>
+                          <div className="calendar__appointments__ind--event--title">{event.event_title}</div>
+                          <div className="calendar__appointments__ind--event--details">{event.event_details||""}</div>
                         </div>
-                    </div>
-                {/* )):"No events for this date."} */}
+                      </div>
+                )):"No events for this date."}
             </div>
             <div className="calendar__form">
                 {/* {addForm?<> */}

@@ -1,7 +1,7 @@
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { CalendarModal } from './CalendarModal';
-import type { DBEvent, month, GoogleEvent } from '../../common/types';
+import type { DayEvent, DBEvent, month, GoogleEvent } from '../../common/types';
 
 export const Calendar: React.FC<{}> = () => {
 
@@ -20,7 +20,7 @@ export const Calendar: React.FC<{}> = () => {
       const fulldate = year+month.toString().padStart(2,'0')+i.toString().padStart(2,'0');
       calDates.map((event:any) => {
         if(event.datesArr.includes(fulldate)) {
-          day_events.push(event.event_title);
+          day_events.push(event);
         }
       })
       monthArr.push({i,fulldate,day_events});
@@ -32,7 +32,7 @@ export const Calendar: React.FC<{}> = () => {
     active: boolean, message: string, completed: boolean
   }>({active: false, message: "", completed: false})
   
-  const [ modalDisplay, setModalDisplay ] = useState<{}|null>(null)
+  const [ modalDisplay, setModalDisplay ] = useState<DayEvent|null|any>(null)
 
   const [ curMonth, setCurMonth ] = useState<month>({
     curDate: yearNow+monthNow+dateNow,
@@ -60,7 +60,7 @@ export const Calendar: React.FC<{}> = () => {
         const start_time_string = startTimeArr[0]+startTimeArr[1];
         const start_time_formatted = `${Number(startTimeArr[0]) > 12?Number(startTimeArr[0])-12:Number(startTimeArr[0])}:${startTimeArr[1]} ${Number(startTimeArr[0]) >= 12?" PM":" AM"}`
         const endDate = item.end.dateTime?.split("T")[0]?.split("-")||item.end.date?.split("-");
-        const endTimeArr = item.start.dateTime?.split("T")[1]?.split(":")||["12","00"];
+        const endTimeArr = item.end.dateTime?.split("T")[1]?.split(":")||["12","00"];
         const end_time_string = endTimeArr[0]+endTimeArr[1];
         const end_time_formatted = `${Number(endTimeArr[0]) > 12?Number(endTimeArr[0])-12:Number(endTimeArr[0])}:${endTimeArr[1]} ${Number(endTimeArr[0]) >= 12?" PM":" AM"}`;
         let datesArr = [startDate[0]+startDate[1]+startDate[2]];
@@ -182,7 +182,13 @@ export const Calendar: React.FC<{}> = () => {
         <div className="postcard__content__media" />
         <div className="postcard__content__text">
           <div className="calendar">
-            {modalDisplay?<CalendarModal setModalDisplay={setModalDisplay} />:""}
+            {modalDisplay
+              ?<CalendarModal 
+                modalDisplay={modalDisplay}
+                setModalDisplay={setModalDisplay}
+              />
+              :""
+            }
             <div className="calendar__header">
               <div className="calendar__headGroup" />
               <div className="calendar__headGroup calendar__headGroup--center">

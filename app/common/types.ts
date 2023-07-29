@@ -188,3 +188,15 @@ export interface DBEvent {
   end_time_string: string,
   gId?: string
 }
+
+export interface DayEvent {
+  datesArr: string[],
+  end_time_formatted: string,
+  end_time_string: string,
+  event_details?: string,
+  event_title: string,
+  gId: string,
+  start_time_formatted: string,
+  start_time_string: string,
+  _id: string
+}
