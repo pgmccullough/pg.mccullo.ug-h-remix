@@ -52,19 +52,23 @@ export let BlankPost: Post = {
 
 export interface Posts extends Array<Post>{}
 
-export interface dateForm {
-  start_code: any,
-  event_title: any
-  event_details: any
-  start_hour: any,
-  start_minute: any,
-  start_ampm: any, 
-  end_month: any, 
-  end_date: any, 
-  end_year: any,
-  end_hour: any, 
-  end_minute: any, 
-  end_ampm: any
+export interface DateForm {
+  event_title: string,
+  event_details: string,
+  start_month_numeric: string,
+  start_month: string, 
+  start_date: string, 
+  start_year: string,
+  start_hour: string,
+  start_minute: string,
+  start_ampm: "AM"|"PM", 
+  end_month_numeric: string, 
+  end_month: string, 
+  end_date: string, 
+  end_year: string,
+  end_hour: string, 
+  end_minute: string, 
+  end_ampm: "AM"|"PM"
 }
 
 export interface niceDay {

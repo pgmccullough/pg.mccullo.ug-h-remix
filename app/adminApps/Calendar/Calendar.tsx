@@ -19,7 +19,7 @@ export const Calendar: React.FC<{}> = () => {
       const day_events:string[] = [];
       const fulldate = year+month.toString().padStart(2,'0')+i.toString().padStart(2,'0');
       calDates.map((event:any) => {
-        if(event.datesArr.includes(fulldate)) {
+        if(event.datesArr?.includes(fulldate)) {
           day_events.push(event);
         }
       })
@@ -46,7 +46,9 @@ export const Calendar: React.FC<{}> = () => {
     year: yearNow
   });
 
-  const [ gSyncLink, setGSyncLink ] = useState<string>("")
+  const [ gSyncLink, setGSyncLink ] = useState<string>("");
+
+  const [ accessToken, setAccessToken ] = useState<string>("");
 
   const scrapeGoogleCal = async (token: string) => {
     try {
@@ -115,6 +117,7 @@ export const Calendar: React.FC<{}> = () => {
       const paramObject: {[key: string]: string} = {};
       tokenCheck.forEach(keyVal => {paramObject[keyVal.split("=")[0]] = keyVal.split("=")[1]})
       if(paramObject.access_token) {
+        setAccessToken(paramObject.access_token);
         scrapeGoogleCal(paramObject.access_token);
         const expTime = Number(paramObject.expires_in) + Math.floor(new Date().getTime() / 1000);
         const token = paramObject.access_token
@@ -122,11 +125,16 @@ export const Calendar: React.FC<{}> = () => {
         history.replaceState(null, "", window.location.origin+window.location.pathname);
       }
       if(window.location.hash==="#gsync") {
+        setAccessToken(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
         scrapeGoogleCal(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
         history.replaceState(null, "", window.location.origin+window.location.pathname);
       }
     }
   },[gSyncLink])
+
+  useEffect(() => {
+    setAccessToken(localStorage.getItem("gcal")&&JSON.parse(localStorage.getItem("gcal")!).token);
+  },[])
 
   useEffect(() => {
     if(calendarNotif.completed) {
@@ -184,6 +192,7 @@ export const Calendar: React.FC<{}> = () => {
           <div className="calendar">
             {modalDisplay
               ?<CalendarModal 
+                accessToken={accessToken}
                 modalDisplay={modalDisplay}
                 setModalDisplay={setModalDisplay}
               />
