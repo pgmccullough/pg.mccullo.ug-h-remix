@@ -1441,6 +1441,7 @@ button {
 
 .webcam__video {
   width: 100%;
+  background: #666;
 }
 .webcam__video--hide {
   display: none;

@@ -1,6 +1,7 @@
 .webcam {
   &__video {
     width: 100%;
+    background: #666;
     &--hide {
       display: none;
     }

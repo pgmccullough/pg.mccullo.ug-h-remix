@@ -9,10 +9,12 @@ export const Webcam: React.FC<{}> = () => {
   const [stream, setStream] = useState<MediaStream|null>(null);
   const [videoChunks, setVideoChunks] = useState<BlobEvent[] | any>([]);
   const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
+  const [audioStatus, setAudioStatus] = useState<{user: boolean, recording: boolean}>({user: true, recording: false})
+  const [videoStatus, setVideoStatus] = useState<boolean>(true);
 
   useEffect(() => {
     getVideo();
-  }, [videoRef]);
+  }, [videoRef, audioStatus, videoStatus]);
 
   const visualTime = (seconds: number) => {
     if(seconds<60) {
@@ -40,6 +42,7 @@ export const Webcam: React.FC<{}> = () => {
 
   const startRecording = async () => {
     if(stream) {
+      setAudioStatus({...audioStatus, recording:true});
       setRecordingStatus("recording");
       setRecordedVideo(null);
       setRecordingTime({seconds: 0, display: "0:00"});
@@ -58,6 +61,7 @@ export const Webcam: React.FC<{}> = () => {
 
   const stopRecording = () => {
     setRecordingTime(null);
+    setAudioStatus({...audioStatus, recording:false});
     if(mediaRecorder.current) {
       setRecordingStatus("inactive");
       mediaRecorder.current.stop();
@@ -72,7 +76,7 @@ export const Webcam: React.FC<{}> = () => {
 
   const getVideo = async () => {
     const streamData = await navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
+      .getUserMedia({ video: videoStatus, audio: (!(audioStatus.user||audioStatus.recording)) })
     if(videoRef.current) {
       setStream(streamData);
       let video = videoRef.current;
@@ -103,9 +107,9 @@ export const Webcam: React.FC<{}> = () => {
             {recordedVideo
               ?<>
                 <video className="webcam__video" src={recordedVideo} controls />
-                <a download href={recordedVideo}>
+                {/* <a download href={recordedVideo}>
                   Download Video
-                </a>
+                </a> */}
               </>
               :""
             }
@@ -113,8 +117,16 @@ export const Webcam: React.FC<{}> = () => {
               ?<button onClick={startRecording}>RECORD</button>
               :<button onClick={stopRecording}>STOP</button>
             }
+            {audioStatus.user
+              ?<button onClick={() => setAudioStatus({...audioStatus, user: false})}>UNMUTE</button>
+              :<button onClick={() => setAudioStatus({...audioStatus, user: true})}>MUTE</button>
+            }
+            {videoStatus
+              ?<button onClick={() => {setVideoStatus(false); setAudioStatus({...audioStatus, user: false})}}>DISABLE CAMERA</button>
+              :<button onClick={() => setVideoStatus(true)}>ENABLE CAMERA</button>
+            }
             {recordingStatus==="inactive"&&recordedVideo
-              ?<button onClick={() => {setRecordedVideo(null)}}>Cancel</button>
+              ?<button onClick={() => {setRecordedVideo(null)}}>CANCEL</button>
               :""
             }
           </div>
