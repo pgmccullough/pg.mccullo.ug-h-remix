@@ -4,6 +4,8 @@ export const Webcam: React.FC<{}> = () => {
 
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const [ webcamOn, setWebcamOn ] = useState<boolean>(false);
   const [recordingStatus, setRecordingStatus] = useState<"inactive"|"recording">("inactive");
   const [recordingTime, setRecordingTime] = useState<{seconds: number, display: string} | null>(null);
   const [stream, setStream] = useState<MediaStream|null>(null);
@@ -13,8 +15,8 @@ export const Webcam: React.FC<{}> = () => {
   const [videoStatus, setVideoStatus] = useState<boolean>(true);
 
   useEffect(() => {
-    getVideo();
-  }, [videoRef, audioStatus, videoStatus]);
+    webcamOn&&getVideo();
+  }, [videoRef, audioStatus, videoStatus, webcamOn]);
 
   const visualTime = (seconds: number) => {
     if(seconds<60) {
@@ -46,7 +48,7 @@ export const Webcam: React.FC<{}> = () => {
       setRecordingStatus("recording");
       setRecordedVideo(null);
       setRecordingTime({seconds: 0, display: "0:00"});
-      const media = new MediaRecorder(stream, { mimeType: "video/webm" });
+      const media = new MediaRecorder(stream, { mimeType: "video/webm;codecs=h264" });
       mediaRecorder.current = media;
       mediaRecorder.current.start();
       let localVideoChunks: any[] = [];
@@ -65,12 +67,12 @@ export const Webcam: React.FC<{}> = () => {
     if(mediaRecorder.current) {
       setRecordingStatus("inactive");
       mediaRecorder.current.stop();
-      mediaRecorder.current.onstop = () => {
+      mediaRecorder.current.onstop = async () => {
         const videoBlob = new Blob(videoChunks);
         const videoUrl = URL.createObjectURL(videoBlob);
         setRecordedVideo(videoUrl);
         setVideoChunks([]);
-      };
+      }
     }
   }
 
@@ -103,7 +105,8 @@ export const Webcam: React.FC<{}> = () => {
         <div className="postcard__content">
           <div className="postcard__content__media"/>
           <div className="webcam">
-            <video className={`webcam__video${recordedVideo?" webcam__video--hide":""}`} ref={videoRef}/>
+            <video className={`webcam__video${recordedVideo?" webcam__video--hide":""}`} ref={videoRef} />
+            {!webcamOn&&<button onClick={() => setWebcamOn(true)}>TURN ON WEBCAM</button>}
             {recordedVideo
               ?<>
                 <video className="webcam__video" src={recordedVideo} controls />
@@ -114,19 +117,19 @@ export const Webcam: React.FC<{}> = () => {
               :""
             }
             {recordingStatus==="inactive"
-              ?<button onClick={startRecording}>RECORD</button>
-              :<button onClick={stopRecording}>STOP</button>
+              ?webcamOn&&<button onClick={startRecording}>RECORD</button>
+              :webcamOn&&<button onClick={stopRecording}>STOP</button>
             }
             {audioStatus.user
-              ?<button onClick={() => setAudioStatus({...audioStatus, user: false})}>UNMUTE</button>
-              :<button onClick={() => setAudioStatus({...audioStatus, user: true})}>MUTE</button>
+              ?webcamOn&&<button onClick={() => setAudioStatus({...audioStatus, user: false})}>UNMUTE</button>
+              :webcamOn&&<button onClick={() => setAudioStatus({...audioStatus, user: true})}>MUTE</button>
             }
             {videoStatus
-              ?<button onClick={() => {setVideoStatus(false); setAudioStatus({...audioStatus, user: false})}}>DISABLE CAMERA</button>
-              :<button onClick={() => setVideoStatus(true)}>ENABLE CAMERA</button>
+              ?webcamOn&&<button onClick={() => {setVideoStatus(false); setAudioStatus({...audioStatus, user: false})}}>DISABLE CAMERA</button>
+              :webcamOn&&<button onClick={() => setVideoStatus(true)}>ENABLE CAMERA</button>
             }
             {recordingStatus==="inactive"&&recordedVideo
-              ?<button onClick={() => {setRecordedVideo(null)}}>CANCEL</button>
+              ?webcamOn&&<button onClick={() => {setRecordedVideo(null)}}>CANCEL</button>
               :""
             }
           </div>
