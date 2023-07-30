@@ -5,6 +5,7 @@ export const Webcam: React.FC<{}> = () => {
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [recordingStatus, setRecordingStatus] = useState<"inactive"|"recording">("inactive");
+  const [recordingTime, setRecordingTime] = useState<{seconds: number, display: string} | null>(null);
   const [stream, setStream] = useState<MediaStream|null>(null);
   const [videoChunks, setVideoChunks] = useState<BlobEvent[] | any>([]);
   const [recordedVideo, setRecordedVideo] = useState<string | null>(null);
@@ -13,10 +14,35 @@ export const Webcam: React.FC<{}> = () => {
     getVideo();
   }, [videoRef]);
 
+  const visualTime = (seconds: number) => {
+    if(seconds<60) {
+      return "0:"+seconds.toString().padStart(2,'0');
+    } else {
+      const minutes = Math.floor(seconds/60).toString().padStart(2,'0')
+      const newSeconds = (seconds%60).toString().padStart(2,'0');
+      return minutes+":"+newSeconds;
+    }
+  }
+
+  useEffect(() => {
+    if(recordingTime) {
+      const secondInc = setInterval(() => {
+        let seconds = recordingTime.seconds;
+        seconds++;
+        let display = visualTime(seconds);
+        setRecordingTime({seconds, display});
+      },1000);
+      return () => {
+        clearInterval(secondInc)
+      };
+    }
+  },[recordingTime])
+
   const startRecording = async () => {
     if(stream) {
       setRecordingStatus("recording");
       setRecordedVideo(null);
+      setRecordingTime({seconds: 0, display: "0:00"});
       const media = new MediaRecorder(stream, { mimeType: "video/webm" });
       mediaRecorder.current = media;
       mediaRecorder.current.start();
@@ -31,6 +57,7 @@ export const Webcam: React.FC<{}> = () => {
   };
 
   const stopRecording = () => {
+    setRecordingTime(null);
     if(mediaRecorder.current) {
       setRecordingStatus("inactive");
       mediaRecorder.current.stop();
@@ -61,6 +88,13 @@ export const Webcam: React.FC<{}> = () => {
           <div className="postcard__time__link--unlink">
             Camera
           </div>
+          {recordingStatus==="recording"
+            ?<div className="webcam__status">
+              <div className="webcam__redDot" />
+              <div className="webCam__recTime">{recordingTime?.display||""}</div>
+            </div>
+            :""
+          }
         </div>
         <div className="postcard__content">
           <div className="postcard__content__media"/>

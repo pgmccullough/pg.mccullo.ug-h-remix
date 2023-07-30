@@ -1445,6 +1445,17 @@ button {
 .webcam__video--hide {
   display: none;
 }
+.webcam__status {
+  display: flex;
+  align-items: center;
+}
+.webcam__redDot {
+  width: 1rem;
+  height: 1rem;
+  background: red;
+  border-radius: 100%;
+  margin-right: 0.25rem;
+}
 
 .postcard__content__media__slider__weblink__anchor {
   text-decoration: none;
