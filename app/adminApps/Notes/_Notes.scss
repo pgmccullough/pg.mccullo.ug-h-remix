@@ -35,6 +35,7 @@
     @extend .note__input;
     resize: vertical;
     height: 14rem;
+    line-height: 1.35rem;
     &--blur {
       filter:blur(2px);
     }

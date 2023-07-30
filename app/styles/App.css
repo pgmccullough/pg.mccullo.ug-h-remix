@@ -1424,6 +1424,7 @@ button {
 .note__textarea {
   resize: vertical;
   height: 14rem;
+  line-height: 1.35rem;
 }
 .note__textarea--blur {
   filter: blur(2px);
