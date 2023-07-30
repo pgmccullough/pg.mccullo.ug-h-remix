@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useState } from 'react';
 import type { User, SiteData } from '../../common/types';
-import { Calendar, Email, Notes } from '~/adminApps';
+import { Calendar, Email, Notes, Webcam } from '~/adminApps';
 import { TextEditor } from '../TextEditor/TextEditor';
 
 export const Sidebar: React.FC<{
@@ -96,7 +96,7 @@ export const Sidebar: React.FC<{
           </div>
         </div>
       </article>
-      {!manualSiteData&&user?.role==="administrator"?<><Email /><Calendar /><Notes /></>:""}
+      {!manualSiteData&&user?.role==="administrator"?<><Email /><Calendar /><Notes /><Webcam /></>:""}
     </div>
   )
 }

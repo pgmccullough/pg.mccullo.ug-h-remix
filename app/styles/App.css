@@ -1439,6 +1439,13 @@ button {
   opacity: 0.5;
 }
 
+.webcam__video {
+  width: 100%;
+}
+.webcam__video--hide {
+  display: none;
+}
+
 .postcard__content__media__slider__weblink__anchor {
   text-decoration: none;
 }
