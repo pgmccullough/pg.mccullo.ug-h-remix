@@ -25,6 +25,8 @@
   &__image, &__content img {
     max-height: 90vh;
     width: auto;
+    height: auto;
+    max-width: 90vw;
   }
   &__time-bar {
     height: 0.5rem;
