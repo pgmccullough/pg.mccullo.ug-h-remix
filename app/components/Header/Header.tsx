@@ -343,6 +343,7 @@ export const Header: React.FC<{
           :siteData?.site_name}
       </div>
       <Link to="/h/">
+        <div className="header__profile--story" />
         <div 
           className="header__profile" 
           style={{

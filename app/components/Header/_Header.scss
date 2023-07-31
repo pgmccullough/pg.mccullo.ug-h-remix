@@ -1,6 +1,29 @@
 @use '../../styles/partials/mixins' as *;
 @use '../../styles/partials/variables' as *;
 
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  25% {
+    transform: rotate(90deg);
+    opacity: 0.5;
+  }
+  50% {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+  75% {
+    transform: rotate(270deg);
+    opacity: 0.5;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 1;
+  }
+}
+
 .header {
     &__cover {
         position: absolute;
@@ -59,6 +82,19 @@
         border: 3px #fff solid;
         border-radius: 100%;
         z-index: 100;
+
+        &--story {
+          @extend .header__profile;
+          width: 112px;
+          height: 112px;
+          margin-top: -3px;
+          margin-left: -3px;
+          background: linear-gradient(white, white) padding-box,
+          linear-gradient(to right, rgb(255, 91, 91), rgb(247, 194, 97), rgb(247, 102, 230), rgb(97, 97, 223)) border-box;
+          border-radius: 100%;
+          border: 4px solid transparent;
+          animation: rotate 1.5s infinite linear forwards;
+        }
 
         @include min-window {
             top: 182px; 
