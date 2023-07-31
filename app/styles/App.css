@@ -1235,10 +1235,12 @@ button {
   padding: 0px 10px;
   color: #fff;
   background: #4A6CBA;
+  width: 30%;
 }
 .calendar__appointments__ind--event {
   border-left: 2px #ccc solid;
   padding-left: 10px;
+  width: 70%;
 }
 .calendar__appointments__ind--event--details {
   color: #999;
@@ -1342,6 +1344,9 @@ button {
 }
 .calendar__notif--active {
   margin-top: -3.5rem;
+}
+.calendar__form {
+  padding: 1rem;
 }
 .calendar__form--field {
   border: 0;
