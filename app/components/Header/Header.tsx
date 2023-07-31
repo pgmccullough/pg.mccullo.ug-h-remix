@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Post, SiteData, User } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
 import { PostCreator } from '../PostCreator/PostCreator';
+import { StoryPost } from '../StoryPost/StoryPost';
 import { v4 as uuidv4 } from 'uuid';
 import { gps as getGPS } from 'exifr';
 import Pusher from "pusher-js";
@@ -14,8 +15,6 @@ export const Header: React.FC<{
   setNewPost?: any,
   storyPost?: any
 }> = ({ manualSiteData, manualUser, setNewPost, storyPost }) => {
-    
-  console.log(storyPost);
 
   const fetcher = useFetcher();
 
@@ -29,6 +28,8 @@ export const Header: React.FC<{
   const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
   const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData?.watchword.word });
+  const [ storyImageURL, setStoryImageURL ] = useState<string>(storyPost[0].media.images[0]||"");
+  const [ storyImageVisibility, setStoryImageVisibility ] = useState<boolean>(false);
   const watchWordRef = useRef<HTMLDivElement>(null);
 
   const storyImageSubmit = useRef<HTMLButtonElement>(null);
@@ -186,8 +187,6 @@ export const Header: React.FC<{
       profileImgChannel.unsubscribe();
     };
   }, []);
-
-  if(storyPost) console.log(storyPost);
 
   return (
     <header className="header">
@@ -347,16 +346,34 @@ export const Header: React.FC<{
           />
           :siteData?.site_name}
       </div>
-      <Link to="/h/">
-        <div className="header__profile--story" />
-        <div 
-          className="header__profile" 
-          style={{
-            backgroundImage: `url('${siteData?.profile_image?.image}')`
-          }}
-          ref={profileImage}
-        />
-      </Link>
+      {storyPost.length
+        ?<div 
+          style={{cursor: "pointer"}} 
+          onClick={() => setStoryImageVisibility(true)}
+        >
+          <div className="header__profile--story" />
+          <div 
+            className="header__profile" 
+            style={{
+              backgroundImage: `url('${siteData?.profile_image?.image}')`
+            }}
+            ref={profileImage}
+          />
+        </div>
+        :<Link to="/h/">
+          <div 
+            className="header__profile" 
+            style={{
+              backgroundImage: `url('${siteData?.profile_image?.image}')`
+            }}
+            ref={profileImage}
+          />
+        </Link>
+      }
+      {storyImageVisibility?<StoryPost 
+        storyImageURL={storyImageURL} 
+        setStoryImageVisibility={setStoryImageVisibility}
+      />:""}
     </header>
   )
 }
