@@ -36,7 +36,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     posts = await db.collection("myPosts").find({ privacy : "Public" }).sort({created:-1}).limit(25).toArray();
   } else {
     onThisDay = await db.collection('myPosts').find({$or: mongoOrArray}).sort({created:-1}).toArray();
-    posts = await db.collection("myPosts").find({}).sort({created:-1}).limit(25).toArray();
+    posts = await db.collection("myPosts").find({ privacy : { $not: { $eq: "Story" } } }).sort({created:-1}).limit(25).toArray();
   }
   
   return { onThisDay, posts, siteData:{...siteData[0]}, user };

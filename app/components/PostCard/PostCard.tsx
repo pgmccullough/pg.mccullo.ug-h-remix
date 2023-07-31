@@ -56,7 +56,8 @@ export const PostCard: React.FC<{
       "Followers",
       "Friends",
       "Self",
-      "Save Media"
+      "Save Media",
+      "Story"
     ]
 
     const gallerySlide = (dir:"left"|"right") => {

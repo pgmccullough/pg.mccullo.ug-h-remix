@@ -9,11 +9,14 @@ import { gps as getGPS } from 'exifr';
 import Pusher from "pusher-js";
 
 export const Header: React.FC<{
-  setNewPost?: any,
   manualSiteData?: SiteData,
-  manualUser?: User
-}> = ({ setNewPost, manualSiteData, manualUser }) => {
+  manualUser?: User,
+  setNewPost?: any,
+  storyPost?: any
+}> = ({ manualSiteData, manualUser, setNewPost, storyPost }) => {
     
+  console.log(storyPost);
+
   const fetcher = useFetcher();
 
   let loadData;
@@ -183,6 +186,8 @@ export const Header: React.FC<{
       profileImgChannel.unsubscribe();
     };
   }, []);
+
+  if(storyPost) console.log(storyPost);
 
   return (
     <header className="header">

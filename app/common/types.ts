@@ -24,7 +24,7 @@ export interface Post {
       links: any[]|null,
       videos: any[]|null,
   }
-  privacy: "Public"|"Followers"|"Friends"|"Self"|"Save Media"
+  privacy: "Public"|"Followers"|"Friends"|"Self"|"Save Media"|"Story"
 }
 
 export let BlankPost: Post = {
@@ -47,7 +47,7 @@ export let BlankPost: Post = {
       links: "",
       videos: "",
   },
-  privacy: "Self"
+  privacy: "Public"
 }
 
 export interface Posts extends Array<Post>{}

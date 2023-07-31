@@ -40,6 +40,7 @@ export const PostOptions: React.FC<{
         <option>Friends</option>
         <option>Self</option>
         <option>Save Media</option>
+        <option>Story</option>
       </select>
       <button onClick={submitPost} className="upload__feedback__submit">POST</button>
     </div>

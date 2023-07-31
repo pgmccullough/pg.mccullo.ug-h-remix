@@ -41,7 +41,8 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     }) 
   }
-  return { calDates, emails, notes, sentEmails, siteData:{...siteData[0]}, user };
+  const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).limit(1).toArray();
+  return { calDates, emails, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user };
 }
 
 export function CatchBoundary() {
@@ -69,7 +70,7 @@ export function CatchBoundary() {
 }
 
 export default function Index() {
-  const { user } = useLoaderData();
+  const { storyPost, user } = useLoaderData();
   const [ newPost, setNewPost ] = useState<Post>();
 
   return (
@@ -77,8 +78,11 @@ export default function Index() {
       {user?.role==="administrator"
         ?<Header
           setNewPost={setNewPost}
+          storyPost={storyPost} 
         />
-        :<Header />}
+        :<Header
+          storyPost={storyPost} 
+        />}
       <div className="content">
         <Sidebar />
         <div className="right-column">
