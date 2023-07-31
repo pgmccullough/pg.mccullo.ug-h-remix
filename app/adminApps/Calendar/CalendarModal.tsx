@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFetcher } from '@remix-run/react';
 import type { DateForm, DayEvent, niceDay } from '../../common/types';
 
 export const CalendarModal: React.FC<{
   accessToken: string,
-  modalDisplay: {i: number, fulldate: string, day_events: DayEvent[]},
+  modalDisplay: { i: number, fulldate: string, day_events: DayEvent[] },
   setCurMonth: any,
+  setCalendarNotif: Dispatch<SetStateAction<{ active: boolean, message: string, completed: boolean }>>,
   setModalDisplay: any
-}> = ({ accessToken, modalDisplay, setCurMonth, setModalDisplay }) => {
+}> = ({ accessToken, modalDisplay, setCurMonth, setCalendarNotif, setModalDisplay }) => {
   
   const addEvent = useFetcher();
 
   const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  
+
   const niceDay: niceDay = {
     year: modalDisplay.fulldate?.substring(0,4),
     month: modalDisplay.fulldate?.substring(4,6), 
@@ -33,7 +34,7 @@ export const CalendarModal: React.FC<{
     start_ampm: "PM", 
     end_month_numeric: niceDay.month,
     end_month: niceDay.niceMonth, 
-    end_date: niceDay.date, 
+    end_date: Number(niceDay.date).toString(), 
     end_year: niceDay.year,
     end_hour: "1", 
     end_minute: "00", 
@@ -42,6 +43,25 @@ export const CalendarModal: React.FC<{
 
   useEffect(() => {
     console.log(addEvent)
+    if(addEvent.data?.newEvent) {
+      if(addEvent.data.newEvent.google?.error) {
+        setCalendarNotif({active: true, message: "Unable to sync to Google Calendar", completed: false});
+        setTimeout(() => {
+          setCalendarNotif((prev: {
+            active: boolean, message: string, completed: boolean
+          }) => {return {...prev, completed: true}});
+          setModalDisplay(null);
+        },2000);
+      } else {
+        setCalendarNotif({active: true, message: "Event successfully created", completed: false});
+        setTimeout(() => {
+          setCalendarNotif((prev: {
+            active: boolean, message: string, completed: boolean
+          }) => {return {...prev, completed: true}});
+          setModalDisplay(null);
+        },2000);
+      }
+    }
     if(addEvent.data?.deletedEvent?.error) {
       console.log("Something went wrong with deletion");
     }
@@ -115,78 +135,80 @@ export const CalendarModal: React.FC<{
   }
     
   return (
-    <div className="calendar calendar__modal">
-        <div className="calendar__header">
-            {niceDay.full.toLocaleDateString([], {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'long'
-            })} 
-            <div onClick={() => setModalDisplay(null)} className="calendar__header--close">+</div>
-        </div>
-        <div className="calendar__appointments">
-            {modalDisplay.day_events?.length>0
-              ?modalDisplay.day_events
-                .sort((a: DayEvent,b: DayEvent) => 
-                  Number(a.start_time_string) - Number(b.start_time_string)
-                )?.map((event: DayEvent) => (
-                  <div className="calendar__appointments__ind" key={event._id}>
-                    <div className="calendar__appointments__ind--time">
-                      <>{event.start_time_formatted} - {event.end_time_formatted}</>
+    <>
+      <div onClick={() => setModalDisplay(null)} className="calendar__header--close">+</div>
+      <div className="calendar calendar__modal">
+          <div className="calendar__header">
+              {niceDay.full.toLocaleDateString([], {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  weekday: 'long'
+              })} 
+              {/* <div onClick={() => setModalDisplay(null)} className="calendar__header--close">+</div> */}
+          </div>
+          <div className="calendar__appointments">
+              {modalDisplay.day_events?.length>0
+                ?modalDisplay.day_events
+                  .sort((a: DayEvent,b: DayEvent) => 
+                    Number(a.start_time_string) - Number(b.start_time_string)
+                  )?.map((event: DayEvent) => (
+                    <div className="calendar__appointments__ind" key={event._id}>
+                      <div className="calendar__appointments__ind--time">
+                        <>{event.start_time_formatted} - {event.end_time_formatted}</>
+                      </div>
+                      <div className="calendar__appointments__ind--event">
+                        <div className="calendar__appointments__ind--event--title">{event.event_title}</div>
+                        <div className="calendar__appointments__ind--event--details">{event.event_details||""}</div>
+                        <button onClick={() => deleteEvent(event._id, event.gId)}>Delete</button>
+                      </div>
                     </div>
-                    <div className="calendar__appointments__ind--event">
-                      <div className="calendar__appointments__ind--event--title">{event.event_title}</div>
-                      <div className="calendar__appointments__ind--event--details">{event.event_details||""}</div>
-                      <button onClick={() => deleteEvent(event._id, event.gId)}>Delete</button>
-                    </div>
-                  </div>
-            )):"No events for this date."}
-        </div>
-        <div className="calendar__form">
-            {/* {addForm?<> */}
-            <input className="calendar__form--field--full-width" name="event_title" type="text" placeholder="Event Title" value={newEvent.event_title} onChange={updateForm} />
-            <textarea className="calendar__form--field--full-width" name="event_details" placeholder="Event Details" value={newEvent.event_details} onChange={updateForm} />
-            <div className="calendar__form--field--start-end-group">
-                <div className="calendar__form--field--start-end-group--label">Start Time</div>
-                <select className="calendar__form--field" name="start_hour" value={newEvent.start_hour} onChange={updateForm} >
-                  {printOptions(12,1,false)}
-                </select>
-                :
-                <select className="calendar__form--field" name="start_minute" value={newEvent.start_minute} onChange={updateForm} >
-                  {printOptions(60,0,true)}
-                </select>     
-                <select className="calendar__form--field" name="start_ampm" value={newEvent.start_ampm} onChange={updateForm} >
-                    <option>AM</option>
-                    <option>PM</option>
-                </select>
-            </div>
-            <div className="calendar__form--field--start-end-group">
-                <div className="calendar__form--field--start-end-group--label">End Date / Time</div>
-                <select className="calendar__form--field" name="end_month" value={newEvent.end_month} onChange={updateForm} >
-                  {printOptions(12,0,false,months)}
-                </select>
-                <select className="calendar__form--field" name="end_date" value={newEvent.end_date} onChange={updateForm} >
-                  {printOptions(31,1,false)}
-                </select>
-                <select className="calendar__form--field" name="end_year" value={newEvent.end_year} onChange={updateForm} >
-                  {printOptions(5,Number(new Date().getFullYear()),false)}
-                </select>
-                <select className="calendar__form--field" name="end_hour" value={newEvent.end_hour} onChange={updateForm} >
-                  {printOptions(12,1,false)}
-                </select>
-                :
-                <select className="calendar__form--field" name="end_minute" value={newEvent.end_minute} onChange={updateForm} >
-                  {printOptions(60,0,true)}
-                </select>     
-                <select className="calendar__form--field" name="end_ampm" value={newEvent.end_ampm} onChange={updateForm} >
-                    <option>AM</option>
-                    <option>PM</option>
-                </select>
-            </div>
-            <div className="calendar__form--submit" onClick={submitForm}>SUBMIT</div>
-            {/* <div className="calendar__form--addEvent">+</div> */}
-        </div>
-    </div>
+              )):"No events for this date."}
+          </div>
+          <div className="calendar__form">
+              {/* {addForm?<> */}
+              <input className="calendar__form--field--full-width" name="event_title" type="text" placeholder="Event Title" value={newEvent.event_title} onChange={updateForm} />
+              <textarea className="calendar__form--field--full-width" name="event_details" placeholder="Event Details" value={newEvent.event_details} onChange={updateForm} />
+              <div className="calendar__form--field--start-end-group">
+                  <div className="calendar__form--field--start-end-group--label">Start Time</div>
+                  <select className="calendar__form--field" name="start_hour" value={newEvent.start_hour} onChange={updateForm} >
+                    {printOptions(12,1,false)}
+                  </select>
+                  :
+                  <select className="calendar__form--field" name="start_minute" value={newEvent.start_minute} onChange={updateForm} >
+                    {printOptions(60,0,true)}
+                  </select>     
+                  <select className="calendar__form--field" name="start_ampm" value={newEvent.start_ampm} onChange={updateForm} >
+                      <option>AM</option>
+                      <option>PM</option>
+                  </select>
+              </div>
+              <div className="calendar__form--field--start-end-group">
+                  <div className="calendar__form--field--start-end-group--label">End Date / Time</div>
+                  <select className="calendar__form--field" name="end_month" value={newEvent.end_month} onChange={updateForm} >
+                    {printOptions(12,0,false,months)}
+                  </select>
+                  <select className="calendar__form--field" name="end_date" value={newEvent.end_date} onChange={updateForm} >
+                    {printOptions(31,1,false)}
+                  </select>
+                  <select className="calendar__form--field" name="end_year" value={newEvent.end_year} onChange={updateForm} >
+                    {printOptions(5,Number(new Date().getFullYear()),false)}
+                  </select>
+                  <select className="calendar__form--field" name="end_hour" value={newEvent.end_hour} onChange={updateForm} >
+                    {printOptions(12,1,false)}
+                  </select>
+                  :
+                  <select className="calendar__form--field" name="end_minute" value={newEvent.end_minute} onChange={updateForm} >
+                    {printOptions(60,0,true)}
+                  </select>     
+                  <select className="calendar__form--field" name="end_ampm" value={newEvent.end_ampm} onChange={updateForm} >
+                      <option>AM</option>
+                      <option>PM</option>
+                  </select>
+              </div>
+              <div className="calendar__form--submit" onClick={submitForm}>SUBMIT</div>
+          </div>
+      </div>
+    </>
   )
 }

@@ -1163,6 +1163,7 @@ button {
   font-size: 44px;
   transform: rotate(45deg);
   text-align: center;
+  z-index: 101;
 }
 .calendar__content {
   overflow: hidden;
@@ -1255,6 +1256,8 @@ button {
   margin-top: 2%;
   margin-left: 2%;
   z-index: 100;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 .calendar__form--field {
   border: 0;

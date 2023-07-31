@@ -39,19 +39,19 @@
         }
 
         &--close {
-            position: absolute; 
-            top: 8px;
-            right: 8px;
-            background: #fff;
-            width: 26px;
-            height: 26px;
-            border-radius: 100%;
-            box-shadow: 0 0 6px 0 #666;
-            cursor: pointer;
-            font-size: 44px;
-            transform: rotate(45deg);
-            text-align: center;
-
+          position: absolute; 
+          top: 8px;
+          right: 8px;
+          background: #fff;
+          width: 26px;
+          height: 26px;
+          border-radius: 100%;
+          box-shadow: 0 0 6px 0 #666;
+          cursor: pointer;
+          font-size: 44px;
+          transform: rotate(45deg);
+          text-align: center;
+          z-index: 101;
         }
 
     }
@@ -155,6 +155,8 @@
       margin-top: 2%;
       margin-left: 2%;
       z-index: 100;
+      overflow-y: scroll;
+      overflow-x: hidden;
     }
 
     &__form {

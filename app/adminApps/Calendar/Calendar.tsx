@@ -195,6 +195,7 @@ export const Calendar: React.FC<{}> = () => {
                 accessToken={accessToken}
                 modalDisplay={modalDisplay}
                 setCurMonth={setCurMonth}
+                setCalendarNotif={setCalendarNotif}
                 setModalDisplay={setModalDisplay}
               />
               :""
