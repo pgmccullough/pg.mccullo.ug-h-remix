@@ -1,6 +1,7 @@
 import { EmailInterface } from '~/common/types';
 import { useFetcher } from "@remix-run/react";
 import { useEffect, useRef, useState } from 'react';
+import { useSwipe } from '~/utils/hooks/useSwipe';
 import dayjs from 'dayjs';
 import 'dayjs/locale/en';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -19,11 +20,9 @@ export const Snippet: React.FC<{
     setCurrentEmail: any
 }> = ({ alterEmailArray, checkedSnippets, currentEmail, email, emailArray, emNotif, setCheckedSnippets, setCurrentEmail }) => {
   
-  const [touchStart, setTouchStart] = useState<number|null>(null);
-  const [touchEnd, setTouchEnd] = useState<number|null>(null);
-  const [touchDistance, setTouchDistance] = useState<number>(0);
-  const [beingDeleted, setBeingDeleted] = useState<boolean>(false)
-  const [shrinkHeight, setShrinkHeight] = useState<number>(73);
+  const [ swipe, setSwipe ] = useSwipe();
+  const [ beingDeleted, setBeingDeleted ] = useState<boolean>(false)
+  const [ _shrinkHeight, setShrinkHeight ] = useState<number>(73);
   const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const snippetDOM = useRef<HTMLDivElement>(null);
   const swipeMarkRead = useFetcher();
@@ -31,7 +30,7 @@ export const Snippet: React.FC<{
 
   const deleteEmail = () => {
     setBeingDeleted(true);
-    setTouchDistance(600);
+    setSwipe("distance")(600);
     emNotif(true, "Deleting email");
     swipeDelete.submit(
       {deleteEmailId: email._id},
@@ -54,31 +53,6 @@ export const Snippet: React.FC<{
         { readEmailId: email._id },
         { method: "post", action: `/api/email/markRead/${email._id}` }
       );
-    }
-  }
-  
-  const onTouchStart = (e: any) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-  
-  const onTouchMove = (e: any) => {
-    if(touchStart) {
-      setTouchDistance(touchStart - e.targetTouches[0].clientX)
-      setTouchEnd(e.targetTouches[0].clientX)
-    }
-  };
-  
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
-    setTouchDistance(0);
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > 150
-    const isRightSwipe = distance < -150
-    if (isLeftSwipe) {
-      deleteEmail();
-    } else if(isRightSwipe) {
-      markRead(1);
     }
   }
 
@@ -110,20 +84,22 @@ export const Snippet: React.FC<{
   return (
     <div 
       ref={snippetDOM}
-      className={`snippet__background${touchDistance>150?" snippet__background--swipeleft":""}${touchDistance<-150?" snippet__background--swiperight":""}`}
+      className={`snippet__background${swipe>150?" snippet__background--swipeleft":""}${swipe<-150?" snippet__background--swiperight":""}`}
     >
       <img 
         src="https://pg.mccullo.ug/api/media/images/icons/read_ico.png" 
-        className={`snippet__icon snippet__icon--read${touchDistance>150?" snippet__icon--hidden":""}`}
+        className={`snippet__icon snippet__icon--read${swipe>150?" snippet__icon--hidden":""}`}
       />
       <img 
         src="https://pg.mccullo.ug/api/media/images/icons/trash_ico.png"
-        className={`snippet__icon snippet__icon--trash${touchDistance<-150?" snippet__icon--hidden":""}`}
+        className={`snippet__icon snippet__icon--trash${swipe<-150?" snippet__icon--hidden":""}`}
       />
       <div
-        className={`snippet${email.unread?" snippet--unread":""}${touchDistance>0?" snippet--swipeleft":""}${touchDistance<0?" snippet--swiperight":""}`}
-        style={{transform: `translateX(${touchDistance*-1}px`}}
-        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        className={`snippet${email.unread?" snippet--unread":""}${swipe>0?" snippet--swipeleft":""}${swipe<0?" snippet--swiperight":""}`}
+        style={{transform: `translateX(${swipe*-1}px`}}
+        onTouchStart={setSwipe("start")} 
+        onTouchMove={setSwipe("move")} 
+        onTouchEnd={() => setSwipe("end")(deleteEmail,() => markRead(1))}
       >
         <div className="snippet__check">
           <input 
