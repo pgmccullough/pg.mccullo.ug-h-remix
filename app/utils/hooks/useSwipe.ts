@@ -1,34 +1,39 @@
 import { useState } from "react";
+import type { TouchEvent } from "react";
 
-export const useSwipe: any = (leftFn:any, rightFn:any) => {
-  const [ endFunctions ] = useState({left: leftFn, right: rightFn});
+export const useSwipe: (
+  (leftFn: () => void, rightFn: () => void) => [
+    number,
+    ((e: TouchEvent<HTMLDivElement>) => React.Dispatch<React.SetStateAction<number>> | undefined)
+  ]
+) = (leftFn:any, rightFn:any) => {
   const [ touchStart, setTouchStart ] = useState<number|null>(null);
   const [ touchEnd, setTouchEnd ] = useState<number|null>(null);
   const [ touchDistance, setTouchDistance ] = useState<number>(0);
 
-  const onTouchStart = (e: any) => {
+  const onTouchStart = (e: TouchEvent) => {
     setTouchEnd(null)
     setTouchStart(e.targetTouches[0].clientX)
   }
-  const onTouchMove = (e: any) => {
+  const onTouchMove = (e: TouchEvent) => {
     if(touchStart) {
       setTouchDistance(touchStart - e.targetTouches[0].clientX)
       setTouchEnd(e.targetTouches[0].clientX)
     }
   };
-  const onTouchEnd = (e: any) => {
+  const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return
     setTouchDistance(0);
     const distance = touchStart - touchEnd
     const isLeftSwipe = distance > 150
     const isRightSwipe = distance < -150
     if (isLeftSwipe) {
-      endFunctions.left();
+      leftFn();
     } else if(isRightSwipe) {
-      endFunctions.right();
+      rightFn();
     }
   }
-  const chooseTouch = (e:any) => {
+  const chooseTouch = (e:TouchEvent) => {
     switch(e.type) {
       case "touchstart":
         onTouchStart(e);
@@ -37,7 +42,7 @@ export const useSwipe: any = (leftFn:any, rightFn:any) => {
         onTouchMove(e);
         break;
       case "touchend":
-        onTouchEnd(e);
+        onTouchEnd();
         break;
       default:
         return setTouchDistance;

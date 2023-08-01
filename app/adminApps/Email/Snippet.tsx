@@ -30,7 +30,7 @@ export const Snippet: React.FC<{
 
   function deleteEmail() {
     setBeingDeleted(true);
-    setSwipe(600);
+    snippetDOM.current!.style.transform = "translateX(-600px)";
     emNotif(true, "Deleting email");
     swipeDelete.submit(
       {deleteEmailId: email._id},
