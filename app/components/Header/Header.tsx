@@ -13,7 +13,7 @@ export const Header: React.FC<{
   manualSiteData?: SiteData,
   manualUser?: User,
   setNewPost?: any,
-  storyPost?: any
+  storyPost?: Post[]
 }> = ({ manualSiteData, manualUser, setNewPost, storyPost }) => {
 
   const fetcher = useFetcher();
@@ -28,7 +28,6 @@ export const Header: React.FC<{
   const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
   const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData?.watchword.word });
-  const [ storyImageURL, setStoryImageURL ] = useState<string>(storyPost[0].media.images[0]||"");
   const [ storyImageVisibility, setStoryImageVisibility ] = useState<boolean>(false);
   const watchWordRef = useRef<HTMLDivElement>(null);
 
@@ -346,7 +345,7 @@ export const Header: React.FC<{
           />
           :siteData?.site_name}
       </div>
-      {storyPost.length
+      {storyPost?.length
         ?<div 
           style={{cursor: "pointer"}} 
           onClick={() => setStoryImageVisibility(true)}
@@ -371,7 +370,7 @@ export const Header: React.FC<{
         </Link>
       }
       {storyImageVisibility?<StoryPost 
-        storyImageURL={storyImageURL} 
+        storyPosts={storyPost}
         setStoryImageVisibility={setStoryImageVisibility}
       />:""}
     </header>

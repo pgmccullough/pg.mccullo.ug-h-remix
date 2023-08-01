@@ -41,7 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     }) 
   }
-  const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).limit(1).toArray();
+  const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).toArray();
   return { calDates, emails, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user };
 }
 
