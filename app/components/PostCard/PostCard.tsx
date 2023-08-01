@@ -1,5 +1,5 @@
 import { Link, useFetcher, useLoaderData } from "@remix-run/react";
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSwipe } from '~/utils/hooks/useSwipe';
 import { stampToTime } from '../../functions/functions';
 import { Audio } from '../Media/Audio/Audio';
@@ -35,7 +35,10 @@ export const PostCard: React.FC<{
     const [ editMode, setEditMode ] = useState(false);
     const [ postFeedback, setPostFeedback ] = useState<{commentsOn: any, sharesOn: any, likesOn: any }>(feedback)
     const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
-    const [ swipe, setSwipe ] = useSwipe();
+    const [ swipe, setSwipe ] = useSwipe(
+      () => gallerySlide("right"),
+      () => gallerySlide("left")
+    );
 
     delete post.media.directory;
 
@@ -59,14 +62,25 @@ export const PostCard: React.FC<{
     const gallerySlide = (dir:"left"|"right") => {
       if(galSlide.current) {
         if(dir==="left") {
-          galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide-1)*galWid.current.offsetWidth)+"px";
-          setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide-1})
+          setMediaSlides((prev: {currentSlide: number, itemLength: number}) => {
+            if(prev.currentSlide > 0) {
+              galSlide.current!.style.marginLeft = "-"+((prev.currentSlide-1)*galWid.current.offsetWidth)+"px";
+              return {...prev,currentSlide:prev.currentSlide-1}
+            }
+            return prev;
+          })
         } else {
-          galSlide.current.style.marginLeft = "-"+((mediaSlides.currentSlide+1)*galWid.current.offsetWidth)+"px";
-          setMediaSlides({...mediaSlides,currentSlide:mediaSlides.currentSlide+1})
+          setMediaSlides((prev: {currentSlide: number, itemLength: number}) => {
+            if(prev.currentSlide<prev.itemLength-1) {
+              galSlide.current!.style.marginLeft = "-"+((prev.currentSlide+1)*galWid.current.offsetWidth)+"px";
+              return {...prev,currentSlide:prev.currentSlide+1}
+            }
+            return prev;
+          })
         }
       }
     }
+    
 
     const editPostCard = () => {
       setEditMode(true);
@@ -218,12 +232,9 @@ export const PostCard: React.FC<{
             <div className="postcard__content__media" ref={galWid}>
               <figure 
                 className="postcard__content__media__slider"
-                onTouchStart={setSwipe("start")} 
-                onTouchMove={setSwipe("move")} 
-                onTouchEnd={() => setSwipe("end")(
-                  (mediaSlides.itemLength-mediaSlides.currentSlide) >= 2?()=>gallerySlide("right"):()=>{},
-                  mediaSlides.currentSlide >= 1?()=>gallerySlide("left"):()=>{}
-                )}
+                onTouchStart={setSwipe} 
+                onTouchMove={setSwipe} 
+                onTouchEnd={setSwipe}
                 ref={galSlide}
                 style={{transform: `translateX(${swipe*-1}px`}}
               >
@@ -253,7 +264,7 @@ export const PostCard: React.FC<{
                 mediaSlides.currentSlide!==0
                   ?<div 
                     className="postcard__content__media__slide--left"
-                    onClick={()=>{gallerySlide("left")}}
+                    onClick={() => gallerySlide("left")}
                   />
                   :""
               }
@@ -261,7 +272,7 @@ export const PostCard: React.FC<{
                 mediaSlides.itemLength>1&&mediaSlides.currentSlide<mediaSlides.itemLength-1
                   ?<div 
                     className="postcard__content__media__slide--right" 
-                    onClick={()=>{gallerySlide("right")}}
+                    onClick={() => gallerySlide("right")}
                   />
                   :""
               }                                                           

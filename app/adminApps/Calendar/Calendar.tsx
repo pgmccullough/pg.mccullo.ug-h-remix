@@ -29,7 +29,7 @@ export const Calendar: React.FC<{}> = () => {
     return monthArr;
   }
 
-  const [ swipe, setSwipe ] = useSwipe();
+  const [ swipe, setSwipe ] = useSwipe(() => changeMonth("next"), () => changeMonth("prev"));
   const [ calendarNotif, setCalendarNotif ] = useState<{
     active: boolean, message: string, completed: boolean
   }>({active: false, message: "", completed: false})
@@ -190,12 +190,9 @@ export const Calendar: React.FC<{}> = () => {
         <div className="postcard__content__text">
           <div className="calendar"
             style={{transform: `translateX(${swipe*-1}px`}}
-            onTouchStart={setSwipe("start")} 
-            onTouchMove={setSwipe("move")} 
-            onTouchEnd={() => setSwipe("end")(
-              () => changeMonth("next"),
-              () => changeMonth("prev")
-            )}
+            onTouchStart={setSwipe} 
+            onTouchMove={setSwipe} 
+            onTouchEnd={setSwipe}
           >
             {modalDisplay
               ?<CalendarModal 

@@ -20,7 +20,7 @@ export const Snippet: React.FC<{
     setCurrentEmail: any
 }> = ({ alterEmailArray, checkedSnippets, currentEmail, email, emailArray, emNotif, setCheckedSnippets, setCurrentEmail }) => {
   
-  const [ swipe, setSwipe ] = useSwipe();
+  const [ swipe, setSwipe ] = useSwipe(deleteEmail,() => markRead(1));
   const [ beingDeleted, setBeingDeleted ] = useState<boolean>(false)
   const [ _shrinkHeight, setShrinkHeight ] = useState<number>(73);
   const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
@@ -28,9 +28,9 @@ export const Snippet: React.FC<{
   const swipeMarkRead = useFetcher();
   const swipeDelete = useFetcher();
 
-  const deleteEmail = () => {
+  function deleteEmail() {
     setBeingDeleted(true);
-    setSwipe("distance")(600);
+    setSwipe(600);
     emNotif(true, "Deleting email");
     swipeDelete.submit(
       {deleteEmailId: email._id},
@@ -97,9 +97,9 @@ export const Snippet: React.FC<{
       <div
         className={`snippet${email.unread?" snippet--unread":""}${swipe>0?" snippet--swipeleft":""}${swipe<0?" snippet--swiperight":""}`}
         style={{transform: `translateX(${swipe*-1}px`}}
-        onTouchStart={setSwipe("start")} 
-        onTouchMove={setSwipe("move")} 
-        onTouchEnd={() => setSwipe("end")(deleteEmail,() => markRead(1))}
+        onTouchStart={setSwipe} 
+        onTouchMove={setSwipe} 
+        onTouchEnd={setSwipe}
       >
         <div className="snippet__check">
           <input 
