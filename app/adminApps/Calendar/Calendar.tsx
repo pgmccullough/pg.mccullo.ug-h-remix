@@ -1,5 +1,6 @@
 import { useFetcher, useLoaderData } from '@remix-run/react';
 import { useEffect, useState } from 'react';
+import { useSwipe } from '~/utils/hooks/useSwipe';
 import { CalendarModal } from './CalendarModal';
 import type { DayEvent, DBEvent, month, GoogleEvent } from '../../common/types';
 
@@ -28,12 +29,11 @@ export const Calendar: React.FC<{}> = () => {
     return monthArr;
   }
 
+  const [ swipe, setSwipe ] = useSwipe();
   const [ calendarNotif, setCalendarNotif ] = useState<{
     active: boolean, message: string, completed: boolean
   }>({active: false, message: "", completed: false})
-  
   const [ modalDisplay, setModalDisplay ] = useState<DayEvent|null|any>(null)
-
   const [ curMonth, setCurMonth ] = useState<month>({
     curDate: yearNow+monthNow+dateNow,
     firstDay: new Date(yearNow, Number(monthNow)-1, 1).getDay(),
@@ -146,7 +146,6 @@ export const Calendar: React.FC<{}> = () => {
 
   useEffect(() => {
     if(saveGoogleEvents.type==="done") {
-      console.log(saveGoogleEvents.data.events);
       setCalendarNotif({active: true, message: `Succesfully updated ${saveGoogleEvents.data.events.updated} events, created ${saveGoogleEvents.data.events.added} events`, completed: true})
     }
   },[saveGoogleEvents])
@@ -189,7 +188,15 @@ export const Calendar: React.FC<{}> = () => {
       <div className="postcard__content calendar__content">
         <div className="postcard__content__media" />
         <div className="postcard__content__text">
-          <div className="calendar">
+          <div className="calendar"
+            style={{transform: `translateX(${swipe*-1}px`}}
+            onTouchStart={setSwipe("start")} 
+            onTouchMove={setSwipe("move")} 
+            onTouchEnd={() => setSwipe("end")(
+              () => changeMonth("next"),
+              () => changeMonth("prev")
+            )}
+          >
             {modalDisplay
               ?<CalendarModal 
                 accessToken={accessToken}
