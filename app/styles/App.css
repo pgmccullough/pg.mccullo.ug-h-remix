@@ -2202,6 +2202,9 @@ button {
   width: 100%;
   height: 100%;
 }
+.story-post__image {
+  position: relative;
+}
 .story-post__image, .story-post__content img {
   max-height: 90vh;
   width: auto;

@@ -1,6 +1,7 @@
 import { Post } from '~/common/types';
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, MouseEvent, SetStateAction } from "react";
 import { useEffect, useState } from "react";
+import { useSwipe } from '~/utils/hooks/useSwipe';
 import { Image } from "../Media/Image/Image";
 
 export const StoryPost: React.FC<{
@@ -16,6 +17,10 @@ export const StoryPost: React.FC<{
   const [ storyViewTime, setStoryViewTime ] = useState<number>(100);
   const [ currentStory, setCurrentStory ] = useState<number>(0);
   const [ storyImages, setStoryImages ] = useState<string[]>(justImages);
+  const [ _swipe, setSwipe ] = useSwipe(
+    () => changeSlide("right"),
+    () => changeSlide("left")
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -41,14 +46,42 @@ export const StoryPost: React.FC<{
     }
   },[storyViewTime])
 
+  const changeSlide = (dir: "right"|"left") => {
+    if(dir==="right"&&currentStory >= (storyImages.length-1)) return;
+    if(dir==="left"&&currentStory <= 0) return;
+    setCurrentStory(currentStory+(dir==="right"?1:-1));
+    setStoryViewTime(100);
+  }
+
   return (
     <>
       <div className="story-post__background" />
         <div className="story-post__content" onClick={() => setStoryImageVisibility(false)}>
-          <div className="story-post__image">
+          <div className="story-post__image"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={setSwipe}
+            onTouchMove={setSwipe}
+            onTouchEnd={setSwipe}
+          >
             {storyImages?.map((img: string, i: number) =>
-              i===currentStory?<Image src={img} key={img} alt="" />:""
+              <Image src={img} key={img} alt="" display={i===currentStory} />
             )}
+            {
+              currentStory>0
+                ?<div 
+                  className="postcard__content__media__slide--left"
+                  onClick={() => changeSlide("left")}
+                />
+                :""
+            }
+            {currentStory < (storyImages.length-1)
+              ?<div 
+                className="postcard__content__media__slide--right"
+                onClick={() => changeSlide("right")}
+              />
+              :""
+            }
+            <div className="postcard__content__media__counter">{currentStory+1} / {storyImages.length}</div>
             <div className="story-post__time-bar" style={{width: (100-storyViewTime)+"%"}} />
           </div>
         </div>
