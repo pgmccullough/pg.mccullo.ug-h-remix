@@ -14,9 +14,10 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
 
   const fetcher = useFetcher();
 
-  let emailBody;
+  let emailBody: string;
 
   if(email?.HtmlBody) {
+    console.log("WAS:",email.HtmlBody);
     emailBody = email.HtmlBody
       .replace(/(<style[\w\W]+style>)/g, "")
       .replaceAll(/width:(.*);/g,'')
@@ -29,8 +30,16 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
     emailBody = `<div style="padding: 2rem;">${emailBody}</div>`;
   }
 
+  let emailCheck = emailBody;
+  let hiddenInOut = emailCheck?.split("<!--")[1]?.split("-->");
+  if(!hiddenInOut) hiddenInOut = ["",""];
+  let insideText: string[] = hiddenInOut[0]?.split(">");
+  insideText.shift();
+  const joinedText = insideText.join(">");
+
   const [attachments, setAttachments] = useState<any[]>([]);
-  const [cleanEmail, setCleanEmail] = useState<string>(emailBody.replaceAll('<!--',''));
+  const [cleanEmail, setCleanEmail] = useState<string>(!hiddenInOut[1]&&joinedText.replace(/(<([^>]+)>)/gi, "").replace(/\s+/g, '')?joinedText:emailBody);
+
 
   useEffect(() => {
     if(!email.unread || email.unread !== 0) {
