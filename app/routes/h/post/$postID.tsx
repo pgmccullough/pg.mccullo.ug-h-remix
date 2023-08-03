@@ -42,7 +42,7 @@ export default function SinglePost() {
             setEditState={setEditState}
             post={post}
         />:
-        "To do: add error component ;)"}
+        ""}
     </>
   );
 }
