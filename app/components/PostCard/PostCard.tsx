@@ -236,7 +236,14 @@ export const PostCard: React.FC<{
                 onTouchMove={setSwipe} 
                 onTouchEnd={setSwipe}
                 ref={galSlide}
-                style={{transform: `translateX(${swipe*-1}px`}}
+                style={
+                  mediaSlides.itemLength > 1
+                    ?{transform: `translateX(${
+                      (Number(galSlide.current?.style.marginLeft.replace('px',''))*-1+swipe) > -1 &&
+                      (Number(galSlide.current?.style.marginLeft.replace('px',''))*-1-1) < (galWid.current?.offsetWidth-swipe)? swipe*-1 : 0
+                    }px)`}
+                    :{}
+                }
               >
                 {
                   Object.keys(post.media).map(key => {
