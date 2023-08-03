@@ -17,6 +17,7 @@
 @use '../components/Comments/Comments.scss';
 @use '../components/SearchBar/SearchBar.scss';
 @use '../components/StoryPost/StoryPost.scss';
+@use '../adminApps/WishList/WishList.scss';
 
 @keyframes loaderSpin {
   0% {transform: rotate(0deg)}
