@@ -1,4 +1,4 @@
-const MEDIA_SERVER_URI = 'https://dbt6gfxf4rv9p.cloudfront.net/';
+const MEDIA_SERVER_URI = 'https://pg.mccullo.ug/api/media/';
 
 export const Video: React.FC<{src:string,alt:string}>  = ({src,alt}) => {
     return (
