@@ -102,9 +102,9 @@ export const Sidebar: React.FC<{
           <Calendar />
           <Notes />
           <Webcam />
-          <WishList />
         </>
         :""}
+      <WishList />
     </div>
   )
 }

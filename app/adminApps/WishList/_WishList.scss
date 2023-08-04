@@ -37,6 +37,18 @@
     padding: 0rem 0.4rem;
     margin-top: -0.5rem;
   }
+  &__price {
+    padding-top: 0.25rem;
+    color: #000;
+    font-weight: 600;
+    text-align: center;
+    border: 1px #ccc solid;
+    display: block;
+    width: 50%;
+    margin: auto;
+    margin-top: 1rem;
+    box-shadow: 0 0 6px 0 #666;
+  }
   &__title, &__description {
     color: #000;
     font-size: 0.95rem;

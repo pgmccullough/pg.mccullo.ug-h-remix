@@ -9,13 +9,20 @@ interface WishItem {
   ['og:site_name']: string,
   ['og:image']: string,
   ['og:image:alt']: string
+  ['og:product:price:amount']: string
 }
 
 export const WishList: React.FC<{}> = () => {
 
+  let { user, wishList } = useLoaderData();
+
+  if(!user) {
+    user = {}
+  }
+
   const [ newWishes, setNewWishes ] = useState<string[]>([""]);
   const [ scraped, setScraped ] = useState<string[]>([]);
-  const [ items, setItems ] = useState<WishItem []>([])
+  const [ items, setItems ] = useState<WishItem []>(wishList)
 
   const fetchFromURL = useFetcher();
 
@@ -34,7 +41,8 @@ export const WishList: React.FC<{}> = () => {
       ['og:url']: "",
       ['og:site_name']: "",
       ['og:image']: "",
-      ['og:image:alt']: ""
+      ['og:image:alt']: "",
+      ['og:product:price:amount']: ""
     }])
     fetchFromURL.submit(
       { url: newWishes[i] },
@@ -54,23 +62,26 @@ export const WishList: React.FC<{}> = () => {
     setNewWishes(wishesClone);
   }
 
-  useEffect(() => {
-    if(fetchFromURL?.data?.scrapeRes) {
-      const cleanObj = {...fetchFromURL?.data?.scrapeRes};
-      delete fetchFromURL.data.scrapeRes;
-      cleanObj['og:title'] = cleanObj['og:title']||"Thing I want";
-      cleanObj['og:description'] = cleanObj['og:description']||"";
-      cleanObj['og:url'] = cleanObj['og:url']||"#";
-      cleanObj['og:site_name'] = cleanObj['og:site_name']||"";
-      cleanObj['og:image'] = cleanObj['og:image']||"";
-      cleanObj['og:image:alt'] = cleanObj['og:image:alt']||cleanObj['og:title'];
-      const updatedItems = [...items].map(item => {
-        if(item.url===cleanObj.url) return cleanObj;
-        return item
-      })
-      setItems(updatedItems);
-    }
-  },[ fetchFromURL ])
+  if(user.role==="administrator") {
+    useEffect(() => {
+      if(fetchFromURL?.data?.scrapeRes) {
+        const cleanObj = {...fetchFromURL?.data?.scrapeRes};
+        delete fetchFromURL.data.scrapeRes;
+        cleanObj['og:title'] = cleanObj['og:title']||"Thing I want";
+        cleanObj['og:description'] = cleanObj['og:description']||"";
+        cleanObj['og:url'] = cleanObj['og:url']||"#";
+        cleanObj['og:site_name'] = cleanObj['og:site_name']||"";
+        cleanObj['og:image'] = cleanObj['og:image']||"";
+        cleanObj['og:image:alt'] = cleanObj['og:image:alt']||cleanObj['og:title'];
+        cleanObj['og:product:price:amount'] = Number(cleanObj['og:product:price:amount'])||"";
+        const updatedItems = [...items].map(item => {
+          if(item.url===cleanObj.url) return cleanObj;
+          return item
+        })
+        setItems(updatedItems);
+      }
+    },[ fetchFromURL ])
+  }
 
   return (
     <>
@@ -83,7 +94,7 @@ export const WishList: React.FC<{}> = () => {
         <div className="postcard__content">
           <div className="postcard__content__media"/>
           <div className="wish-list">
-            {newWishes.map((_wish: string, i: number) => 
+            {user.role==="administrator"&&newWishes.map((_wish: string, i: number) => 
               <input 
                 key={`wishList-${i}`}
                 className="wish-list__input" 
@@ -103,6 +114,7 @@ export const WishList: React.FC<{}> = () => {
                       className="wish-list__image"
                     />
                     <p className="wish-list__source">{item["og:site_name"]}</p>
+                    <p className="wish-list__price">${Number(item["og:product:price:amount"]).toFixed(2)}</p>
                     <p className="wish-list__title">{item["og:title"]}</p>
                     <p className="wish-list__description">{item["og:description"]}</p>
                   </a>

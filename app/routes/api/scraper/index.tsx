@@ -1,5 +1,6 @@
 import type { ActionArgs } from "@remix-run/node";
 import { getUser } from "~/utils/session.server";
+import { clientPromise } from "~/lib/mongodb";
 
 export const action = async ({ request }: ActionArgs) => {
   const user = await getUser(request);
@@ -22,15 +23,33 @@ export const action = async ({ request }: ActionArgs) => {
     }
     let ogTags: {[key: string]: string} = {url: urlToScrape!};
     scrapeRes = scrapeRes?.toString().split("</head>")[0];
-    scrapeRes = scrapeRes?.split('<meta property=');
+    scrapeRes = scrapeRes?.split('<meta ');
     scrapeRes?.forEach(tag => {
-      let tagArr = tag.split(' content=');
-      if(tagArr[0].toLowerCase().includes("og:")) {
-        ogTags[tagSanitize(tagArr[0])] = tagSanitize(tagArr[1].split(">")[0])
+      let tagArrTest = tag.split('="');
+      let content: string | string[];
+      let property: string | string[];
+      console.log(tag);
+      if(!tagArrTest[1]) {
+        content = tag?.split("content='");
+        content = content[1]?.split("'")[0];
+        property = tag?.split("property='");
+        property = property[1]?.split("'")[0];
+        console.log("!",content,property);
+      } else {
+        content = tag?.split('content="');
+        content = content[1]?.split('"')[0];
+        property = tag?.split('property="');
+        property = property[1]?.split('"')[0];
+        console.log("?",content,property);
+      }
+      if(property?.toLowerCase().includes("og:")) {
+        ogTags[property] = tagSanitize(content);
       }
     })
     scrapeRes = ogTags;
-    // write to DB
+    const client = await clientPromise;
+    const db = client.db("user_posts");
+    await db.collection('myWishList').insertOne(scrapeRes);
     return {scrapeRes}
   }
 }

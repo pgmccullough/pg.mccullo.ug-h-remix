@@ -41,8 +41,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
     }) 
   }
+  const wishList = await db.collection("myWishList").find().sort({created:-1}).toArray();
   const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).toArray();
-  return { calDates, emails, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user };
+  return { calDates, emails, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user, wishList };
 }
 
 export function CatchBoundary() {
