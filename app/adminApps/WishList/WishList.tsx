@@ -66,14 +66,16 @@ export const WishList: React.FC<{}> = () => {
     useEffect(() => {
       if(fetchFromURL?.data?.scrapeRes) {
         const cleanObj = {...fetchFromURL?.data?.scrapeRes};
+        const schemaBackup = {...fetchFromURL?.data?.schemaResults[0]}
+        console.log(schemaBackup);
         delete fetchFromURL.data.scrapeRes;
-        cleanObj['og:title'] = cleanObj['og:title']||"Thing I want";
-        cleanObj['og:description'] = cleanObj['og:description']||"";
-        cleanObj['og:url'] = cleanObj['og:url']||"#";
+        cleanObj['og:title'] = cleanObj['og:title']||schemaBackup['name']||"Thing I want";
+        cleanObj['og:description'] = cleanObj['og:description']||schemaBackup['description']||"";
+        cleanObj['og:url'] = cleanObj['og:url']||schemaBackup['url']||"#";
         cleanObj['og:site_name'] = cleanObj['og:site_name']||"";
-        cleanObj['og:image'] = cleanObj['og:image']||"";
-        cleanObj['og:image:alt'] = cleanObj['og:image:alt']||cleanObj['og:title'];
-        cleanObj['og:product:price:amount'] = Number(cleanObj['og:product:price:amount'])||"";
+        cleanObj['og:image'] = cleanObj['og:image']||schemaBackup['image'][0]||"";
+        cleanObj['og:image:alt'] = cleanObj['og:image:alt']||cleanObj['og:title']||schemaBackup['name'];
+        cleanObj['og:product:price:amount'] = Number(cleanObj['og:product:price:amount'])||schemaBackup['offers']['price']||"";
         const updatedItems = [...items].map(item => {
           if(item.url===cleanObj.url) return cleanObj;
           return item

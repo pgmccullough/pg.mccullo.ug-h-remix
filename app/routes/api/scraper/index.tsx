@@ -11,45 +11,51 @@ export const action = async ({ request }: ActionArgs) => {
     tag = tag.replaceAll("&quot;",'"');
     return tag;
   }
-  if(user?.role==="administrator") {
-    const urlToScrape = (await request.formData()).get("url")?.toString();
-    console.log("FETCHING ",urlToScrape);
-    try {
-      const res = await fetch(urlToScrape!);
-      scrapeRes = await res.text();
-    } catch(err) {
-      console.log(err);
-      scrapeRes = err;
-    }
+
+  const getOGTags = (scrapeRes: any, urlToScrape: any) => {
     let ogTags: {[key: string]: string} = {url: urlToScrape!};
     scrapeRes = scrapeRes?.toString().split("</head>")[0];
     scrapeRes = scrapeRes?.split('<meta ');
-    scrapeRes?.forEach(tag => {
+    scrapeRes?.forEach((tag: string) => {
       let tagArrTest = tag.split('="');
       let content: string | string[];
       let property: string | string[];
-      console.log(tag);
       if(!tagArrTest[1]) {
         content = tag?.split("content='");
         content = content[1]?.split("'")[0];
         property = tag?.split("property='");
         property = property[1]?.split("'")[0];
-        console.log("!",content,property);
       } else {
         content = tag?.split('content="');
         content = content[1]?.split('"')[0];
         property = tag?.split('property="');
         property = property[1]?.split('"')[0];
-        console.log("?",content,property);
       }
       if(property?.toLowerCase().includes("og:")) {
         ogTags[property] = tagSanitize(content);
       }
     })
-    scrapeRes = ogTags;
+    return ogTags;
+  }
+
+  const getSchema = (scrapeRes: any) => {
+    scrapeRes = scrapeRes?.toString().split('<script type="application/ld+json">')[1].split("</script>")[0];
+    return JSON.parse(scrapeRes);
+  }
+
+  if(user?.role==="administrator") {
+    const urlToScrape = (await request.formData()).get("url")?.toString();
+    try {
+      const res = await fetch(urlToScrape!);
+      scrapeRes = await res.text();
+    } catch(err) {
+      scrapeRes = err;
+    }
+    const ogResults = getOGTags(scrapeRes, urlToScrape);
+    const schemaResults = getSchema(scrapeRes)
     const client = await clientPromise;
     const db = client.db("user_posts");
-    await db.collection('myWishList').insertOne(scrapeRes);
-    return {scrapeRes}
+    await db.collection('myWishList').insertOne(ogResults);
+    return {scrapeRes: ogResults, schemaResults}
   }
 }
