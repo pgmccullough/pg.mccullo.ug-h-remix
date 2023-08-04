@@ -2220,6 +2220,9 @@ button {
 .wish-list {
   padding: 1rem;
 }
+.wish-list a {
+  text-decoration: none;
+}
 .wish-list__input {
   width: 100%;
   font: 1rem "PGM Sans";
@@ -2227,6 +2230,42 @@ button {
   border: 1px #666 solid;
   border-radius: 3px;
   margin-bottom: 0.75rem;
+}
+.wish-list__item-container {
+  display: flex;
+  flex-wrap: wrap;
+}
+.wish-list__item {
+  width: 45%;
+  margin: 2.5%;
+  border: 1px #ccc solid;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 0 6px 0 #666;
+}
+.wish-list__image {
+  width: 100%;
+}
+.wish-list__source {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #000;
+  background: #ccc;
+  margin: 0;
+  padding: 0rem 0.4rem;
+  margin-top: -0.5rem;
+}
+.wish-list__title, .wish-list__description {
+  color: #000;
+  font-size: 0.95rem;
+  line-height: 1.1rem;
+  text-align: justify;
+  padding: 0 0.5rem;
+}
+.wish-list__description {
+  color: #666;
+  font-size: 0.75rem;
+  line-height: 1rem;
 }
 
 @keyframes loaderSpin {
