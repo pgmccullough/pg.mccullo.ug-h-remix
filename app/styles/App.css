@@ -2289,6 +2289,7 @@ button {
   color: #666;
   font-size: 0.75rem;
   line-height: 1rem;
+  text-align: left;
 }
 .wish-list__delete {
   background: #fff;

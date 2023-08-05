@@ -38,6 +38,12 @@ export const WishList: React.FC<{}> = () => {
     return !!str.split(".")[1] && Number(str.split(".").at(-1)?.length) > 1;
   }
 
+  const extractSiteName = (url: string) => {
+    const bits = url.split("//");
+    const domain = bits[1].split(".");
+    return domain[0]==="www"?domain[1]:domain[0];
+  }
+
   const scrape = (i:number) => {
     if(!isUrl(newWishes[i])) return;
     const stateSet = new Set([...scraped]);
@@ -134,14 +140,14 @@ export const WishList: React.FC<{}> = () => {
             <div className="wish-list__item-container">
               {items.map((item: WishItem) => 
                 <div key={item["_id"]} className="wish-list__item">
-                  <div className="wish-list__delete" onClick={() => deleteItem(item._id)}>+</div>
+                  {user.role==="administrator"?<div className="wish-list__delete" onClick={() => deleteItem(item._id)}>+</div>:""}
                   <a href={item["og:url"]||item["url"]} target="_BLANK">
                     <img 
                       src={item["og:image"]||item["image"]![0]} 
                       alt={item["og:image:alt"]||item["name"]}
                       className="wish-list__image"
                     />
-                    <p className="wish-list__source">{item["og:site_name"]}</p>
+                    <p className="wish-list__source">{item["og:site_name"]||extractSiteName(item["og:url"]||item["url"])}</p>
                     <p className="wish-list__price">${Number(item["og:product:price:amount"]||item["offers"]!["price"]).toFixed(2)}</p>
                     <p className="wish-list__title">{item["og:title"]||item["name"]}</p>
                     <p className="wish-list__description">{item["og:description"]||item["description"]}</p>
