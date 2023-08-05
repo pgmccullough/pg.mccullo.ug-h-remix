@@ -204,3 +204,19 @@ export interface DayEvent {
   start_time_string: string,
   _id: string
 }
+
+export interface WishItem {
+  url: string,
+  _id: string,
+  ['og:title']: string,
+  ['og:description']: string,
+  ['og:url']: string,
+  ['og:site_name']: string,
+  ['og:image']: string,
+  ['og:image:alt']: string
+  ['og:product:price:amount']: string
+  ['image']?: string[],
+  ['name']?: string,
+  ['offers']?: {price: string},
+  ['description']?: string
+}

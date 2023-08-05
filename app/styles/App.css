@@ -2235,6 +2235,20 @@ button {
   display: flex;
   flex-wrap: wrap;
 }
+.wish-list__item-column {
+  position: relative;
+  width: 100%;
+}
+@media (min-width: 600px) and (max-width: 992px) {
+  .wish-list__item-column {
+    width: 50%;
+  }
+}
+@media (min-width: 1220px) {
+  .wish-list__item-column {
+    width: 50%;
+  }
+}
 .wish-list__item {
   position: relative;
   width: 95%;
@@ -2242,16 +2256,6 @@ button {
   border: 1px #ccc solid;
   border-radius: 4px;
   box-shadow: 0 0 6px 0 #666;
-}
-@media (min-width: 600px) and (max-width: 992px) {
-  .wish-list__item {
-    width: 45%;
-  }
-}
-@media (min-width: 1220px) {
-  .wish-list__item {
-    width: 45%;
-  }
 }
 .wish-list__image {
   width: 100%;

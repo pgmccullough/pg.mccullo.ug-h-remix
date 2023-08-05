@@ -39,8 +39,16 @@ export const action = async ({ request }: ActionArgs) => {
   }
 
   const getSchema = (scrapeRes: any) => {
-    scrapeRes = scrapeRes?.toString().split('<script type="application/ld+json">')[1].split("</script>")[0];
-    return JSON.parse(scrapeRes);
+    scrapeRes = scrapeRes?.toString().split('<script type="application/ld+json">')[1]?.split("</script>")[0];
+    if(!scrapeRes) return;
+    let parsed = JSON.parse(scrapeRes);
+    if(parsed.length) {
+      [ parsed ] = parsed;
+    }
+    if(parsed.image.length&&parsed.image[0].contentUrl) {
+      parsed.image = [parsed.image[0].contentUrl]
+    }
+    return parsed;
   }
 
   if(user?.role==="administrator") {
@@ -51,11 +59,9 @@ export const action = async ({ request }: ActionArgs) => {
     } catch(err) {
       scrapeRes = err;
     }
-    const ogResults = getOGTags(scrapeRes, urlToScrape);
-    const schemaResults = getSchema(scrapeRes);
-    console.log("OG",Object.keys(ogResults).length);
-    console.log("schema",Object.keys(schemaResults[0]).length);
-    const dbData = Object.keys(ogResults).length > Object.keys(schemaResults[0]).length ? ogResults : schemaResults[0];
+    const ogResults = getOGTags(scrapeRes, urlToScrape)||{};
+    const schemaResults = getSchema(scrapeRes)||[{}];
+    const dbData = Object.keys(ogResults).length > Object.keys(schemaResults).length ? ogResults : schemaResults;
     const client = await clientPromise;
     const db = client.db("user_posts");
     const dbEntry = await db.collection('myWishList').insertOne({ ...dbData, url: urlToScrape });

@@ -1,21 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-
-interface WishItem {
-  url: string,
-  _id: string,
-  ['og:title']: string,
-  ['og:description']: string,
-  ['og:url']: string,
-  ['og:site_name']: string,
-  ['og:image']: string,
-  ['og:image:alt']: string
-  ['og:product:price:amount']: string
-  ['image']?: string[],
-  ['name']?: string,
-  ['offers']?: {price: string},
-  ['description']?: string
-}
+import { WishItem } from "~/common/types";
+import { WishListItem } from "./WishListItem";
 
 export const WishList: React.FC<{}> = () => {
 
@@ -36,12 +22,6 @@ export const WishList: React.FC<{}> = () => {
 
   const isUrl = (str: string) => {
     return !!str.split(".")[1] && Number(str.split(".").at(-1)?.length) > 1;
-  }
-
-  const extractSiteName = (url: string) => {
-    const bits = url.split("//");
-    const domain = bits[1].split(".");
-    return domain[0]==="www"?domain[1]:domain[0];
   }
 
   const scrape = (i:number) => {
@@ -104,9 +84,9 @@ export const WishList: React.FC<{}> = () => {
         cleanObj['og:description'] = cleanObj['og:description']||schemaBackup['description']||"";
         cleanObj['og:url'] = cleanObj['og:url']||schemaBackup['url']||"#";
         cleanObj['og:site_name'] = cleanObj['og:site_name']||"";
-        cleanObj['og:image'] = cleanObj['og:image']||schemaBackup['image'][0]||"";
+        cleanObj['og:image'] = (schemaBackup.image?.length?schemaBackup["image"][0]:cleanObj["og:image"])||"";
         cleanObj['og:image:alt'] = cleanObj['og:image:alt']||cleanObj['og:title']||schemaBackup['name'];
-        cleanObj['og:product:price:amount'] = Number(cleanObj['og:product:price:amount'])||schemaBackup['offers']['price']||"";
+        cleanObj['og:product:price:amount'] = Number(cleanObj['og:product:price:amount'])||schemaBackup['offers']?.price||"";
         const updatedItems = [...items].map(item => {
           if(item.url===cleanObj.url) return cleanObj;
           return item
@@ -138,22 +118,30 @@ export const WishList: React.FC<{}> = () => {
               />
             )}
             <div className="wish-list__item-container">
-              {items.map((item: WishItem) => 
-                <div key={item["_id"]} className="wish-list__item">
-                  {user.role==="administrator"?<div className="wish-list__delete" onClick={() => deleteItem(item._id)}>+</div>:""}
-                  <a href={item["og:url"]||item["url"]} target="_BLANK">
-                    <img 
-                      src={item["og:image"]||item["image"]![0]} 
-                      alt={item["og:image:alt"]||item["name"]}
-                      className="wish-list__image"
-                    />
-                    <p className="wish-list__source">{item["og:site_name"]||extractSiteName(item["og:url"]||item["url"])}</p>
-                    <p className="wish-list__price">${Number(item["og:product:price:amount"]||item["offers"]!["price"]).toFixed(2)}</p>
-                    <p className="wish-list__title">{item["og:title"]||item["name"]}</p>
-                    <p className="wish-list__description">{item["og:description"]||item["description"]}</p>
-                  </a>
-                </div>
-              )}
+              <div className="wish-list__item-column">
+                {items.map((item: WishItem, i: number) => 
+                !(i%2)
+                  ?<WishListItem 
+                    key={item._id} 
+                    item={item} 
+                    user={user}
+                    deleteItem={deleteItem}
+                  />
+                  :""
+                )}
+              </div>
+              <div className="wish-list__item-column">
+                {items.map((item: WishItem, i: number) => 
+                (i%2)
+                  ?<WishListItem 
+                    key={item._id} 
+                    item={item} 
+                    user={user}
+                    deleteItem={deleteItem}
+                  />
+                  :""
+                )}
+              </div>
             </div>
           </div>
         </div>
