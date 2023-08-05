@@ -3,6 +3,7 @@ import { useFetcher, useLoaderData } from "@remix-run/react";
 
 interface WishItem {
   url: string,
+  _id: string,
   ['og:title']: string,
   ['og:description']: string,
   ['og:url']: string,
@@ -10,6 +11,10 @@ interface WishItem {
   ['og:image']: string,
   ['og:image:alt']: string
   ['og:product:price:amount']: string
+  ['image']?: string[],
+  ['name']?: string,
+  ['offers']?: {price: string},
+  ['description']?: string
 }
 
 export const WishList: React.FC<{}> = () => {
@@ -24,7 +29,10 @@ export const WishList: React.FC<{}> = () => {
   const [ scraped, setScraped ] = useState<string[]>([]);
   const [ items, setItems ] = useState<WishItem []>(wishList)
 
+  console.log(wishList);
+
   const fetchFromURL = useFetcher();
+  const fetchDelete = useFetcher();
 
   const isUrl = (str: string) => {
     return !!str.split(".")[1] && Number(str.split(".").at(-1)?.length) > 1;
@@ -36,6 +44,7 @@ export const WishList: React.FC<{}> = () => {
     if(stateSet.has(newWishes[i])) return;
     setItems([...items, {
       url: newWishes[i],
+      _id: "",
       ['og:title']: "Loading",
       ['og:description']: "",
       ['og:url']: "",
@@ -62,13 +71,29 @@ export const WishList: React.FC<{}> = () => {
     setNewWishes(wishesClone);
   }
 
+  const deleteItem = (id: string) => {
+    fetchDelete.submit(
+      { idToDelete: id },
+      { method: "post", action: `/api/scraper/delete?index` }
+    );
+  }
+
   if(user.role==="administrator") {
+    useEffect(() => {
+      if(fetchDelete?.data?.deletedId) {
+        console.log(fetchDelete.data.deletedId);
+        const filteredItems = [...items].filter((item) => item._id !== fetchDelete.data.deletedId);
+        setItems(filteredItems);
+      }
+    },[ fetchDelete ])
+
     useEffect(() => {
       if(fetchFromURL?.data?.scrapeRes) {
         const cleanObj = {...fetchFromURL?.data?.scrapeRes};
         const schemaBackup = {...fetchFromURL?.data?.schemaResults[0]}
-        console.log(schemaBackup);
+        console.log(fetchFromURL?.data);
         delete fetchFromURL.data.scrapeRes;
+        cleanObj['_id'] = fetchFromURL.data.dbEntry.insertedId;
         cleanObj['og:title'] = cleanObj['og:title']||schemaBackup['name']||"Thing I want";
         cleanObj['og:description'] = cleanObj['og:description']||schemaBackup['description']||"";
         cleanObj['og:url'] = cleanObj['og:url']||schemaBackup['url']||"#";
@@ -96,7 +121,7 @@ export const WishList: React.FC<{}> = () => {
         <div className="postcard__content">
           <div className="postcard__content__media"/>
           <div className="wish-list">
-            {user.role==="administrator"&&newWishes.map((_wish: string, i: number) => 
+            {user.role==="administrator"&&newWishes.map((wish: string, i: number) => 
               <input 
                 key={`wishList-${i}`}
                 className="wish-list__input" 
@@ -108,17 +133,18 @@ export const WishList: React.FC<{}> = () => {
             )}
             <div className="wish-list__item-container">
               {items.map((item: WishItem) => 
-                <div key={item["og:description"]} className="wish-list__item">
-                  <a href={item["og:url"]} target="_BLANK">
+                <div key={item["_id"]} className="wish-list__item">
+                  <div className="wish-list__delete" onClick={() => deleteItem(item._id)}>+</div>
+                  <a href={item["og:url"]||item["url"]} target="_BLANK">
                     <img 
-                      src={item["og:image"]} 
-                      alt={item["og:image:alt"]}
+                      src={item["og:image"]||item["image"]![0]} 
+                      alt={item["og:image:alt"]||item["name"]}
                       className="wish-list__image"
                     />
                     <p className="wish-list__source">{item["og:site_name"]}</p>
-                    <p className="wish-list__price">${Number(item["og:product:price:amount"]).toFixed(2)}</p>
-                    <p className="wish-list__title">{item["og:title"]}</p>
-                    <p className="wish-list__description">{item["og:description"]}</p>
+                    <p className="wish-list__price">${Number(item["og:product:price:amount"]||item["offers"]!["price"]).toFixed(2)}</p>
+                    <p className="wish-list__title">{item["og:title"]||item["name"]}</p>
+                    <p className="wish-list__description">{item["og:description"]||item["description"]}</p>
                   </a>
                 </div>
               )}

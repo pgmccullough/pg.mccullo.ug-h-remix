@@ -52,10 +52,13 @@ export const action = async ({ request }: ActionArgs) => {
       scrapeRes = err;
     }
     const ogResults = getOGTags(scrapeRes, urlToScrape);
-    const schemaResults = getSchema(scrapeRes)
+    const schemaResults = getSchema(scrapeRes);
+    console.log("OG",Object.keys(ogResults).length);
+    console.log("schema",Object.keys(schemaResults[0]).length);
+    const dbData = Object.keys(ogResults).length > Object.keys(schemaResults[0]).length ? ogResults : schemaResults[0];
     const client = await clientPromise;
     const db = client.db("user_posts");
-    await db.collection('myWishList').insertOne(ogResults);
-    return {scrapeRes: ogResults, schemaResults}
+    const dbEntry = await db.collection('myWishList').insertOne({ ...dbData, url: urlToScrape });
+    return {scrapeRes: ogResults, schemaResults, dbEntry}
   }
 }
