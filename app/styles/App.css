@@ -1480,6 +1480,18 @@ button {
   opacity: 0.5;
 }
 
+.task-tracker__resource {
+  display: flex;
+}
+.task-tracker__input {
+  width: 100%;
+  font: 1rem "PGM Sans";
+  padding: 0.35rem 0.25rem 0.25rem 0.4rem;
+  border: 1px #666 solid;
+  border-radius: 3px;
+  margin-bottom: 0.75rem;
+}
+
 .webcam__video {
   width: 100%;
   background: #666;

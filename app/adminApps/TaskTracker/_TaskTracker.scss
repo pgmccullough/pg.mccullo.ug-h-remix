@@ -1,0 +1,15 @@
+@use '../../styles/partials/variables' as *;
+
+.task-tracker {
+  &__resource {
+    display: flex;
+  }
+  &__input{    
+    width: 100%;
+    font: 1rem $sans;
+    padding: 0.35rem 0.25rem 0.25rem 0.4rem;
+    border: 1px #666 solid;
+    border-radius: 3px;
+    margin-bottom: 0.75rem;
+  }
+}
