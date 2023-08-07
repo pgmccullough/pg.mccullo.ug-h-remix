@@ -15,8 +15,6 @@ export const WishList: React.FC<{}> = () => {
   const [ scraped, setScraped ] = useState<string[]>([]);
   const [ items, setItems ] = useState<WishItem []>(wishList)
 
-  console.log(wishList);
-
   const fetchFromURL = useFetcher();
   const fetchDelete = useFetcher();
 
@@ -67,7 +65,6 @@ export const WishList: React.FC<{}> = () => {
   if(user.role==="administrator") {
     useEffect(() => {
       if(fetchDelete?.data?.deletedId) {
-        console.log(fetchDelete.data.deletedId);
         const filteredItems = [...items].filter((item) => item._id !== fetchDelete.data.deletedId);
         setItems(filteredItems);
       }
@@ -77,7 +74,6 @@ export const WishList: React.FC<{}> = () => {
       if(fetchFromURL?.data?.scrapeRes) {
         const cleanObj = {...fetchFromURL?.data?.scrapeRes};
         const schemaBackup = {...fetchFromURL?.data?.schemaResults[0]}
-        console.log(fetchFromURL?.data);
         delete fetchFromURL.data.scrapeRes;
         cleanObj['_id'] = fetchFromURL.data.dbEntry.insertedId;
         cleanObj['og:title'] = cleanObj['og:title']||schemaBackup['name']||"Thing I want";

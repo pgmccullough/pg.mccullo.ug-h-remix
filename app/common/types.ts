@@ -220,3 +220,18 @@ export interface WishItem {
   ['offers']?: {price: string},
   ['description']?: string
 }
+
+export interface Job {
+  _id: string,
+  title: string,
+  deadline: string,
+  month: string,
+  date: string,
+  year: string,
+  totalCount: string,
+  units: string,
+  url: string | {title: string, url: string},
+  curCount: string,
+  dailies: {[key: string]: string},
+  notes: []
+}

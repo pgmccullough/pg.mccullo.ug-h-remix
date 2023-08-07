@@ -7,7 +7,7 @@ import { Sidebar } from '~/components/Sidebar/Sidebar';
 import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise } from "~/lib/mongodb";
 import * as postmark from "postmark"
-import { Post } from "~/common/types";
+import { Job, Post } from "~/common/types";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await getUser(request);
@@ -18,11 +18,13 @@ export const loader: LoaderFunction = async ({ request }) => {
   let emails: any[] = [];
   let sentEmails: any[] = [];
   let calDates: any[] = [];
+  let jobs: any[] = [];
   if(user?.role==="administrator") {
     notes = await db.collection('myNotes').find().sort({created:-1}).toArray();
     calDates = await db.collection('myDates').find().sort({created:-1}).toArray();
     emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
     sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
+    jobs = await db.collection("myJobs").find().sort({created:-1}).toArray();
     if(!process.env.POSTMARK_TOKEN) return {response: "Postmark token required."};
     const emailClient = new postmark.ServerClient(process.env.POSTMARK_TOKEN);
     sentEmails.forEach((sentEmail:any) => {
@@ -43,7 +45,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
   const wishList = await db.collection("myWishList").find().sort({created:-1}).toArray();
   const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).toArray();
-  return { calDates, emails, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user, wishList };
+  return { calDates, emails, jobs, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user, wishList };
 }
 
 export function CatchBoundary() {

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { useEffect, useState } from 'react';
 import type { User, SiteData } from '../../common/types';
-import { Calendar, Email, Notes, Webcam, WishList } from '~/adminApps';
+import { Calendar, Email, Notes, TaskTracker, Webcam, WishList } from '~/adminApps';
 import { TextEditor } from '../TextEditor/TextEditor';
 
 export const Sidebar: React.FC<{
@@ -101,8 +101,9 @@ export const Sidebar: React.FC<{
           <Email />
           <Calendar />
           <Notes />
-          <Webcam />
+          <TaskTracker />
           <WishList />
+          <Webcam />
         </>
         :""}
     </div>
