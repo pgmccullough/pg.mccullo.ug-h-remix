@@ -5,7 +5,7 @@ declare global {
 }
 
 if (!process.env.MONGODB_URL) {
-  throw new Error('Invalid environment variable: "MONGODB_URI"')
+  throw new Error('Invalid environment variable: "MONGODB_URL"')
 }
 
 const uri = process.env.MONGODB_URL

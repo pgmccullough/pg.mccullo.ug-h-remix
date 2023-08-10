@@ -224,7 +224,7 @@ export interface WishItem {
 export interface Job {
   _id: string,
   title: string,
-  deadline: `${number|string}/${number|string}/${number}`|``,
+  deadline: `${number|string}/${number|string}/${number}`|``|any,
   month: `${number|string}`,
   date: `${number|string}`,
   year: `${number}`,
@@ -233,5 +233,7 @@ export interface Job {
   url: {title: string, url: string}[],
   curCount: `${number}`,
   dailies: {[key: `${number}-${number}-${number}`]: `${number}`},
-  notes: []
+  notes: [],
+  order: number,
+  archive: boolean
 }
