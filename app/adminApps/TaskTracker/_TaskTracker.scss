@@ -1,8 +1,85 @@
 @use '../../styles/partials/variables' as *;
 
 .task-tracker {
+  padding: 1rem;
+  &__title {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-weight: bold;
+  }
+  &__goal {
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  &__deadline {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #666;
+    &-relative {
+      margin: 0;
+      line-height: 0.25rem;
+    }
+  }
+  &__resources {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+  }
   &__resource {
     display: flex;
+    &-ul {
+      border-left: 3px #666 solid;
+      margin-left: 1.5rem;
+      margin-top: 0;
+      padding-left: 0.75rem;
+    }
+    &-li {
+      margin-left: 0.5rem;
+      list-style: none;
+    }
+    &-a {
+      color: #666;
+      text-decoration: none;
+      border-bottom: 1px #666 dashed;
+      &:hover {
+        border-bottom-color: #000
+      }
+    }
+  }
+  &__current {
+    @extend .task-tracker__resources;
+    &-input {
+      border: 0;
+      border-bottom: 3px #4A6CBA solid;
+      margin-left: 0.5rem;
+      font-family: $sans;
+    }
+  }
+  &__summary {
+    margin: 0.75rem -1rem;
+    padding: 0.75rem 10%;
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1rem;
+    font-style: italic;
+    border-top: 1px #ccc solid;
+  }
+  &__actions {
+    background: #eee;
+    padding: 0.5rem;
+    margin: -1rem;
+    border-top: 1px #ccc solid;
+  }
+  &__button {
+    margin: 0 0.25rem 0 0;
+    &--red {
+      background: #d87474;
+    }
+    &--yellow {
+      background: #F4D35E;
+    }
   }
   &__input{    
     width: 100%;

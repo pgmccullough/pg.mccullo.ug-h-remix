@@ -207,24 +207,34 @@ export const TaskTracker: React.FC<{}> = () => {
                 <button onClick={addTask}>SUBMIT</button>
                 </>
                 :activeJob&&<>
-                  <div>{activeJob.deadline} {
-                    timeDiff(
-                      new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
-                      new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
-                  }</div>
-                  <ul>
+                <div className="task-tracker__title">{activeJob.title}</div>
+                  <div className="task-tracker__goal">{Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
+                  <div className="task-tracker__deadline">
+                    Due {activeJob.deadline} 
+                    <p className="task-tracker__deadline-relative">
+                      ({timeDiff(
+                        new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                        new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
+                      } days from now)
+                    </p>
+                  </div>
+                  <p className="task-tracker__resources">Resources</p>
+                  <ul className="task-tracker__resource-ul">
                     {activeJob.url.map((link: {title: string, url: string}) => 
-                      <li key={`${activeJob._id}_${link.url}`}>
-                        <a href={link.url} target="__BLANK">{link.title}</a>
+                      <li className="task-tracker__resource-li" key={`${activeJob._id}_${link.url}`}>
+                        <a className="task-tracker__resource-a" href={link.url} target="__BLANK">{link.title}</a>
                       </li>
                     )}
                   </ul>
-
-                  <div>Goal: {Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
-                  <div>Currently: 
-                    <input onChange={updateCurrent} value={activeJob.curCount} />
+                  <div className="task-tracker__current">Currently: 
+                    <input 
+                      className="task-tracker__current-input" 
+                      onChange={updateCurrent}
+                      placeholder="0"
+                      value={activeJob.curCount==="0"?"":activeJob.curCount}
+                    />
                   </div>
-                  <div>
+                  <div className="task-tracker__summary">
                     {`
                       ${(Number(activeJob.totalCount)-Number(activeJob.curCount)).toLocaleString("en-US")}
                       ${activeJob.units} remaining.
@@ -234,11 +244,13 @@ export const TaskTracker: React.FC<{}> = () => {
                         new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
                         new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
                       )).toLocaleString("en-US")
-                    } words a day will get you there.
+                    } {activeJob.units} a day to meet deadline.
                   </div>
-                  <button onClick={() => archiveTask(activeJob)}>ARCHIVE</button>
-                  <button onClick={() => deleteTask(activeJob)}>DELETE</button>
-                  <button onClick={() => updateTask(activeJob)}>SAVE</button>
+                  <div className="task-tracker__actions">
+                    <button className="task-tracker__button task-tracker__button--yellow" onClick={() => archiveTask(activeJob)}>ARCHIVE</button>
+                    <button className="task-tracker__button task-tracker__button--red" onClick={() => deleteTask(activeJob)}>DELETE</button>
+                    <button className="task-tracker__button" onClick={() => updateTask(activeJob)}>SAVE</button>
+                  </div>
                 </>}
           </div>
         </div>

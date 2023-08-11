@@ -1480,8 +1480,84 @@ button {
   opacity: 0.5;
 }
 
+.task-tracker {
+  padding: 1rem;
+}
+.task-tracker__title {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-weight: bold;
+}
+.task-tracker__goal {
+  text-align: center;
+  font-size: 0.9rem;
+}
+.task-tracker__deadline {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+}
+.task-tracker__deadline-relative {
+  margin: 0;
+  line-height: 0.25rem;
+}
+.task-tracker__resources, .task-tracker__current {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
 .task-tracker__resource {
   display: flex;
+}
+.task-tracker__resource-ul {
+  border-left: 3px #666 solid;
+  margin-left: 1.5rem;
+  margin-top: 0;
+  padding-left: 0.75rem;
+}
+.task-tracker__resource-li {
+  margin-left: 0.5rem;
+  list-style: none;
+}
+.task-tracker__resource-a {
+  color: #666;
+  text-decoration: none;
+  border-bottom: 1px #666 dashed;
+}
+.task-tracker__resource-a:hover {
+  border-bottom-color: #000;
+}
+.task-tracker__current-input {
+  border: 0;
+  border-bottom: 3px #4A6CBA solid;
+  margin-left: 0.5rem;
+  font-family: "PGM Sans";
+}
+.task-tracker__summary {
+  margin: 0.75rem -1rem;
+  padding: 0.75rem 10%;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1rem;
+  font-style: italic;
+  border-top: 1px #ccc solid;
+}
+.task-tracker__actions {
+  background: #eee;
+  padding: 0.5rem;
+  margin: -1rem;
+  border-top: 1px #ccc solid;
+}
+.task-tracker__button {
+  margin: 0 0.25rem 0 0;
+}
+.task-tracker__button--red {
+  background: #d87474;
+}
+.task-tracker__button--yellow {
+  background: #F4D35E;
 }
 .task-tracker__input {
   width: 100%;
