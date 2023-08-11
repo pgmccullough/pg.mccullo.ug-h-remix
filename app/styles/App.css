@@ -1578,6 +1578,59 @@ button {
   width: calc(100% - 0.25rem);
 }
 
+.task-day {
+  width: 13%;
+  border: 1px #ccc solid;
+  border-radius: 4px;
+  height: 8rem;
+  position: relative;
+}
+.task-day__wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: space-evenly;
+  margin-top: 1rem;
+}
+.task-day__visual {
+  width: 100%;
+  height: 50%;
+  position: relative;
+}
+.task-day__status-bar, .task-day__status-bar--green {
+  position: absolute;
+  width: 90%;
+  margin-left: 5%;
+  background: #d87474;
+  min-height: 2px;
+  max-height: 100%;
+  bottom: 0;
+}
+.task-day__status-bar--green {
+  background: #09BC8A;
+}
+.task-day__graph-line {
+  position: absolute;
+  border-top: 1px #666 dashed;
+  width: 100%;
+  height: 0;
+  opacity: 0.2;
+}
+.task-day__desc {
+  background: #eee;
+  font-size: 0.6rem;
+  line-height: 0.7rem;
+  padding: 0.25rem;
+  text-align: center;
+  border-top: 1px #ccc solid;
+  height: 50%;
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .webcam__video {
   width: 100%;
   background: #666;

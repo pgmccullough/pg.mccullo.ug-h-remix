@@ -232,7 +232,7 @@ export interface Job {
   units: string,
   url: {title: string, url: string}[],
   curCount: `${number}`,
-  dailies: {[key: `${number}-${number}-${number}`]: `${number}`},
+  dailies: {[key: `${number|string}-${number|string}-${number|string}`]: `${number}`},
   notes: [],
   order: number,
   archive: boolean

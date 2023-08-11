@@ -1,5 +1,6 @@
-import { ChangeEvent, ChangeEventHandler, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "@remix-run/react";
+import { TaskDay } from "./TaskDay";
 import { Job } from "~/common/types";
 
 
@@ -91,7 +92,10 @@ export const TaskTracker: React.FC<{}> = () => {
   }
 
   const updateCurrent = (e: ChangeEvent<HTMLInputElement>) => {
-    setActiveJob({...activeJob, curCount: `${Number(e.target.value)}`});
+    setActiveJob({...activeJob,
+      curCount: `${Number(e.target.value)}`,
+      dailies: {...activeJob.dailies, [`${initDt}-${initMo}-${initYr}`]: Number(e.target.value)}
+    });
   }
 
   const clickNew = () => {
@@ -219,6 +223,21 @@ export const TaskTracker: React.FC<{}> = () => {
                       new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
                     } days from now)
                   </p>
+                </div>
+                <div className="task-day__wrapper">
+                  {Array.apply(null, Array(7)).map((_num:unknown, i:number) =>
+                    <TaskDay key={`td-${i}`}
+                      activeJob={activeJob}
+                      goal={(Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
+                        new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                        new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
+                      )}
+                      initDt={initDt}
+                      initMo={initMo}
+                      initYr={initYr}
+                      offset={6-i}
+                    />
+                  )}
                 </div>
                 <p className="task-tracker__resources">Resources</p>
                 <ul className="task-tracker__resource-ul">
