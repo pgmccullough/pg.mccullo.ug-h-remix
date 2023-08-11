@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, ChangeEventHandler, useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { Job } from "~/common/types";
 
@@ -9,8 +9,8 @@ export const TaskTracker: React.FC<{}> = () => {
 
   const taskFetch = useFetcher();
 
-  const initDt = (new Date().getMonth()+1).toString().padStart(2,"0");
-  const initMo = (new Date().getDate()).toString().padStart(2,"0");
+  const initDt = (new Date().getDate()).toString().padStart(2,"0");
+  const initMo = (new Date().getMonth()+1).toString().padStart(2,"0");
   const initYr = new Date().getFullYear();
 
   const [ jobList, setJobList ] = useState<Job[]>(jobs.filter((job:Job) => !job.archive));
@@ -33,14 +33,22 @@ export const TaskTracker: React.FC<{}> = () => {
     archive: false
   })
 
-  const timeDiff = (deadlineTime: number, nowTime: number) => {
-    const diffInSecs = ((deadlineTime/1000) - (nowTime/1000))
-    const diffInMins = diffInSecs/60;
-    const diffInHrs = diffInMins/60;
-    const diffInDays = diffInHrs/24;
-    const diffInWeeks = diffInDays/7;
-    const diffInMonths = diffInDays/30;
-    return diffInDays+" days left...";
+  const timeDiff: any = (deadlineTime: number, nowTime: number, measure: string = "days") => {
+    const diffObj = {
+      seconds: 0,
+      minutes: 0,
+      hours: 0,
+      days: 0,
+      weeks: 0,
+      months: 0,
+    };
+    diffObj.seconds = ((deadlineTime/1000) - (nowTime/1000))
+    diffObj.minutes = diffObj.seconds/60;
+    diffObj.hours = diffObj.minutes/60;
+    diffObj.days = diffObj.hours/24;
+    diffObj.weeks = diffObj.days/7;
+    diffObj.months = diffObj.days/30;
+    return diffObj[measure as keyof typeof diffObj];
   }
 
   const printOptions = (
@@ -82,6 +90,10 @@ export const TaskTracker: React.FC<{}> = () => {
     }
   }
 
+  const updateCurrent = (e: ChangeEvent<HTMLInputElement>) => {
+    setActiveJob({...activeJob, curCount: `${Number(e.target.value)}`});
+  }
+
   const clickNew = () => {
     setFormActive(true);
     if(!jobList.find((job:Job) => job._id === "")) {
@@ -100,6 +112,10 @@ export const TaskTracker: React.FC<{}> = () => {
     if(taskFetch.data?.archived?.archivedId) {
       setJobList([...jobList].filter((job: Job) => job._id !== taskFetch.data?.archived?.archivedId));
       setActiveJob([...jobList].filter((job: Job) => job._id !== taskFetch.data?.archived?.archivedId)[0]);
+    }
+    if(taskFetch.data?.deleted?.deletedId) {
+      setJobList([...jobList].filter((job: Job) => job._id !== taskFetch.data?.deleted?.deletedId));
+      setActiveJob([...jobList].filter((job: Job) => job._id !== taskFetch.data?.deleted?.deletedId)[0]);
     }
     if(taskFetch.data?.task?.insertedId) {
       const targetJob = [...jobList].find((job: Job) => !job._id);
@@ -190,17 +206,36 @@ export const TaskTracker: React.FC<{}> = () => {
                 )}
                 <button onClick={addTask}>SUBMIT</button>
                 </>
-                :<>
+                :activeJob&&<>
                   <div>{activeJob.deadline} {
                     timeDiff(
-                      new Date( Number(activeJob.year), Number(activeJob.month)+1, Number(activeJob.date)).getTime(),
+                      new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
                       new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
                   }</div>
-                  <div>{activeJob.month}</div>
-                  <div>{activeJob.date}</div>
-                  <div>{activeJob.year}</div>
-                  <div>Goal: {activeJob.totalCount} {activeJob.units}</div>
-                  <div>Currently: {activeJob.curCount}</div>
+                  <ul>
+                    {activeJob.url.map((link: {title: string, url: string}) => 
+                      <li key={`${activeJob._id}_${link.url}`}>
+                        <a href={link.url} target="__BLANK">{link.title}</a>
+                      </li>
+                    )}
+                  </ul>
+
+                  <div>Goal: {Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
+                  <div>Currently: 
+                    <input onChange={updateCurrent} value={activeJob.curCount} />
+                  </div>
+                  <div>
+                    {`
+                      ${(Number(activeJob.totalCount)-Number(activeJob.curCount)).toLocaleString("en-US")}
+                      ${activeJob.units} remaining.
+                    `}
+                    {
+                      Math.ceil((Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
+                        new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                        new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
+                      )).toLocaleString("en-US")
+                    } words a day will get you there.
+                  </div>
                   <button onClick={() => archiveTask(activeJob)}>ARCHIVE</button>
                   <button onClick={() => deleteTask(activeJob)}>DELETE</button>
                   <button onClick={() => updateTask(activeJob)}>SAVE</button>
