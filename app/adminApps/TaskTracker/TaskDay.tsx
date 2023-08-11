@@ -44,7 +44,7 @@ export const TaskDay: React.FC<{
         <div className="task-day__status-bar" style={{height: (daySuccess>0?daySuccess:0)+"%"}} />
         <div className="task-day__status-bar--green" style={{height: (daySuccess>0?daySuccess:0)+"%", opacity: daySuccess/100}} />
         {Array.apply(null, Array(9)).map((_num:unknown, i:number) =>
-          <div className="task-day__graph-line" style={{top: `${(i+1)*10}%`}} />
+          <div key={`graphLine-${dailiesDate}-${i}`} className="task-day__graph-line" style={{top: `${(i+1)*10}%`}} />
         )}
       </div>
       <div className="task-day__desc">
