@@ -183,7 +183,7 @@ export const TaskTracker: React.FC<{}> = () => {
               >+</div>
             </div>
             {formActive
-              ?<>
+              ?<div className="task-tracker__form">
                 <input className="task-tracker__input" name="title" placeholder="Title" value={newJob.title} onChange={updateForm} />
                 <div className="task-tracker__date">
                   <select className="calendar__form--field" name="month" value={newJob.month} onChange={updateForm} >
@@ -200,58 +200,60 @@ export const TaskTracker: React.FC<{}> = () => {
                 <input className="task-tracker__input" placeholder="Units" name="units" value={newJob.units} onChange={updateForm} />
                 {Array.isArray(newJob.url) && newJob.url.map((resource: {title: string, url: string}, i: number) => 
                   <div className="task-tracker__resource" key={resource.url}>
-                    <input className="task-tracker__input" placeholder="Resource Title" name="urlTitle" data-index={i} value={resource.title} onChange={updateForm} />
+                    <input className="task-tracker__input--left-pair" placeholder="Resource Title" name="urlTitle" data-index={i} value={resource.title} onChange={updateForm} />
                     <input className="task-tracker__input" placeholder="Resource URL" name="urlUrl" data-index={i} value={resource.url} onChange={updateForm} />
                   </div>
                 )}
-                <button onClick={addTask}>SUBMIT</button>
-                </>
-                :activeJob&&<>
-                <div className="task-tracker__title">{activeJob.title}</div>
-                  <div className="task-tracker__goal">{Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
-                  <div className="task-tracker__deadline">
-                    Due {activeJob.deadline} 
-                    <p className="task-tracker__deadline-relative">
-                      ({timeDiff(
-                        new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
-                        new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
-                      } days from now)
-                    </p>
-                  </div>
-                  <p className="task-tracker__resources">Resources</p>
-                  <ul className="task-tracker__resource-ul">
-                    {activeJob.url.map((link: {title: string, url: string}) => 
-                      <li className="task-tracker__resource-li" key={`${activeJob._id}_${link.url}`}>
-                        <a className="task-tracker__resource-a" href={link.url} target="__BLANK">{link.title}</a>
-                      </li>
-                    )}
-                  </ul>
-                  <div className="task-tracker__current">Currently: 
-                    <input 
-                      className="task-tracker__current-input" 
-                      onChange={updateCurrent}
-                      placeholder="0"
-                      value={activeJob.curCount==="0"?"":activeJob.curCount}
-                    />
-                  </div>
-                  <div className="task-tracker__summary">
-                    {`
-                      ${(Number(activeJob.totalCount)-Number(activeJob.curCount)).toLocaleString("en-US")}
-                      ${activeJob.units} remaining.
-                    `}
-                    {
-                      Math.ceil((Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
-                        new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
-                        new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
-                      )).toLocaleString("en-US")
-                    } {activeJob.units} a day to meet deadline.
-                  </div>
-                  <div className="task-tracker__actions">
-                    <button className="task-tracker__button task-tracker__button--yellow" onClick={() => archiveTask(activeJob)}>ARCHIVE</button>
-                    <button className="task-tracker__button task-tracker__button--red" onClick={() => deleteTask(activeJob)}>DELETE</button>
-                    <button className="task-tracker__button" onClick={() => updateTask(activeJob)}>SAVE</button>
-                  </div>
-                </>}
+                <div className="task-tracker__actions--form">
+                  <button className="task-tracker__button" onClick={addTask}>SUBMIT</button>
+                </div>
+              </div>
+              :activeJob&&<>
+              <div className="task-tracker__title">{activeJob.title}</div>
+                <div className="task-tracker__goal">{Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
+                <div className="task-tracker__deadline">
+                  Due {activeJob.deadline} 
+                  <p className="task-tracker__deadline-relative">
+                    ({timeDiff(
+                      new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                      new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
+                    } days from now)
+                  </p>
+                </div>
+                <p className="task-tracker__resources">Resources</p>
+                <ul className="task-tracker__resource-ul">
+                  {activeJob.url.map((link: {title: string, url: string}) => 
+                    <li className="task-tracker__resource-li" key={`${activeJob._id}_${link.url}`}>
+                      <a className="task-tracker__resource-a" href={link.url} target="__BLANK">{link.title}</a>
+                    </li>
+                  )}
+                </ul>
+                <div className="task-tracker__current">Currently: 
+                  <input 
+                    className="task-tracker__current-input" 
+                    onChange={updateCurrent}
+                    placeholder="0"
+                    value={activeJob.curCount==="0"?"":activeJob.curCount}
+                  />
+                </div>
+                <div className="task-tracker__summary">
+                  {`
+                    ${(Number(activeJob.totalCount)-Number(activeJob.curCount)).toLocaleString("en-US")}
+                    ${activeJob.units} remaining.
+                  `}
+                  {
+                    Math.ceil((Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
+                      new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                      new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
+                    )).toLocaleString("en-US")
+                  } {activeJob.units} a day to meet deadline.
+                </div>
+                <div className="task-tracker__actions">
+                  <button className="task-tracker__button task-tracker__button--yellow" onClick={() => archiveTask(activeJob)}>ARCHIVE</button>
+                  <button className="task-tracker__button task-tracker__button--red" onClick={() => deleteTask(activeJob)}>DELETE</button>
+                  <button className="task-tracker__button" onClick={() => updateTask(activeJob)}>SAVE</button>
+                </div>
+              </>}
           </div>
         </div>
       </article>

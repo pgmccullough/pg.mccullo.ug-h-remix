@@ -1544,11 +1544,14 @@ button {
   font-style: italic;
   border-top: 1px #ccc solid;
 }
-.task-tracker__actions {
+.task-tracker__actions, .task-tracker__actions--form {
   background: #eee;
   padding: 0.5rem;
   margin: -1rem;
   border-top: 1px #ccc solid;
+}
+.task-tracker__actions--form {
+  margin-top: 0;
 }
 .task-tracker__button {
   margin: 0 0.25rem 0 0;
@@ -1559,13 +1562,20 @@ button {
 .task-tracker__button--yellow {
   background: #F4D35E;
 }
-.task-tracker__input {
+.task-tracker__form {
+  padding-top: 1rem;
+}
+.task-tracker__input, .task-tracker__input--left-pair {
   width: 100%;
   font: 1rem "PGM Sans";
   padding: 0.35rem 0.25rem 0.25rem 0.4rem;
   border: 1px #666 solid;
   border-radius: 3px;
   margin-bottom: 0.75rem;
+}
+.task-tracker__input--left-pair {
+  margin-right: 0.5rem;
+  width: calc(100% - 0.25rem);
 }
 
 .webcam__video {

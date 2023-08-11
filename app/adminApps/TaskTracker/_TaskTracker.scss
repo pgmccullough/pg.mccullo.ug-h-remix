@@ -71,6 +71,10 @@
     padding: 0.5rem;
     margin: -1rem;
     border-top: 1px #ccc solid;
+    &--form {
+      @extend .task-tracker__actions;
+      margin-top: 0;
+    }
   }
   &__button {
     margin: 0 0.25rem 0 0;
@@ -81,12 +85,20 @@
       background: #F4D35E;
     }
   }
-  &__input{    
+  &__form {
+    padding-top: 1rem;
+  }
+  &__input {    
     width: 100%;
     font: 1rem $sans;
     padding: 0.35rem 0.25rem 0.25rem 0.4rem;
     border: 1px #666 solid;
     border-radius: 3px;
     margin-bottom: 0.75rem;
+    &--left-pair {
+      @extend .task-tracker__input;
+      margin-right: 0.5rem;
+      width: calc(100% - 0.25rem);
+    }
   }
 }
