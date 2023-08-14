@@ -1451,6 +1451,10 @@ button {
 }
 .note__title--active {
   background: #fff;
+  cursor: default;
+}
+.note__title--active:hover {
+  background: #fff;
 }
 .note__input, .note__textarea {
   border: 1px #ccc solid;

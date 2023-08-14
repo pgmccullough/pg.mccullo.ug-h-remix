@@ -218,10 +218,10 @@ export const TaskTracker: React.FC<{}> = () => {
                 <div className="task-tracker__deadline">
                   Due {activeJob.deadline} 
                   <p className="task-tracker__deadline-relative">
-                    ({timeDiff(
+                    ({Math.ceil(timeDiff(
                       new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
                       new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
-                    } days from now)
+                    )} days from now)
                   </p>
                 </div>
                 <div className="task-day__wrapper">

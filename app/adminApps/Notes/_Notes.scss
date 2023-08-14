@@ -20,6 +20,10 @@
     }
     &--active {
       background: #fff;
+      cursor: default;
+      &:hover {
+        background: #fff;
+      }
     }
   }
   &__input {
