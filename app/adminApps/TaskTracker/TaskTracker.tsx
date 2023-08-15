@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 import { TaskDay } from "./TaskDay";
 import { Job } from "~/common/types";
@@ -14,8 +14,10 @@ export const TaskTracker: React.FC<{}> = () => {
   const initMo = (new Date().getMonth()+1).toString().padStart(2,"0");
   const initYr = new Date().getFullYear();
 
-  const [ jobList, setJobList ] = useState<Job[]>(jobs.filter((job:Job) => !job.archive));
-  const [ activeJob, setActiveJob ] = useState<Job>(jobs.filter((job:Job) => !job.archive)[0]);
+  const [ tabDraggable, setTabDraggable] = useState<boolean>(true);
+  const [ dragStartX, setDragStartX ] = useState<number>(0);
+  const [ jobList, setJobList ] = useState<Job[]>(jobs.filter((job:Job) => !job.archive).sort((a:Job, b:Job) => a.order - b.order));
+  const [ activeJob, setActiveJob ] = useState<Job>(jobs.filter((job:Job) => !job.archive).sort((a:Job, b:Job) => a.order - b.order)[0]);
   const [ formActive, setFormActive ] = useState<boolean>(false)
   const [ newJob, setNewJob ] = useState<Job>({
     _id: '',
@@ -160,6 +162,25 @@ export const TaskTracker: React.FC<{}> = () => {
     );    
   }
 
+  useEffect(() => {
+    jobList.forEach((_job:Job,i:number) => {
+      setJobList((prev: Job[]) => {
+        const jlClone = [...prev];
+        jlClone[i].order = i;
+        return jlClone;
+      })
+    })
+  },[])
+
+  const checkDrag = (e: DragEvent<HTMLDivElement>, job: Job) => {
+    if((e.clientX > dragStartX-45)||(dragStartX===0)) return;
+    const filteredJL: Job[] = [...jobList.filter((indJob:Job) => indJob.order!==job.order&&indJob.order!==(job.order-1))];
+    const prevJob: Job = {...jobList.find((indJob:Job) => indJob.order===(job.order-1))!, order: job.order};
+    const curJob = {...job, order: job.order-1};
+    setJobList([...filteredJL, curJob, prevJob]);
+    setDragStartX(0);
+  }
+
   return (
     <>
       <article className="postcard--left">
@@ -174,9 +195,13 @@ export const TaskTracker: React.FC<{}> = () => {
           <div className="note__titles">
               {jobList.map(job =>
                 <div 
+                  draggable={tabDraggable}
                   key={job._id} 
                   onClick={() => blurForm(job)} 
                   className={`note__title${job._id===activeJob._id?" note__title--active":""}`}
+                  onDragStart={(e) => setDragStartX(e.clientX)}
+                  onDrag={(e) => checkDrag(e, job)}
+                  onDragOver={(e) => e.preventDefault()}
                 >
                   {activeJob._id===job._id?activeJob.title:job.title}
                 </div>
