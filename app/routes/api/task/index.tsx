@@ -34,6 +34,16 @@ export const action = async ({ request }: ActionArgs) => {
       const updated = await db.collection('myJobs').updateOne({ _id : new ObjectId(taskObj._id)}, { $set: { dailies: taskObj.dailies, curCount: taskObj.curCount } });
       return { updated: {...updated, updatedId: taskObj._id} };
     }
+    if(taskAction==="updateOrder") {
+      const updatedJobs = [];
+      for(const job of taskObj) {
+        const storeId = job._id;
+        delete job._id;
+        const updated = await db.collection('myJobs').updateOne({ _id : new ObjectId(storeId)}, { $set: { ...job } });
+        updatedJobs.push(updated)
+      }
+      return { updatedBatch: updatedJobs }
+    }
     return { error: "No data sent"}
   } else {
     return { error: "Unauthorized"}

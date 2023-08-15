@@ -162,6 +162,13 @@ export const TaskTracker: React.FC<{}> = () => {
     );    
   }
 
+  const updateDraggedTabs = () => {
+    taskFetch.submit(
+      { taskAction: "updateOrder", taskObj: JSON.stringify(jobList) },
+      { method: "post", action: `/api/task?index` }
+    );    
+  }
+
   useEffect(() => {
     jobList.forEach((_job:Job,i:number) => {
       setJobList((prev: Job[]) => {
@@ -173,12 +180,21 @@ export const TaskTracker: React.FC<{}> = () => {
   },[])
 
   const checkDrag = (e: DragEvent<HTMLDivElement>, job: Job) => {
-    if((e.clientX > dragStartX-45)||(dragStartX===0)) return;
-    const filteredJL: Job[] = [...jobList.filter((indJob:Job) => indJob.order!==job.order&&indJob.order!==(job.order-1))];
-    const prevJob: Job = {...jobList.find((indJob:Job) => indJob.order===(job.order-1))!, order: job.order};
-    const curJob = {...job, order: job.order-1};
-    setJobList([...filteredJL, curJob, prevJob]);
-    setDragStartX(0);
+    if(dragStartX===0) return;
+    if(e.clientX <= dragStartX-45) {
+      const filteredJL: Job[] = [...jobList.filter((indJob:Job) => indJob.order!==job.order&&indJob.order!==(job.order-1))];
+      const prevJob: Job = {...jobList.find((indJob:Job) => indJob.order===(job.order-1))!, order: job.order};
+      const curJob = {...job, order: job.order-1};
+      setJobList([...filteredJL, curJob, prevJob]);
+      setDragStartX(0);
+    }
+    if(e.clientX >= dragStartX+45) {
+      const filteredJL: Job[] = [...jobList.filter((indJob:Job) => indJob.order!==job.order&&indJob.order!==(job.order+1))];
+      const prevJob: Job = {...jobList.find((indJob:Job) => indJob.order===(job.order+1))!, order: job.order};
+      const curJob = {...job, order: job.order+1};
+      setJobList([...filteredJL, prevJob, curJob]);
+      setDragStartX(0);
+    }
   }
 
   return (
@@ -201,6 +217,7 @@ export const TaskTracker: React.FC<{}> = () => {
                   className={`note__title${job._id===activeJob._id?" note__title--active":""}`}
                   onDragStart={(e) => setDragStartX(e.clientX)}
                   onDrag={(e) => checkDrag(e, job)}
+                  onDragEnd={updateDraggedTabs}
                   onDragOver={(e) => e.preventDefault()}
                 >
                   {activeJob._id===job._id?activeJob.title:job.title}
