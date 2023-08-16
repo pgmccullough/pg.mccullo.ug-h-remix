@@ -1469,6 +1469,7 @@ button {
   resize: vertical;
   height: 14rem;
   line-height: 1.35rem;
+  overflow-y: scroll;
 }
 .note__textarea--blur {
   filter: blur(2px);
@@ -1482,6 +1483,20 @@ button {
 .note__button--disabled {
   pointer-events: none;
   opacity: 0.5;
+}
+.note__progress {
+  width: 100%;
+  height: 0.5rem;
+  margin: 0.25rem 0;
+  border: 1px #ccc solid;
+  border-radius: 4px;
+  background: #eee;
+  overflow: hidden;
+}
+.note__progress-inner {
+  background: #17B890;
+  height: 0.5rem;
+  transition: 0.25s;
 }
 
 .task-tracker {

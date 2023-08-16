@@ -15,9 +15,13 @@ export const Notes: React.FC<{}> = () => {
   const [ noteTitles, setNoteTitles ] = useState<Note[]>(notes.sort((a:Note,b:Note)=>a.order-b.order));
   const [ activeNote, setActiveNote ] = useState<Note>(notes.sort((a:Note,b:Note)=>a.order-b.order)[0]);
   const [ isUpdating, setIsUpdating ] = useState<boolean>(false);
-  const [ cacheNote, setCacheNote ] = useState<string>(notes.sort((a:Note,b:Note)=>a.order-b.order)[0].content)
+  const [ cacheNote, setCacheNote ] = useState<Note>(notes.sort((a:Note,b:Note)=>a.order-b.order)[0])
 
   const fetcher = useFetcher();
+
+  useEffect(() => {
+    if(activeNote._id!==cacheNote._id) setCacheNote(activeNote);
+  },[activeNote, cacheNote, setCacheNote])
 
   useEffect(() => {
     if(fetcher.type==="done") {
@@ -80,7 +84,7 @@ export const Notes: React.FC<{}> = () => {
   const toCheckBox = (html: string) => {
     if(activeNote.content.replaceAll("[ ]","<input type='checkbox' />")!==activeNote.content) {
       setActiveNote({...activeNote, content: activeNote.content.replaceAll("[ ]","<input type='checkbox' />")})
-      setCacheNote(activeNote.content.replaceAll("[ ]","<input type='checkbox'/>"))
+      setCacheNote({...cacheNote, content: activeNote.content.replaceAll("[ ]","<input type='checkbox'/>")})
     }
     return html.replaceAll("[ ]","<input type='checkbox' />");
   }
@@ -96,6 +100,9 @@ export const Notes: React.FC<{}> = () => {
       if(clicked.parentElement) setActiveNote({...activeNote, content: clicked.parentElement.innerHTML})
     };
   }
+
+  const checkBoxTotal = (activeNote.content?.match(/<input/g) || []).length;
+  const checkBoxChecked = (activeNote.content?.match(/checked=/g) || []).length;
 
   return (
     <>
@@ -135,8 +142,12 @@ export const Notes: React.FC<{}> = () => {
               className={`note__textarea${isUpdating?" note__textarea--blur":""}`}
               onClick={dynamicCheckBoxClick}
               onKeyUp={updateNoteBody}
-              dangerouslySetInnerHTML={{__html: toCheckBox(cacheNote)}}
+              dangerouslySetInnerHTML={{__html: toCheckBox(cacheNote.content)}}
             / >
+            {checkBoxTotal
+              ?<div className="note__progress"><div className="note__progress-inner" style={{width: `${Math.ceil((checkBoxChecked/checkBoxTotal)*100)}%`}} /></div>
+              :""
+            }
             <button
               onClick={saveNoteUpdate} 
               className={`note__button${isUpdating?" note__button--disabled":""}`}
