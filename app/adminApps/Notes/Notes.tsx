@@ -1,3 +1,4 @@
+import type { ChangeEvent, KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useState } from "react";
 import { useFetcher, useLoaderData } from "@remix-run/react";
 
@@ -11,9 +12,10 @@ export const Notes: React.FC<{}> = () => {
     order: number
   }
 
-  const [noteTitles, setNoteTitles] = useState<Note[]>(notes.sort((a:Note,b:Note)=>a.order-b.order));
-  const [activeNote, setActiveNote] = useState<Note>(notes.sort((a:Note,b:Note)=>a.order-b.order)[0]);
-  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [ noteTitles, setNoteTitles ] = useState<Note[]>(notes.sort((a:Note,b:Note)=>a.order-b.order));
+  const [ activeNote, setActiveNote ] = useState<Note>(notes.sort((a:Note,b:Note)=>a.order-b.order)[0]);
+  const [ isUpdating, setIsUpdating ] = useState<boolean>(false);
+  const [ cacheNote, setCacheNote ] = useState<string>(notes.sort((a:Note,b:Note)=>a.order-b.order)[0].content)
 
   const fetcher = useFetcher();
 
@@ -30,7 +32,10 @@ export const Notes: React.FC<{}> = () => {
 
   const noteClick = (noteId: string) => {
     const newNote = noteTitles.find((note: Note) => note._id===noteId);
-    if(newNote) setActiveNote(newNote);
+    if(newNote) {
+      setActiveNote(newNote);
+
+    }
   }
 
   const createNote = () => {
@@ -40,10 +45,15 @@ export const Notes: React.FC<{}> = () => {
     );
   }
 
-  const updateNote = (e:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>) => {
+  const updateNoteTitle = (e:ChangeEvent<HTMLInputElement>) => {
     const activeTitle = noteTitles.find((note:Note) => note._id===activeNote._id);
     if(activeTitle&&e.target.name==="title") activeTitle.title = e.target.value;
     setActiveNote({...activeNote, [e.target.name]:e.target.value});
+  }
+
+  const updateNoteBody = (e:KeyboardEvent<HTMLDivElement>) => {
+    const input = e.target as HTMLElement;
+    setActiveNote({...activeNote, content: input.innerHTML});
   }
 
   const saveNoteUpdate = () => {
@@ -65,6 +75,26 @@ export const Notes: React.FC<{}> = () => {
       { noteAction: "deleteNote", noteID },
       { method: "post", action: `/api/notes?index` }
     );
+  }
+
+  const toCheckBox = (html: string) => {
+    if(activeNote.content.replaceAll("[ ]","<input type='checkbox' />")!==activeNote.content) {
+      setActiveNote({...activeNote, content: activeNote.content.replaceAll("[ ]","<input type='checkbox' />")})
+      setCacheNote(activeNote.content.replaceAll("[ ]","<input type='checkbox'/>"))
+    }
+    return html.replaceAll("[ ]","<input type='checkbox' />");
+  }
+
+  const dynamicCheckBoxClick = (e:MouseEvent<HTMLInputElement>) => {
+    const clicked = e.target as HTMLInputElement;
+    if(clicked.type==="checkbox") {
+      if(clicked.checked) {
+        clicked.setAttribute("checked", "true");
+      } else {
+        clicked.removeAttribute("checked");
+      }
+      if(clicked.parentElement) setActiveNote({...activeNote, content: clicked.parentElement.innerHTML})
+    };
   }
 
   return (
@@ -97,16 +127,16 @@ export const Notes: React.FC<{}> = () => {
               type="text" 
               className="note__input"
               name="title"
-              onChange={updateNote}
+              onChange={updateNoteTitle}
               value={activeNote.title}
             />
-            <textarea 
+            <div 
+              contentEditable
               className={`note__textarea${isUpdating?" note__textarea--blur":""}`}
-              name="content"
-              onChange={updateNote}
-              value={activeNote.content}
-            >
-            </textarea>
+              onClick={dynamicCheckBoxClick}
+              onKeyUp={updateNoteBody}
+              dangerouslySetInnerHTML={{__html: toCheckBox(cacheNote)}}
+            / >
             <button
               onClick={saveNoteUpdate} 
               className={`note__button${isUpdating?" note__button--disabled":""}`}
