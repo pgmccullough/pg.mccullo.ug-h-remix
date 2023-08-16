@@ -97,7 +97,12 @@ export const Notes: React.FC<{}> = () => {
       } else {
         clicked.removeAttribute("checked");
       }
-      if(clicked.parentElement) setActiveNote({...activeNote, content: clicked.parentElement.innerHTML})
+      let checkElement = clicked.parentElement;
+      while(!checkElement?.className) {
+        if(!checkElement) return;
+        checkElement = checkElement.parentElement
+      }
+      if(checkElement) setActiveNote({...activeNote, content: checkElement.innerHTML})
     };
   }
 
