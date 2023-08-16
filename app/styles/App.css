@@ -702,6 +702,25 @@ button {
   background: #eee;
   padding: 4px;
 }
+.postcard__select {
+  width: 90%;
+  margin: 0 auto 0.5rem;
+  padding: 0.25rem 0 0.1rem 0.25rem;
+  font: 1rem "PGM Sans";
+}
+.postcard__checkbox {
+  display: block;
+  text-align: left;
+  margin-left: 0.5rem;
+}
+.postcard__content-edit, .postcard__content-edit--active {
+  position: relative;
+  z-index: 99;
+  background: rgba(255, 255, 255, 0.9);
+}
+.postcard__content-edit--active {
+  z-index: 100;
+}
 
 .lexical__paragraph {
   margin: 0;

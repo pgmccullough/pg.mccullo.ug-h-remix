@@ -9,6 +9,7 @@ import { Video } from '../Media/Video/Video';
 import { Weblink } from '../Media/Weblink/Weblink';
 import { EmojiReact } from '../EmojiReact/EmojiReact';
 import { Comments } from "../Comments/Comments";
+import { TextEditor } from '../TextEditor/TextEditor';
 import type { Post } from "~/common/types";
 
 import dayjs from 'dayjs';
@@ -33,6 +34,8 @@ export const PostCard: React.FC<{
       itemLength: 0
     })
     const [ editMode, setEditMode ] = useState(false);
+    const [ editPostText, setEditPostText ] = useState(post.content);
+    const [ bodyEditActive, setBodyEditActive ] = useState(false);
     const [ postFeedback, setPostFeedback ] = useState<{commentsOn: any, sharesOn: any, likesOn: any }>(feedback)
     const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
     const [ swipe, setSwipe ] = useSwipe(
@@ -156,6 +159,7 @@ export const PostCard: React.FC<{
                     action={`/api/post/update/${post._id}`}
                   >
                     <select 
+                      className="postcard__select"
                       name="privacy"
                       defaultValue={post.privacy}
                     >
@@ -165,27 +169,33 @@ export const PostCard: React.FC<{
                         </option>
                       )}
                     </select>
-                    <input 
-                      type="checkbox"
-                      name="commentsOn"
-                      checked={!postFeedback.commentsOn||postFeedback.commentsOn==="false"?false:true}
-                      onChange={(e) => {setPostFeedback({...postFeedback, commentsOn: e.target.value==="true"?"false":"true"})}}
-                      value={postFeedback.commentsOn?"true":"false"}
-                    /> Comments
-                    <input 
-                      type="checkbox"
-                      name="sharesOn"
-                      checked={!postFeedback.sharesOn||postFeedback.sharesOn==="false"?false:true}
-                      onChange={(e) => {setPostFeedback({...postFeedback, sharesOn: e.target.value==="true"?"false":"true"})}}
-                      value={postFeedback.sharesOn?"true":"false"}
-                    /> Shares
-                    <input 
-                      type="checkbox"
-                      name="likesOn"
-                      checked={!postFeedback.likesOn||postFeedback.likesOn==="false"?false:true}
-                      onChange={(e) => {setPostFeedback({...postFeedback, likesOn: e.target.value==="true"?"false":"true"})}}
-                      value={postFeedback.likesOn?"true":"false"}
-                    /> Likes
+                    <div className="postcard__checkbox">
+                      <input 
+                        type="checkbox"
+                        name="commentsOn"
+                        checked={!postFeedback.commentsOn||postFeedback.commentsOn==="false"?false:true}
+                        onChange={(e) => {setPostFeedback({...postFeedback, commentsOn: e.target.value==="true"?"false":"true"})}}
+                        value={postFeedback.commentsOn?"true":"false"}
+                      /> Comments
+                    </div>
+                    <div className="postcard__checkbox">
+                      <input 
+                        type="checkbox"
+                        name="sharesOn"
+                        checked={!postFeedback.sharesOn||postFeedback.sharesOn==="false"?false:true}
+                        onChange={(e) => {setPostFeedback({...postFeedback, sharesOn: e.target.value==="true"?"false":"true"})}}
+                        value={postFeedback.sharesOn?"true":"false"}
+                      /> Shares
+                    </div>
+                    <div className="postcard__checkbox">
+                      <input 
+                        type="checkbox"
+                        name="likesOn"
+                        checked={!postFeedback.likesOn||postFeedback.likesOn==="false"?false:true}
+                        onChange={(e) => {setPostFeedback({...postFeedback, likesOn: e.target.value==="true"?"false":"true"})}}
+                        value={postFeedback.likesOn?"true":"false"}
+                      /> Likes
+                    </div>
                     <button>SAVE</button>
                   </fetcher.Form>
                   <>
@@ -285,9 +295,20 @@ export const PostCard: React.FC<{
               }                                                           
             </div>
             {post.content?.replace(/(<([^>]+)>)/gi, "")
-              ?<div className="postcard__content__text">
-                <div className="fake-p" dangerouslySetInnerHTML={{__html: post.content}} />
-              </div>
+              ?editMode
+                ?<div 
+                  onMouseEnter={() => setBodyEditActive(true)}
+                  onMouseLeave={() => setBodyEditActive(false)}
+                >
+                  <TextEditor
+                    htmlString={editPostText}
+                    contentStateSetter={setEditPostText}
+                    styleClass={`postcard__content-edit${bodyEditActive?"--active":""}`}
+                  />
+                </div>
+                :<div className="postcard__content__text">
+                  <div className="fake-p" dangerouslySetInnerHTML={{__html: post.content}} />
+                </div>
               :""
             }
             <div className="postcard__content__meta">

@@ -325,6 +325,26 @@
             padding: 4px;
         }
     }
+  &__select {
+    width: 90%;
+    margin: 0 auto 0.5rem;
+    padding: 0.25rem 0 0.1rem 0.25rem;
+    font: 1rem $sans;
+  }
+  &__checkbox {
+    display: block;
+    text-align: left;
+    margin-left: 0.5rem;
+  }
+  &__content-edit {
+    position: relative;
+    z-index: 99;
+    background: rgba(255,255,255,0.9);
+    &--active {
+      @extend .postcard__content-edit;
+      z-index: 100;
+    }
+  }
 }
 
 .lexical__paragraph {
