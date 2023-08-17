@@ -18,8 +18,8 @@ export const loader: LoaderFunction = async({request}: LoaderArgs) => {
   const url = new URL(request.url)
   const userId = url.searchParams.get('userId');
   const fullUser: any = await getFromId(userId||"");
-  const {cover_image, profile_image, site_description, site_name} = fullUser.userObj;
-  return {cover_image, profile_image, site_description, site_name};
+  const {cover_image, profile_image, site_description, site_name, watchword} = fullUser.userObj;
+  return {cover_image, profile_image, site_description, site_name, watchword};
 }
 
 export const action = async ({ request }: ActionArgs) => {
