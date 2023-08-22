@@ -147,7 +147,7 @@ export const Notes: React.FC<{}> = () => {
               className={`note__textarea${isUpdating?" note__textarea--blur":""}`}
               onClick={dynamicCheckBoxClick}
               onKeyUp={updateNoteBody}
-              dangerouslySetInnerHTML={{__html: toCheckBox(cacheNote.content)}}
+              dangerouslySetInnerHTML={{__html: cacheNote.content}}
             / >
             {checkBoxTotal
               ?<div className="note__progress"><div className="note__progress-inner" style={{width: `${Math.ceil((checkBoxChecked/checkBoxTotal)*100)}%`}} /></div>
