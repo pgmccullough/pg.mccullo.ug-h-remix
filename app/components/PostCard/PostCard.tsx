@@ -249,8 +249,9 @@ export const PostCard: React.FC<{
                 style={
                   mediaSlides.itemLength > 1
                     ?{transform: `translateX(${
-                      (Number(galSlide.current?.style.marginLeft.replace('px',''))*-1+swipe) > -1 &&
-                      (Number(galSlide.current?.style.marginLeft.replace('px',''))*-1-1) < (galWid.current?.offsetWidth-swipe)? swipe*-1 : 0
+                      (Number(galSlide.current?.style.marginLeft.replace('px',''))*-1+swipe) > -1 
+                      && (Number(galSlide.current?.style.marginLeft.replace('px',''))) > (galWid.current?.offsetWidth*(mediaSlides.itemLength-1)*-1)
+                      ? swipe*-1 : 0
                     }px)`}
                     :{}
                 }
