@@ -1,15 +1,17 @@
-import { LoaderFunction } from "@remix-run/node";
-import { Outlet, useCatch, useLoaderData } from "@remix-run/react";
+import { json, LoaderFunction } from "@remix-run/node";
+import { Outlet, Scripts, useCatch, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from '~/components/Sidebar/Sidebar';
 import { PostCard } from "~/components/PostCard/PostCard";
+import { Analytics } from "~/components/Analytics/Analytics";
 import { clientPromise } from "~/lib/mongodb";
 import * as postmark from "postmark"
 import { Job, Post } from "~/common/types";
 
 export const loader: LoaderFunction = async ({ request }) => {
+  const IPSTACK_APIKEY = process.env.IPSTACK_APIKEY;
   const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");
@@ -45,7 +47,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
   const wishList = await db.collection("myWishList").find().sort({created:-1}).toArray();
   const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).toArray();
-  return { calDates, emails, jobs, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user, wishList };
+  return { calDates, emails, IPSTACK_APIKEY, jobs, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user, wishList };
 }
 
 export function CatchBoundary() {
@@ -73,11 +75,11 @@ export function CatchBoundary() {
 }
 
 export default function Index() {
-  const { storyPost, user } = useLoaderData();
+  const { IPSTACK_APIKEY, storyPost, user } = useLoaderData();
   const [ newPost, setNewPost ] = useState<Post>();
-
   return (
     <>
+      <Analytics IPSTACK_APIKEY={IPSTACK_APIKEY} />
       {user?.role==="administrator"
         ?<Header
           setNewPost={setNewPost}
@@ -91,7 +93,8 @@ export default function Index() {
         <div className="right-column">
           {user?.role==="administrator"
             ?<Outlet context={newPost} />
-            :<Outlet />}
+            :<Outlet />
+          }
         </div>
       </div>
     </>

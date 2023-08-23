@@ -237,3 +237,28 @@ export interface Job {
   order: number,
   archive: boolean
 }
+
+export interface IPData {
+  city: string,
+  continent_code: string,
+  continent_name: string,
+  country_code: string,
+  country_name: string,
+  ip: string
+  latitude: number
+  location: {
+    geoname_id: number, 
+    capital: 'Washington D.C.', 
+    languages: Array<{code: string, name: string, native: string}>,
+    country_flag: string,
+    country_flag_emoji: string,
+    calling_code: string,
+    country_flag_emoji_unicode: string,
+    is_eu: boolean
+  }
+  longitude: number
+  region_code: string
+  region_name: string
+  type: string
+  zip: string
+}
