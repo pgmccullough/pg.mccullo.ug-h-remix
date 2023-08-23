@@ -28,7 +28,7 @@ export const FileUpload: React.FC<{
     for(const file of Object.entries(files!)) {
       const reader = new FileReader();
       const [,value] = file;
-      let resizedImage = await imgResize(value,{maxWidth:600});
+      let resizedImage = await imgResize(value,{maxWidth:1200});
       resizedImage.name = value.name;
       reader.readAsDataURL(resizedImage);
       reader.onload = function(e) {
