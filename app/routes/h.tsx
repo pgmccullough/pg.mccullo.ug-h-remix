@@ -12,7 +12,7 @@ import { Job, Post } from "~/common/types";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const IPSTACK_APIKEY = process.env.IPSTACK_APIKEY;
-  const user = await getUser(request);
+  const user = await getUser(request)||{user_name: null, role: null};
   const client = await clientPromise;
   const db = client.db("user_posts");
   const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();  
