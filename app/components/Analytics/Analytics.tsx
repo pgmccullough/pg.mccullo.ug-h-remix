@@ -50,8 +50,8 @@ export const Analytics: React.FC<{IPSTACK_APIKEY: {IPSTACK_APIKEY: string}}> = (
         const apiResponse = await fetch("https://api.ipify.org/?format=json");
         const ipObj: { ip: string } = await apiResponse.json();
         buildVisitor.ip = ipObj.ip;
-        //const userData = await fetch(`http://api.ipstack.com/${ipObj.ip}?access_key=${IPSTACK_APIKEY}`);
-        //buildVisitor.ipData = await userData.json();
+        const userData = await fetch(`https://api.ipstack.com/${ipObj.ip}?access_key=${IPSTACK_APIKEY}`);
+        buildVisitor.ipData = await userData.json();
         
         setVisitor(buildVisitor);
         updateVisitor.submit(
