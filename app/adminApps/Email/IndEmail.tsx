@@ -17,7 +17,6 @@ export const IndEmail: React.FC<{ email: EmailInterface }> = ({ email }) => {
   let emailBody: string;
 
   if(email?.HtmlBody) {
-    console.log("WAS:",email.HtmlBody);
     emailBody = email.HtmlBody
       .replace(/(<style[\w\W]+style>)/g, "")
       .replaceAll(/width:(.*);/g,'')
