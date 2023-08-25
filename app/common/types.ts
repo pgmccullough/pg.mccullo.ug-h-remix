@@ -262,3 +262,12 @@ export interface IPData {
   type: string
   zip: string
 }
+
+export interface Visitor {
+  customName: string|null,
+  history: Array<{action: any, path: any, timestamp: any}>,
+  ip: Array<string>,
+  ipData: Array<IPData|null>,
+  guestUUID: Array<string>,
+  user: Array<User|null>
+}
