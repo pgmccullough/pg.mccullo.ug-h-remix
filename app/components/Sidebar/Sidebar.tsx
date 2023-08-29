@@ -104,7 +104,7 @@ export const Sidebar: React.FC<{
           <TaskTracker />
           <WishList />
           <Webcam />
-          <SiteActivity />
+          {/* <SiteActivity /> */}
         </>
         :""}
     </div>

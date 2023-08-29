@@ -81,7 +81,7 @@ export default function Index() {
   const [ newPost, setNewPost ] = useState<Post>();
   return (
     <>
-      <Analytics IPSTACK_APIKEY={IPSTACK_APIKEY} />
+      {/* <Analytics IPSTACK_APIKEY={IPSTACK_APIKEY} /> */}
       {user?.role==="administrator"
         ?<Header
           setNewPost={setNewPost}
