@@ -1688,6 +1688,19 @@ button {
   margin-right: 0.25rem;
 }
 
+.siteActivity {
+  position: fixed;
+  bottom: 0;
+  right: 3rem;
+  background: #fff;
+  z-index: 100;
+  width: 15rem;
+  height: 16rem;
+}
+.siteActivity--hidden {
+  bottom: -14rem;
+}
+
 .postcard__content__media__slider__weblink__anchor {
   text-decoration: none;
 }

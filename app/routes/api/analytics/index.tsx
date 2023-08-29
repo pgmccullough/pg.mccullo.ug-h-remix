@@ -8,14 +8,18 @@ export const action = async ({ request }: ActionArgs) => {
   const client = await clientPromise;
   const db = client.db("user_posts");
   let targetUser;
-  targetUser = visitor.user.length && await db.collection('myVisitors').find({"user.id" : visitor.user.at("-1").id}).toArray();
-  if(!await targetUser.length) {
+  console.log("visitor.user: ",visitor.user);
+  targetUser = visitor.user[0].user_name && await db.collection('myVisitors').find({"user.id" : visitor.user.at("-1").id}).toArray();
+  if(!await targetUser?.length) {
+    console.log("NO SUCH VISITOR.USER.LENGTH");
     targetUser = visitor.guestUUID && await db.collection('myVisitors').find({guestUUID : {$all: visitor.guestUUID}}).toArray();
   }
-  if(!await targetUser.length) {
+  if(!await targetUser?.length) {
+    console.log("NO SUCH VISITOR.guestUUID");
     targetUser = visitor.ip.length && await db.collection('myVisitors').find({ip : {$all: visitor.ip}}).toArray();
   }
-  if(!await targetUser.length) {
+  if(!await targetUser?.length) {
+    console.log("CREATE NEW USER: ",visitor);
     await db.collection('myVisitors').insertOne(visitor);
   } else {
     const [ userToUpdate ] = await targetUser;
@@ -31,8 +35,6 @@ export const action = async ({ request }: ActionArgs) => {
       $set: updates
     }
     await db.collection('myVisitors').updateOne({_id : new ObjectId(userToUpdate._id)}, setUpdates);
-
-
   }
   return { msg: "ok" };
 }

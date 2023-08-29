@@ -1,0 +1,12 @@
+.siteActivity {
+  position: fixed;
+  bottom: 0;
+  right: 3rem;
+  background: #fff;
+  z-index: 100;
+  width: 15rem;
+  height: 16rem;
+  &--hidden {
+    bottom: -14rem;
+  }
+}
