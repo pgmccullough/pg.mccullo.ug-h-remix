@@ -223,7 +223,7 @@ export const Header: React.FC<{
 
       <div className="header__cover">
         <img 
-          src={siteData?.cover_image??.image} 
+          src={siteData?.cover_image?.image} 
           width="100%" 
           alt={siteData?.site_name}
           ref={storyImage}
@@ -354,7 +354,7 @@ export const Header: React.FC<{
           <div 
             className="header__profile" 
             style={{
-              backgroundImage: `url('${siteData?.profile_image??.image}')`
+              backgroundImage: `url('${siteData?.profile_image?.image}')`
             }}
             ref={profileImage}
           />
@@ -363,7 +363,7 @@ export const Header: React.FC<{
           <div 
             className="header__profile" 
             style={{
-              backgroundImage: `url('${siteData?.profile_image??.image}')`
+              backgroundImage: `url('${siteData?.profile_image?.image}')`
             }}
             ref={profileImage}
           />
