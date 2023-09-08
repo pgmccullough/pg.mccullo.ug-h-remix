@@ -46,7 +46,7 @@ export const action = async ({ request }: ActionArgs) => {
       [ parsed ] = parsed;
     }
     if(parsed?.image.length&&parsed?.image[0].contentUrl) {
-      parsed?.image = [parsed?.image[0].contentUrl]
+      parsed.image = [parsed?.image[0].contentUrl]
     }
     return parsed;
   }
