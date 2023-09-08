@@ -80,7 +80,7 @@ export const WishList: React.FC<{}> = () => {
         cleanObj['og:description'] = cleanObj['og:description']||schemaBackup['description']||"";
         cleanObj['og:url'] = cleanObj['og:url']||schemaBackup['url']||"#";
         cleanObj['og:site_name'] = cleanObj['og:site_name']||"";
-        cleanObj['og:image'] = (schemaBackup.image?.length?schemaBackup["image"][0]:cleanObj["og:image"])||"";
+        cleanObj['og:image'] = (schemaBackup?.image?.length?schemaBackup["image"][0]:cleanObj["og:image"])||"";
         cleanObj['og:image:alt'] = cleanObj['og:image:alt']||cleanObj['og:title']||schemaBackup['name'];
         cleanObj['og:product:price:amount'] = Number(cleanObj['og:product:price:amount'])||schemaBackup['offers']?.price||"";
         const updatedItems = [...items].map(item => {

@@ -48,7 +48,7 @@ export const Comment: React.FC<{
   useEffect(() => {
     if(commenter.data?.userObj) {
       const { first_name, last_name, profile_image } = commenter.data.userObj;
-      const profImage = profile_image.image;
+      const profImage = profile_image?.image;
       setCommenterData({name: first_name+" "+last_name, image: profImage});
       commenter.data.userObj = null;
     }
@@ -76,8 +76,8 @@ export const Comment: React.FC<{
     <div key={comment.id} className="comment">
       <div className="comment__poster">
         <div className="comment__user-image">
-          {commenterData.image
-            ?<img className="comment__user-image--img" src={commenterData.image} alt={commenterData.name}/>
+          {commenterData?.image
+            ?<img className="comment__user-image--img" src={commenterData?.image} alt={commenterData.name}/>
             :""
           }
         </div>

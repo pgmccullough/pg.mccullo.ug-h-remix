@@ -16,7 +16,7 @@ export const WishListItem: React.FC<{ deleteItem: (id: string) => void, item: Wi
       {user.role==="administrator"?<div className="wish-list__delete" onClick={() => deleteItem(item._id)}>+</div>:""}
       <a href={item["og:url"]||item["url"]} target="_BLANK">
         <img 
-          src={item.image?.length?item["image"][0]:item["og:image"]} 
+          src={item?.image?.length?item["image"][0]:item["og:image"]} 
           alt={item["og:image:alt"]||item["name"]}
           className="wish-list__image"
         />

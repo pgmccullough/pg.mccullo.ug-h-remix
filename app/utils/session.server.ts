@@ -58,7 +58,7 @@ export async function getUser(request: Request) {
     .find({ _id : new ObjectId(userId) })
     .toArray();
     const {_id, user_name, role, first_name, last_name, profile_image} = user;
-    return {id: _id, user_name, role, first_name, last_name, profile_image: profile_image.image};
+    return {id: _id, user_name, role, first_name, last_name, profile_image: profile_image?.image};
   } catch {
     throw logout(request);
   }

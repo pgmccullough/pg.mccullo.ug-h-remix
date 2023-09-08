@@ -165,13 +165,13 @@ export const Header: React.FC<{
 
     const storyImgChannel = pusher.subscribe("client-change-storyImg");
     storyImgChannel.bind("refresh", (storyImgData: { storyImg: { gps: string|null, timestamp: number, image: string } }) =>  {
-      storyImage.current!.src = storyImgData.storyImg.image;
+      storyImage.current!.src = storyImgData.storyImg?.image;
       storyTimestamp.current!.innerText = stampToTime(storyImgData.storyImg.timestamp);
     });
 
     const profileImgChannel = pusher.subscribe("client-change-profileImg");
     profileImgChannel.bind("refresh", (profImgData: { profileImg: { gps: string|null, timestamp: number, image: string } }) =>  {
-      profileImage.current!.style.backgroundImage = `url(${profImgData.profileImg.image})`;
+      profileImage.current!.style.backgroundImage = `url(${profImgData.profileImg?.image})`;
       profTimestamp.current!.innerText = stampToTime(profImgData.profileImg.timestamp);
     });
 
@@ -223,7 +223,7 @@ export const Header: React.FC<{
 
       <div className="header__cover">
         <img 
-          src={siteData?.cover_image?.image} 
+          src={siteData?.cover_image??.image} 
           width="100%" 
           alt={siteData?.site_name}
           ref={storyImage}
@@ -354,7 +354,7 @@ export const Header: React.FC<{
           <div 
             className="header__profile" 
             style={{
-              backgroundImage: `url('${siteData?.profile_image?.image}')`
+              backgroundImage: `url('${siteData?.profile_image??.image}')`
             }}
             ref={profileImage}
           />
@@ -363,7 +363,7 @@ export const Header: React.FC<{
           <div 
             className="header__profile" 
             style={{
-              backgroundImage: `url('${siteData?.profile_image?.image}')`
+              backgroundImage: `url('${siteData?.profile_image??.image}')`
             }}
             ref={profileImage}
           />

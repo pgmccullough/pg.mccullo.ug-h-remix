@@ -38,7 +38,7 @@ export const action = async ({ request }: ActionArgs) => {
     parsedSiteData.profile_image = {
       "gps":gpsObj,
       "timestamp": Date.now(),
-      "image": profileImgData.image
+      "image": profileImgData?.image
     };
     delete parsedSiteData._id;
     const updates = {

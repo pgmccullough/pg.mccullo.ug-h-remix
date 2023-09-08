@@ -11,7 +11,7 @@ export const StoryPost: React.FC<{
   
   const justImages: string[] = [];
   storyPosts?.map((story: Post) => {
-    justImages.push(...story.media.images);
+    justImages.push(...story.media?.images);
   })
 
   const [ storyViewTime, setStoryViewTime ] = useState<number>(100);
