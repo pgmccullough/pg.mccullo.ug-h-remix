@@ -257,7 +257,7 @@ export const TaskTracker: React.FC<{}> = () => {
               <div className="task-tracker__title">{activeJob.title}</div>
                 <div className="task-tracker__goal">{Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
                 <div className="task-tracker__deadline">
-                  Due {activeJob.deadline} 
+                  Due {/*activeJob.deadline*/} 
                   <p className="task-tracker__deadline-relative">
                     ({Math.ceil(timeDiff(
                       new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
@@ -267,18 +267,17 @@ export const TaskTracker: React.FC<{}> = () => {
                 </div>
                 <div className="task-day__wrapper">
                   {Array.apply(null, Array(7)).map((_num:unknown, i:number) =>
-                    // <TaskDay key={`td-${i}`}
-                    //   activeJob={activeJob}
-                    //   goal={(Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
-                    //     new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
-                    //     new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
-                    //   )}
-                    //   initDt={initDt}
-                    //   initMo={initMo}
-                    //   initYr={initYr}
-                    //   offset={6-i}
-                    // />
-                    <></>
+                    <TaskDay key={`td-${i}`}
+                      activeJob={activeJob}
+                      goal={(Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
+                        new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                        new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
+                      )}
+                      initDt={initDt}
+                      initMo={initMo}
+                      initYr={initYr}
+                      offset={6-i}
+                    />
                   )}
                 </div>
                 <p className="task-tracker__resources">Resources</p>
