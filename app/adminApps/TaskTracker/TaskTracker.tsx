@@ -16,7 +16,7 @@ export const TaskTracker: React.FC<{}> = () => {
   const [ tabDraggable, setTabDraggable] = useState<boolean>(true);
   const [ dragStartX, setDragStartX ] = useState<number>(0);
   const [ jobList, setJobList ] = useState<Job[]>(jobs.filter((job:Job) => !job.archive).sort((a:Job, b:Job) => a.order - b.order));
-  const [ activeJob, setActiveJob ] = useState<Job>(jobs.filter((job:Job) => !job.archive).sort((a:Job, b:Job) => a.order - b.order)[0]);
+  const [ activeJob, setActiveJob ] = useState<Job|null>(null);
   const [ formActive, setFormActive ] = useState<boolean>(false)
   const [ newJob, setNewJob ] = useState<Job>({
     _id: '',
@@ -93,11 +93,15 @@ export const TaskTracker: React.FC<{}> = () => {
   }
 
   const updateCurrent = (e: ChangeEvent<HTMLInputElement>) => {
-    setActiveJob({...activeJob,
+    activeJob && setActiveJob({...activeJob,
       curCount: `${Number(e.target.value)}`,
       dailies: {...activeJob.dailies, [`${initDt}-${initMo}-${initYr}`]: Number(e.target.value)}
     });
   }
+
+  useEffect(() => {
+    setActiveJob(jobs.filter((job:Job) => !job.archive).sort((a:Job, b:Job) => a.order - b.order)[0]);
+  },[])
 
   const clickNew = () => {
     setFormActive(true);
@@ -208,7 +212,7 @@ export const TaskTracker: React.FC<{}> = () => {
           <div className="postcard__content__media"/>
           <div className="task-tracker">
           <div className="note__titles">
-              {jobList.map(job =>
+              {activeJob && jobList.map(job =>
                 <div 
                   draggable={tabDraggable}
                   key={job._id} 
@@ -253,16 +257,16 @@ export const TaskTracker: React.FC<{}> = () => {
                   <button className="task-tracker__button" onClick={addTask}>SUBMIT</button>
                 </div>
               </div>
-              :activeJob&&<>
+              :activeJob && <>
               <div className="task-tracker__title">{activeJob.title}</div>
                 <div className="task-tracker__goal">{Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
                 <div className="task-tracker__deadline">
                   Due {activeJob.deadline} 
                   <p className="task-tracker__deadline-relative">
-                    {/* ({Math.ceil(timeDiff(
+                    ({Math.ceil(timeDiff(
                       new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
                       new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
-                    )} days from now) */}
+                    )} days from now)
                   </p>
                 </div>
                 <div className="task-day__wrapper">
@@ -302,10 +306,10 @@ export const TaskTracker: React.FC<{}> = () => {
                     ${activeJob.units} remaining.
                   `}
                   {
-                    // Math.ceil((Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
-                    //   new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
-                    //   new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
-                    // )).toLocaleString("en-US")
+                    Math.ceil((Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
+                      new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                      new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
+                    )).toLocaleString("en-US")
                   } {activeJob.units} a day to meet deadline.
                 </div>
                 <div className="task-tracker__actions">
