@@ -7,7 +7,6 @@ import { Job } from "~/common/types";
 export const TaskTracker: React.FC<{}> = () => {
 
   const { jobs, serverTime } = useLoaderData();
-  console.log('wtf',serverTime);
   const taskFetch = useFetcher();
 
   const initDt = (new Date(serverTime).getDate()).toString().padStart(2,"0");
