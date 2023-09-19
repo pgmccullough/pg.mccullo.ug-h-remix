@@ -9,6 +9,9 @@ export const TaskTracker: React.FC<{}> = () => {
   const { jobs, serverTime } = useLoaderData();
   const taskFetch = useFetcher();
 
+  console.log(new Date(serverTime),"server");
+  console.log(new Date(),"client");
+
   const initDt = (new Date(serverTime).getDate()).toString().padStart(2,"0");
   const initMo = (new Date(serverTime).getMonth()+1).toString().padStart(2,"0");
   const initYr = new Date(serverTime).getFullYear();
@@ -257,12 +260,12 @@ export const TaskTracker: React.FC<{}> = () => {
               <div className="task-tracker__title">{activeJob.title}</div>
                 <div className="task-tracker__goal">{Number(activeJob.totalCount).toLocaleString("en-US")} {activeJob.units}</div>
                 <div className="task-tracker__deadline">
-                  Due {/*activeJob.deadline*/} 
+                  Due {activeJob.deadline} 
                   <p className="task-tracker__deadline-relative">
-                    ({Math.ceil(timeDiff(
+                    {/* ({Math.ceil(timeDiff(
                       new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
                       new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
-                    )} days from now)
+                    )} days from now) */}
                   </p>
                 </div>
                 <div className="task-day__wrapper">
@@ -302,10 +305,10 @@ export const TaskTracker: React.FC<{}> = () => {
                     ${activeJob.units} remaining.
                   `}
                   {
-                    Math.ceil((Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
-                      new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
-                      new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
-                    )).toLocaleString("en-US")
+                    // Math.ceil((Number(activeJob.totalCount)-Number(activeJob.curCount))/timeDiff(
+                    //   new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
+                    //   new Date( Number(initYr), Number(initMo), Number(initDt)).getTime()
+                    // )).toLocaleString("en-US")
                   } {activeJob.units} a day to meet deadline.
                 </div>
                 <div className="task-tracker__actions">
