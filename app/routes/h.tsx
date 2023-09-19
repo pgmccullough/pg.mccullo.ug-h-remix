@@ -15,7 +15,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   const user = await getUser(request)||{user_name: null, role: null};
   const client = await clientPromise;
   const db = client.db("user_posts");
-  const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();  
+  const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();
+  const serverTime = new Date();
   let notes: any[] = [];
   let emails: any[] = [];
   let sentEmails: any[] = [];
@@ -49,7 +50,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
   const wishList = await db.collection("myWishList").find().sort({created:-1}).toArray();
   const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).toArray();
-  return { calDates, emails, IPSTACK_APIKEY, jobs, notes, sentEmails, siteData:{...siteData[0]}, storyPost, user, visitors, wishList };
+  return { calDates, emails, IPSTACK_APIKEY, jobs, notes, sentEmails, serverTime, siteData:{...siteData[0]}, storyPost, user, visitors, wishList };
 }
 
 export function CatchBoundary() {

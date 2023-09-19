@@ -6,13 +6,13 @@ import { Job } from "~/common/types";
 
 export const TaskTracker: React.FC<{}> = () => {
 
-  const { jobs } = useLoaderData();
-
+  const { jobs, serverTime } = useLoaderData();
+  console.log('wtf',serverTime);
   const taskFetch = useFetcher();
 
-  const initDt = (new Date().getDate()).toString().padStart(2,"0");
-  const initMo = (new Date().getMonth()+1).toString().padStart(2,"0");
-  const initYr = new Date().getFullYear();
+  const initDt = (new Date(serverTime).getDate()).toString().padStart(2,"0");
+  const initMo = (new Date(serverTime).getMonth()+1).toString().padStart(2,"0");
+  const initYr = new Date(serverTime).getFullYear();
 
   const [ tabDraggable, setTabDraggable] = useState<boolean>(true);
   const [ dragStartX, setDragStartX ] = useState<number>(0);
@@ -239,7 +239,7 @@ export const TaskTracker: React.FC<{}> = () => {
                     {printOptions(31,1,true)}
                   </select>
                   <select className="calendar__form--field" name="year" value={newJob.year} onChange={updateForm} >
-                    {printOptions(5,Number(new Date().getFullYear()),false)}
+                    {printOptions(5,Number(new Date(serverTime).getFullYear()),false)}
                   </select>
                 </div>
                 <input className="task-tracker__input" placeholder="Expected Amount" name="totalCount" value={newJob.totalCount} onChange={updateForm} />
