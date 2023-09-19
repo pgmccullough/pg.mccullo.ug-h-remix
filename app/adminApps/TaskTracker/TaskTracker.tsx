@@ -266,6 +266,10 @@ export const TaskTracker: React.FC<{}> = () => {
                       new Date( Number(activeJob.year), Number(activeJob.month), Number(activeJob.date)).getTime(),
                       new Date( Number(initYr), Number(initMo), Number(initDt)).getTime())
                     )} days from now) */}
+                    ({Math.ceil(timeDiff(
+                      new Date( 2023, 12, 1).getTime(),
+                      new Date( 2023, 9, 19).getTime())
+                    )} days from now)
                   </p>
                 </div>
                 <div className="task-day__wrapper">
