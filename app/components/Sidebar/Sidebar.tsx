@@ -101,9 +101,9 @@ export const Sidebar: React.FC<{
           <Email />
           <Calendar />
           <Notes />
-          <TaskTracker />
+          {/* <TaskTracker /> */}
           <WishList />
-          <Webcam />
+          {/* <Webcam /> */}
           {/* <SiteActivity /> */}
         </>
         :""}
