@@ -19,6 +19,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const serverTime = new Date();
   let notes: any[] = [];
   let emails: any[] = [];
+  let rentalProperties: any[] = [];
   let sentEmails: any[] = [];
   let calDates: any[] = [];
   let jobs: any[] = [];
@@ -27,6 +28,7 @@ export const loader: LoaderFunction = async ({ request }) => {
     visitors = await db.collection('myVisitors').find().sort({created:-1}).limit(25).toArray();
     notes = await db.collection('myNotes').find().sort({created:-1}).toArray();
     calDates = await db.collection('myDates').find().sort({created:-1}).toArray();
+    rentalProperties = await db.collection('myProperties').find().sort({created:-1}).toArray();
     emails = await db.collection('myEmails').find({MessageStream:"inbound"}).sort({created:-1}).limit(25).toArray();
     sentEmails = await db.collection('myEmails').find({MessageStream:"outbound"}).sort({created:-1}).limit(25).toArray();
     jobs = await db.collection("myJobs").find().sort({created:-1}).toArray();
@@ -50,7 +52,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
   const wishList = await db.collection("myWishList").find().sort({created:-1}).toArray();
   const storyPost = await db.collection("myPosts").find({ privacy : "Story", created: { $gt: (new Date().getTime()/1000)-86400 } }).sort({created:-1}).toArray();
-  return { calDates, emails, IPSTACK_APIKEY, jobs, notes, sentEmails, serverTime, siteData:{...siteData[0]}, storyPost, user, visitors, wishList };
+  return { calDates, emails, IPSTACK_APIKEY, jobs, notes, rentalProperties, sentEmails, serverTime, siteData:{...siteData[0]}, storyPost, user, visitors, wishList };
 }
 
 export function CatchBoundary() {
