@@ -98,12 +98,12 @@ export const Sidebar: React.FC<{
       </article>
       {!manualSiteData&&user?.role==="administrator"
         ?<>
-          <Email />
+          {/* <Email /> */}
           <Calendar />
           <Notes />
-          <TaskTracker />
+          {/* <TaskTracker /> */}
           <WishList />
-          <RentalProperties />
+          {/* <RentalProperties /> */}
           {/* <Webcam /> */}
           {/* <SiteActivity /> */}
         </>

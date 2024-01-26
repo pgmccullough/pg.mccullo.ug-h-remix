@@ -13,6 +13,8 @@ type RentalProperty = {
 export const RentalProperties: React.FC<{}> = () => {
   const { rentalProperties } = useLoaderData();
 
+  console.log(rentalProperties)
+
   return (
     <>
       <article className="postcard--left">
