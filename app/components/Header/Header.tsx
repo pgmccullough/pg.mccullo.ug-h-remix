@@ -221,7 +221,7 @@ export const Header: React.FC<{
         <button ref={profileImageSubmit}></button>
       </fetcher.Form>
 
-      <div className="header__cover">
+      <figure className="header__cover">
         <img 
           src={siteData?.cover_image?.image} 
           width="100%" 
@@ -230,20 +230,20 @@ export const Header: React.FC<{
         />
         <div className="header__text">
           {user?.role==="administrator"
-            ?<h1 
+            ?<figcaption 
               className="header__h1"
               onBlur={blurWatchWord}
               onInput={() => setWatchWordActive({...watchWordActive, watchword: watchWordRef.current?.innerText})}
               ref={watchWordRef}
             >
               {siteData?.watchword?.word}
-            </h1>
-            :<h1 
+            </figcaption>
+            :<figcaption 
               className="header__h1" 
               ref={watchWordRef}
             >
               {siteData?.watchword?.word}
-            </h1>
+            </figcaption>
           }
           {siteData&&siteData.cover_image?
           <div className="header__p">
@@ -337,7 +337,7 @@ export const Header: React.FC<{
           </>
           :""
         }
-      </div>
+      </figure>
       <div className="header__bar">
         {user?.role==="administrator"
           ?<PostCreator
