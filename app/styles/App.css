@@ -135,30 +135,30 @@
   width: 100%;
 }
 
-p {
+.writing p {
   font-family: "Gentium Plus", Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
   font-size: 1.75vh;
   line-height: 2.25vh;
 }
-p .chapCap {
+.writing p .chapCap {
   font-weight: 700;
   font-size: 3vh;
 }
-p .chapUps {
+.writing p .chapUps {
   text-transform: uppercase;
   font-size: 1.5vh;
 }
-p .line {
+.writing p .line {
   display: block;
 }
-p .break {
+.writing p .break {
   height: 3vh;
 }
-p .tab {
+.writing p .tab {
   display: inline-block;
   width: 5%;
 }
-p .chapNum {
+.writing p .chapNum {
   font-size: 3vh;
   text-align: center;
   font-weight: 700;
