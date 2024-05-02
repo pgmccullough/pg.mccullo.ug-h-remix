@@ -20,6 +20,7 @@
 @use '../components/SearchBar/SearchBar.scss';
 @use '../components/StoryPost/StoryPost.scss';
 @use '../adminApps/WishList/WishList.scss';
+@use '../routes/h/writing/writing.scss';
 
 @keyframes loaderSpin {
   0% {transform: rotate(0deg)}

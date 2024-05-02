@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+.writingMain {
+  background: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+}
+
+.pagesbg {
+  background-image: url('~/assets/images/twopages.png');
+  background-size: 108.46vmin 90vmin;
+  width: 108.46vmin;
+  height: 90vmin;
+  margin: auto;
+  margin-top: 5vh;
+  display: flex;
+  & .pageodd, & .pageeven {
+    padding: 1.75rem;
+    height: 100%;
+    overflow: hidden;
+    width: 50%;
+    filter: blur(0.6px);
+    opacity: 0.8;
+  }
+  & h1 {
+    margin: 0;
+    font-size: 3.5vh;
+  }
+  & h2 {
+    margin: 0;
+    font-size: 2vh;
+  }
+  & h3 {
+    margin-top: 0.25vh;
+    font-size: 1.75vh;
+  }
+  & .cap {
+    font-size: 2.5vh;
+  }
+}
+
+.covericon {
+  margin-top: 7vh;
+  background-image: url('~/assets/images/covericon.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  height: 16vh;
+  width: 100%;
+}
+
+p {
+  font-family: 'Gentium Plus', Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  font-size: 1.75vh;
+  line-height: 2.25vh;
+  & .chapCap {
+    font-weight: 700;
+    font-size: 3vh;
+  }
+  & .chapUps {
+    text-transform: uppercase;
+    font-size: 1.5vh;
+  }
+  & .line {
+    display: block;
+  }
+  & .break {
+    height: 3vh;
+  }
+  & .tab {
+    display: inline-block;
+    width: 5%;
+  }
+  & .chapNum {
+    font-size: 3vh;
+    text-align: center;
+    font-weight: 700;
+  }
+}
