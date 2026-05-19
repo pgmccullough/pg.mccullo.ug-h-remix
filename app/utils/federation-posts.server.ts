@@ -87,8 +87,16 @@ export async function listPublicPosts(opts: {
 
 const MEDIA_BASE = `https://${DOMAIN}/api/media/`;
 
+/**
+ * Build an absolute media URL given the raw item (often just a bare
+ * filename like "9ffd63b7-….png") and the kind of media bucket it lives
+ * in. The local UI hardcodes paths like /api/media/images/<filename> in
+ * its <Image> component, so the data layer never sees the "images/"
+ * prefix; we need to add it here for federation.
+ */
 function mediaItemToDocument(
-  item: any
+  item: any,
+  kindPath: "images" | "videos" | "audio" | "files"
 ): Document | APImage | null {
   // Items can be strings (URLs) or objects with url + meta. Be defensive —
   // post history spans years of schema drift.
@@ -100,8 +108,12 @@ function mediaItemToDocument(
 
   // Normalize to absolute URL.
   let absolute = url.trim();
-  if (absolute.startsWith("/")) absolute = `https://${DOMAIN}${absolute}`;
-  else if (!/^https?:\/\//.test(absolute)) absolute = `${MEDIA_BASE}${absolute}`;
+  if (absolute.startsWith("/")) {
+    absolute = `https://${DOMAIN}${absolute}`;
+  } else if (!/^https?:\/\//.test(absolute)) {
+    // Bare filename — prepend the bucket path the local UI uses.
+    absolute = `${MEDIA_BASE}${kindPath}/${absolute}`;
+  }
 
   // Guard against the URL constructor throwing on garbage data.
   try {
@@ -145,7 +157,7 @@ function collectAttachments(post: PostDoc): (Document | APImage)[] {
     const arr = media[key];
     if (!Array.isArray(arr)) continue;
     for (const item of arr) {
-      const doc = mediaItemToDocument(item);
+      const doc = mediaItemToDocument(item, key);
       if (doc) out.push(doc);
     }
   }
