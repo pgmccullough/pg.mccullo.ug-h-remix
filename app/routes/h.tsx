@@ -1,7 +1,9 @@
 import {
+  Link,
   Outlet,
   isRouteErrorResponse,
   useLoaderData,
+  useLocation,
   useRouteError,
 } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
@@ -155,6 +157,16 @@ export function ErrorBoundary() {
 export default function Index() {
   const { storyPost, user } = useLoaderData<typeof loader>();
   const [newPost, setNewPost] = useState<Post | undefined>();
+  const location = useLocation();
+
+  // The Me/Friends toggle is admin-only (only admin has a friends feed
+  // page to switch to). It also only makes sense on those two routes —
+  // hide it on single-post pages, login, the book, etc.
+  const isOnMe = location.pathname === "/h" || location.pathname === "/h/";
+  const isOnFriends = location.pathname.startsWith("/h/friends");
+  const showToggle =
+    user?.role === "administrator" && (isOnMe || isOnFriends);
+
   return (
     <>
       <Analytics />
@@ -166,6 +178,59 @@ export default function Index() {
       <div className="content">
         <Sidebar />
         <div className="right-column">
+          {showToggle && (
+            <>
+              <style>{`
+                .feed-toggle {
+                  display: flex;
+                  background: #fff;
+                  border: 1px solid #979997;
+                  border-radius: 999px;
+                  padding: 4px;
+                  margin-bottom: 1rem;
+                  width: fit-content;
+                  margin-left: auto;
+                  margin-right: auto;
+                }
+                .feed-toggle__tab,
+                .feed-toggle__tab:visited {
+                  display: inline-block;
+                  padding: 6px 22px;
+                  border-radius: 999px;
+                  font: 600 14px 'PGM Sans', sans-serif;
+                  color: #4A6CBA;
+                  text-decoration: none;
+                  letter-spacing: 0.02em;
+                  transition: background-color 0.15s ease, color 0.15s ease;
+                }
+                .feed-toggle__tab:hover {
+                  color: #506982;
+                }
+                .feed-toggle__tab--active,
+                .feed-toggle__tab--active:visited {
+                  background: #4A6CBA;
+                  color: #fff;
+                }
+                .feed-toggle__tab--active:hover {
+                  color: #fff;
+                }
+              `}</style>
+              <nav className="feed-toggle" aria-label="Feed">
+                <Link
+                  to="/h"
+                  className={`feed-toggle__tab${isOnMe ? " feed-toggle__tab--active" : ""}`}
+                >
+                  Me
+                </Link>
+                <Link
+                  to="/h/friends"
+                  className={`feed-toggle__tab${isOnFriends ? " feed-toggle__tab--active" : ""}`}
+                >
+                  Friends
+                </Link>
+              </nav>
+            </>
+          )}
           {user?.role === "administrator" ? (
             <Outlet context={newPost} />
           ) : (
