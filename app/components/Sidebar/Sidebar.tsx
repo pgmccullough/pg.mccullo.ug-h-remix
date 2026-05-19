@@ -100,48 +100,69 @@ export const Sidebar: React.FC<{
       </article>
 
       {/* Session controls — visible to everyone. Styled via a scoped
-          <style> tag so hover/focus states work without needing an SCSS
-          recompile. */}
+          <style> tag so it lands without needing an SCSS recompile. The
+          rules below have to fight the global `button { height: 20px }`
+          reset in _global.scss, so we explicitly reset the things that
+          reset would otherwise impose. Colors and shapes match the
+          existing site theme: $header (#506982), the global button blue
+          (#4A6CBA), 4px radii, and the box-shadow hover treatment used
+          on .postcard__time__option. */}
       <style>{`
         .sidebar-session {
           text-align: center;
-          padding: 1rem;
+          padding: 14px 12px;
+          background: #eee;
+          border: 1px solid #979997;
+          border-radius: 4px;
         }
         .sidebar-session__line {
-          font-size: 0.85rem;
+          font-size: 13px;
           color: #555;
-          margin-bottom: 0.6rem;
+          margin-bottom: 10px;
         }
-        .sidebar-session__btn {
+        .sidebar-session__line strong {
+          color: #506982;
+        }
+        .sidebar-session__btn,
+        .sidebar-session__btn:visited {
+          /* Reset the globals that fight us */
+          height: auto;
+          margin: 0;
+          /* Theme-matched button */
           display: inline-block;
-          padding: 0.55rem 1.25rem;
-          border-radius: 999px;
-          background: #1a1a1a;
+          padding: 8px 18px;
+          background: #4A6CBA;
           color: #fff;
-          text-decoration: none;
-          font-size: 0.9rem;
-          font-weight: 600;
-          font-family: inherit;
+          font: 600 14px 'PGM Sans', sans-serif;
           letter-spacing: 0.02em;
-          transition: background-color 0.15s ease, transform 0.05s ease;
-          border: 1px solid #1a1a1a;
+          border: 0;
+          border-radius: 4px;
+          text-decoration: none;
+          line-height: 1.2;
           cursor: pointer;
+          transition: box-shadow 0.2s ease, background-color 0.15s ease;
+          box-sizing: border-box;
         }
         .sidebar-session__btn:hover,
         .sidebar-session__btn:focus-visible {
-          background: #333;
+          background: #506982;
+          box-shadow: 0 0 0 3px #ccc;
           outline: none;
         }
-        .sidebar-session__btn:active {
-          transform: translateY(1px);
-        }
-        .sidebar-session__btn--ghost {
-          background: transparent;
-          color: #1a1a1a;
+        .sidebar-session__btn--ghost,
+        .sidebar-session__btn--ghost:visited {
+          background: #fff;
+          color: #4A6CBA;
+          border: 1px solid #979997;
+          border-right: 1px solid #777;
+          border-bottom: 2px solid #777;
+          padding: 7px 16px;
         }
         .sidebar-session__btn--ghost:hover,
         .sidebar-session__btn--ghost:focus-visible {
-          background: #f0f0f0;
+          background: #fff;
+          color: #506982;
+          box-shadow: 0 0 0 3px #ccc;
         }
       `}</style>
       <article className="postcard--left sidebar-session">
