@@ -63,6 +63,19 @@ export async function softDeleteInboxPost(noteUri: string): Promise<void> {
   await c.updateOne({ noteUri }, { $set: { deleted: true } });
 }
 
+export async function getInboxPostsByUris(
+  noteUris: string[]
+): Promise<Record<string, InboxPost>> {
+  if (!noteUris.length) return {};
+  const c = await inboxPostsCol();
+  const docs = await c
+    .find({ noteUri: { $in: noteUris }, deleted: { $ne: true } })
+    .toArray();
+  const out: Record<string, InboxPost> = {};
+  for (const d of docs) out[d.noteUri] = d;
+  return out;
+}
+
 export async function listInboxPosts(opts: {
   limit?: number;
   beforePublished?: number;

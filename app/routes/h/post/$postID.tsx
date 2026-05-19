@@ -3,8 +3,13 @@ import { useLoaderData } from "react-router";
 import { useEffect, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
+import type { PostParentSnippet } from "~/components/PostCard/PostCard";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { serializeDoc } from "~/utils/serialize.server";
+import {
+  getInboxPostsByUris,
+  getRemoteActors,
+} from "~/utils/federation-inbox-posts.server";
 import * as gtag from "~/utils/gtags.client";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
@@ -12,28 +17,66 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");
-  const siteData = await db.collection("myUsers").find({user_name:"PGMcCullough"}).toArray();  
+  const siteData = await db
+    .collection("myUsers")
+    .find({ user_name: "PGMcCullough" })
+    .toArray();
   let post;
-  if(user?.role!=="administrator") {
-    [ post ] = await db.collection("myPosts").find({ privacy : "Public", _id: new ObjectId(postID) }).toArray();
+  if (user?.role !== "administrator") {
+    [post] = await db
+      .collection("myPosts")
+      .find({ privacy: "Public", _id: new ObjectId(postID) })
+      .toArray();
   } else {
-    [ post ] = await db.collection("myPosts").find({ _id: new ObjectId(postID) }).toArray();
+    [post] = await db
+      .collection("myPosts")
+      .find({ _id: new ObjectId(postID) })
+      .toArray();
   }
-  if(!post) {
-    throw new Response(JSON.stringify({user,siteData}), {
+  if (!post) {
+    throw new Response(JSON.stringify({ user, siteData }), {
       status: 404,
-      statusText: "Sorry, this page either doesn't exist (check the spelling in the URL?) or maybe it does and you're just not allowed to see it...",
+      statusText:
+        "Sorry, this page either doesn't exist (check the spelling in the URL?) or maybe it does and you're just not allowed to see it...",
     });
   }
-  return { post: serializeDoc(post), user };
-}
+  const serialized = serializeDoc(post);
+
+  // If this post is a reply, try to load the parent for the inline snippet.
+  let parent: PostParentSnippet | null = null;
+  const parentUri = (serialized as any).inReplyTo as string | undefined;
+  if (parentUri) {
+    const inboxParents = await getInboxPostsByUris([parentUri]);
+    const ip = inboxParents[parentUri];
+    if (ip) {
+      const authors = await getRemoteActors([ip.authorActorUri]);
+      const a = authors[ip.authorActorUri];
+      parent = {
+        authorActorUri: ip.authorActorUri,
+        displayName: a?.displayName,
+        handle: a?.handle,
+        fqHandle: a?.fqHandle,
+        avatarUrl: a?.avatarUrl,
+        content: ip.content,
+        publishedMs: ip.published,
+        url: ip.url,
+      };
+    }
+  }
+
+  return { post: serialized, parent, user };
+};
 
 export default function SinglePost() {
-  const { post } = useLoaderData();
+  const { post, parent } = useLoaderData<{
+    post: any;
+    parent: PostParentSnippet | null;
+  }>();
 
-  const [ editState, setEditState ] = useState<{
-    isOn: boolean, id: string|null
-  }>({ isOn: false, id: null })
+  const [editState, setEditState] = useState<{
+    isOn: boolean;
+    id: string | null;
+  }>({ isOn: false, id: null });
 
   useEffect(() => {
     if (post?._id) {
@@ -48,14 +91,17 @@ export default function SinglePost() {
 
   return (
     <>
-      {post&&!post.error?
-        <PostCard 
-            key={post._id} 
-            editState={editState}
-            setEditState={setEditState}
-            post={post}
-        />:
-        ""}
+      {post && !post.error ? (
+        <PostCard
+          key={post._id}
+          editState={editState}
+          setEditState={setEditState}
+          post={post}
+          parent={parent}
+        />
+      ) : (
+        ""
+      )}
     </>
   );
 }

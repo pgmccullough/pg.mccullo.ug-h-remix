@@ -3,9 +3,14 @@ import type { LoaderFunctionArgs } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
+import type { PostParentSnippet } from "~/components/PostCard/PostCard";
 import { SearchBar } from "~/components/SearchBar/SearchBar";
 import { clientPromise } from "~/lib/mongodb";
 import { serializeDocs } from "~/utils/serialize.server";
+import {
+  getInboxPostsByUris,
+  getRemoteActors,
+} from "~/utils/federation-inbox-posts.server";
 import { v4 as uuidv4 } from "uuid";
 import type { Post } from "~/common/types";
 
@@ -61,16 +66,55 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       .toArray();
   }
 
+  const serializedPosts = serializeDocs(posts ?? []);
+  const serializedOnThisDay = serializeDocs(onThisDay ?? []);
+
+  // For any post that is a reply, fetch the parent (if we have it stored
+  // in federation_inbox_posts) plus the parent's author profile, so we
+  // can render an inline "quoting" snippet. Posts whose parents we don't
+  // have yet fall back to no snippet — could later trigger a background
+  // fetch via lookupObject.
+  const allPosts = [...serializedPosts, ...serializedOnThisDay];
+  const parentUris = Array.from(
+    new Set(
+      allPosts
+        .map((p: any) => p.inReplyTo as string | undefined)
+        .filter((u): u is string => typeof u === "string" && u.length > 0)
+    )
+  );
+  let parentsByUri: Record<string, PostParentSnippet> = {};
+  if (parentUris.length) {
+    const inboxParents = await getInboxPostsByUris(parentUris);
+    const authorUris = Array.from(
+      new Set(Object.values(inboxParents).map((p) => p.authorActorUri))
+    );
+    const authors = await getRemoteActors(authorUris);
+    for (const [uri, ip] of Object.entries(inboxParents)) {
+      const a = authors[ip.authorActorUri];
+      parentsByUri[uri] = {
+        authorActorUri: ip.authorActorUri,
+        displayName: a?.displayName,
+        handle: a?.handle,
+        fqHandle: a?.fqHandle,
+        avatarUrl: a?.avatarUrl,
+        content: ip.content,
+        publishedMs: ip.published,
+        url: ip.url,
+      };
+    }
+  }
+
   return {
-    onThisDay: serializeDocs(onThisDay ?? []),
-    posts: serializeDocs(posts ?? []),
+    onThisDay: serializedOnThisDay,
+    posts: serializedPosts,
+    parentsByUri,
     siteData: { ...siteData[0] },
     user,
   };
 };
 
 export default function Index() {
-  const { onThisDay, posts } = useLoaderData<typeof loader>();
+  const { onThisDay, posts, parentsByUri } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
 
   const scrollerBottom = useRef<HTMLDivElement | null>(null);
@@ -163,32 +207,37 @@ export default function Index() {
         }`}
       >
         {!postSearchResults &&
-          onThisDay?.map((thisDay: Post) => (
+          onThisDay?.map((thisDay: any) => (
             <PostCard
               key={thisDay._id}
               editState={editState}
               setEditState={setEditState}
               post={thisDay}
+              parent={
+                thisDay.inReplyTo ? parentsByUri?.[thisDay.inReplyTo] : null
+              }
             />
           ))}
       </div>
       {!postSearchResults &&
-        posts?.map((post: Post) => (
+        posts?.map((post: any) => (
           <PostCard
             key={post._id}
             editState={editState}
             setEditState={setEditState}
             post={post}
+            parent={post.inReplyTo ? parentsByUri?.[post.inReplyTo] : null}
           />
         ))}
       {/* Using state here for infinite scroll loads. Ideally would push these
           into posts from loaderdata, but rerender resets the count to 25 */}
-      {postArray?.map((post: Post) => (
+      {postArray?.map((post: any) => (
         <PostCard
           key={post._id}
           editState={editState}
           setEditState={setEditState}
           post={post}
+          parent={post.inReplyTo ? parentsByUri?.[post.inReplyTo] : null}
         />
       ))}
       {!postSearchResults ? (

@@ -17,9 +17,21 @@ import localizedFormat from 'dayjs/plugin/localizedFormat';
 dayjs.extend(localizedFormat)
 dayjs().format();
 
+export interface PostParentSnippet {
+  authorActorUri: string;
+  displayName?: string;
+  handle?: string;
+  fqHandle?: string;
+  avatarUrl?: string;
+  content: string;          // HTML
+  publishedMs?: number;
+  url?: string;             // human-facing URL of the parent
+}
+
 export const PostCard: React.FC<{
-  editState: any, setEditState: any, post: Post | null, title?: string, message?: string
-}> = ({ editState, setEditState, post, title, message }) => {
+  editState: any, setEditState: any, post: Post | null, title?: string, message?: string,
+  parent?: PostParentSnippet | null,
+}> = ({ editState, setEditState, post, title, message, parent }) => {
   if(post) {
     const { feedback } = post;
 
@@ -246,6 +258,80 @@ export const PostCard: React.FC<{
             </>
             :""
           }
+            {parent ? (
+              <>
+                <style>{`
+                  .reply-parent {
+                    margin: 10px 12px 0;
+                    border: 1px solid #ccd5e1;
+                    border-radius: 6px;
+                    background: #f4f7fb;
+                    padding: 8px 10px;
+                    font-size: 13px;
+                    text-decoration: none;
+                    color: inherit;
+                    display: block;
+                  }
+                  .reply-parent:hover { background: #ecf1f8; }
+                  .reply-parent__caption {
+                    color: #777;
+                    font-size: 11px;
+                    margin-bottom: 4px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.04em;
+                  }
+                  .reply-parent__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 4px;
+                  }
+                  .reply-parent__avatar {
+                    width: 22px; height: 22px; border-radius: 50%;
+                    object-fit: cover; background: #ddd;
+                  }
+                  .reply-parent__name { font-weight: 600; color: #506982; }
+                  .reply-parent__handle { color: #888; font-size: 11px; }
+                  .reply-parent__content {
+                    color: #444;
+                    line-height: 1.35;
+                    max-height: 4.5em;
+                    overflow: hidden;
+                    position: relative;
+                  }
+                  .reply-parent__content p { margin: 0.15rem 0; }
+                `}</style>
+                <a
+                  className="reply-parent"
+                  href={parent.url || parent.authorActorUri}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="View original post"
+                >
+                  <div className="reply-parent__caption">
+                    Replying to{" "}
+                    {parent.fqHandle || parent.handle || parent.authorActorUri}
+                  </div>
+                  <div className="reply-parent__head">
+                    {parent.avatarUrl ? (
+                      <img className="reply-parent__avatar" src={parent.avatarUrl} alt="" />
+                    ) : (
+                      <div className="reply-parent__avatar" />
+                    )}
+                    <span className="reply-parent__name">
+                      {parent.displayName || parent.fqHandle || "?"}
+                    </span>
+                    {parent.fqHandle && parent.fqHandle !== parent.displayName && (
+                      <span className="reply-parent__handle">{parent.fqHandle}</span>
+                    )}
+                  </div>
+                  <div
+                    className="reply-parent__content fake-p"
+                    dangerouslySetInnerHTML={{ __html: parent.content }}
+                  />
+                </a>
+              </>
+            ) : null}
             <div className="postcard__content__media" ref={galWid}>
               <figure 
                 className="postcard__content__media__slider"
