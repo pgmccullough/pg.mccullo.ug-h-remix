@@ -352,20 +352,27 @@ federation
   })
   // --- B1: responses to follows WE initiated ---
   .on(Accept, async (ctx, accept) => {
-    // We only care about Accept(Follow) — confirmation a remote actor
-    // accepted a Follow we sent.
-    const inner = await accept.getObject(ctx);
-    if (!(inner instanceof Follow)) return;
-    if (!accept.actorId) return;
+    // Confirmation that a remote actor accepted a Follow we sent.
+    //
+    // We deliberately DON'T try to dereference the inner Follow object —
+    // its URL is one we generated (/users/patrick/follows/<uuid>) and we
+    // don't serve that path. Instead we match by the actor: any Accept
+    // coming from a user we have a pending follow for is the accept for
+    // that follow.
+    if (!accept.actorId) {
+      console.log(`[federation] Accept received without actorId — ignoring`);
+      return;
+    }
+    console.log(
+      `[federation] Accept received from ${accept.actorId.href} (object: ${accept.objectId?.href ?? "?"})`
+    );
     await markAcceptedByActor(PRIMARY_USERNAME, accept.actorId.href);
-    console.log(`[federation] Follow accepted by ${accept.actorId.href}`);
+    console.log(`[federation] marked Follow accepted by ${accept.actorId.href}`);
   })
   .on(Reject, async (ctx, reject) => {
-    const inner = await reject.getObject(ctx);
-    if (!(inner instanceof Follow)) return;
     if (!reject.actorId) return;
+    console.log(`[federation] Reject received from ${reject.actorId.href}`);
     await markRejectedByActor(PRIMARY_USERNAME, reject.actorId.href);
-    console.log(`[federation] Follow rejected by ${reject.actorId.href}`);
   })
   // --- B2: posts arriving from accounts we follow ---
   .on(Create, async (ctx, create) => {
