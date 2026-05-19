@@ -96,6 +96,7 @@ export const SiteActivity: React.FC<{}> = () => {
           max-height: 0;
           overflow-y: auto;
           transition: max-height 0.28s ease;
+          border-top: 1px solid #ddd;
         }
         .siteActivity__body--open {
           max-height: 50vh;
@@ -110,8 +111,6 @@ export const SiteActivity: React.FC<{}> = () => {
           align-items: center;
           cursor: pointer;
           user-select: none;
-          border-top: 1px solid #ddd;
-          /* Header is always visible at the bottom of the drawer. */
         }
         .siteActivity__header:hover { background: #e6e6e6; }
         .siteActivity__caret {
@@ -140,6 +139,20 @@ export const SiteActivity: React.FC<{}> = () => {
       `}</style>
 
       <div className="siteActivity">
+        {/* Header on TOP, body BELOW it. Container is anchored to the
+            viewport bottom, so as the body's max-height grows from 0 the
+            container grows upward and the header rides up with it. */}
+        <div
+          className="siteActivity__header"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <span>Recent visitors ({sorted.length})</span>
+          <span
+            className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
+          >
+            ^
+          </span>
+        </div>
         <div
           className={`siteActivity__body${expanded ? " siteActivity__body--open" : ""}`}
           aria-hidden={!expanded}
@@ -164,17 +177,6 @@ export const SiteActivity: React.FC<{}> = () => {
               </div>
             ))
           )}
-        </div>
-        <div
-          className="siteActivity__header"
-          onClick={() => setExpanded(!expanded)}
-        >
-          <span>Recent visitors ({sorted.length})</span>
-          <span
-            className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
-          >
-            ^
-          </span>
         </div>
       </div>
     </>
