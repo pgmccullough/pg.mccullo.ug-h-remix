@@ -27,6 +27,11 @@ import {
   Follow,
   Undo,
   Accept,
+  Reject,
+  Create,
+  Update,
+  Delete,
+  Announce,
   exportJwk,
   importJwk,
   generateCryptoKeyPair,
@@ -46,6 +51,19 @@ import {
   postToNote,
   postToCreate,
 } from "~/utils/federation-posts.server";
+import {
+  markAcceptedByActor,
+  markRejectedByActor,
+  countFollowing,
+  listFollowing,
+} from "~/utils/federation-following.server";
+import {
+  storeInboxPost,
+  updateInboxPost,
+  softDeleteInboxPost,
+  cacheRemoteActor,
+} from "~/utils/federation-inbox-posts.server";
+import type { InboxPost } from "~/utils/federation-inbox-posts.server";
 
 // Hardcoded for now — single-user instance. Phase E (managed hosting) will
 // look this up per request from the host header / Mongo.
@@ -331,6 +349,111 @@ federation
     }
     await removeFollower(PRIMARY_USERNAME, undo.actorId.href);
     console.log(`[federation] removed follower ${undo.actorId.href}`);
+  })
+  // --- B1: responses to follows WE initiated ---
+  .on(Accept, async (ctx, accept) => {
+    // We only care about Accept(Follow) — confirmation a remote actor
+    // accepted a Follow we sent.
+    const inner = await accept.getObject(ctx);
+    if (!(inner instanceof Follow)) return;
+    if (!accept.actorId) return;
+    await markAcceptedByActor(PRIMARY_USERNAME, accept.actorId.href);
+    console.log(`[federation] Follow accepted by ${accept.actorId.href}`);
+  })
+  .on(Reject, async (ctx, reject) => {
+    const inner = await reject.getObject(ctx);
+    if (!(inner instanceof Follow)) return;
+    if (!reject.actorId) return;
+    await markRejectedByActor(PRIMARY_USERNAME, reject.actorId.href);
+    console.log(`[federation] Follow rejected by ${reject.actorId.href}`);
+  })
+  // --- B2: posts arriving from accounts we follow ---
+  .on(Create, async (ctx, create) => {
+    const inner = await create.getObject(ctx);
+    if (!(inner instanceof Note)) return;
+    if (!inner.id || !create.actorId) return;
+
+    // Cache the author so we can render their name/avatar later.
+    const author = await create.getActor(ctx);
+    if (author) {
+      await cacheRemoteActor({
+        actorUri: create.actorId.href,
+        handle: author.preferredUsername?.toString() ?? undefined,
+        fqHandle: author.preferredUsername
+          ? `@${author.preferredUsername}@${new URL(create.actorId.href).host}`
+          : undefined,
+        displayName: author.name?.toString() ?? undefined,
+        avatarUrl: author.iconId?.href,
+        profileUrl: author.url instanceof URL ? author.url.href : undefined,
+        updatedAt: Date.now(),
+      });
+    }
+
+    const published = inner.published
+      ? Number(inner.published.epochMilliseconds)
+      : Date.now();
+    const url = inner.url instanceof URL ? inner.url.href : undefined;
+
+    const attachments: InboxPost["attachments"] = [];
+    for await (const a of inner.getAttachments(ctx)) {
+      const u = (a as any).url;
+      const url = u instanceof URL ? u.href : typeof u === "string" ? u : null;
+      if (!url) continue;
+      const mediaType = (a as any).mediaType?.toString();
+      let type: "Image" | "Video" | "Audio" | "Document" = "Document";
+      const t = (a as any).constructor?.name;
+      if (t === "Image" || mediaType?.startsWith("image/")) type = "Image";
+      else if (t === "Video" || mediaType?.startsWith("video/")) type = "Video";
+      else if (t === "Audio" || mediaType?.startsWith("audio/")) type = "Audio";
+      attachments.push({ type, url, mediaType });
+    }
+
+    await storeInboxPost({
+      noteUri: inner.id.href,
+      authorActorUri: create.actorId.href,
+      content: inner.content?.toString() ?? "",
+      url,
+      published,
+      receivedAt: Date.now(),
+      attachments: attachments.length ? attachments : undefined,
+    });
+
+    console.log(
+      `[federation] stored incoming Note ${inner.id.href} from ${create.actorId.href}`
+    );
+  })
+  .on(Update, async (ctx, update) => {
+    const inner = await update.getObject(ctx);
+    if (!(inner instanceof Note) || !inner.id) return;
+    const patch: Partial<InboxPost> = {
+      content: inner.content?.toString() ?? "",
+    };
+    if (inner.url instanceof URL) patch.url = inner.url.href;
+    await updateInboxPost(inner.id.href, patch);
+  })
+  .on(Delete, async (_ctx, del) => {
+    // Delete activities carry the tombstoned object's id in `objectId`.
+    if (!del.objectId) return;
+    await softDeleteInboxPost(del.objectId.href);
+  })
+  .on(Announce, async (ctx, announce) => {
+    // Boost — the inner object is a Note already published elsewhere. We
+    // store it as if it were a post from the announcer, but flag who
+    // boosted it so the UI can show "Patrick boosted ..."
+    const inner = await announce.getObject(ctx);
+    if (!(inner instanceof Note) || !inner.id || !announce.actorId) return;
+    const published = inner.published
+      ? Number(inner.published.epochMilliseconds)
+      : Date.now();
+    await storeInboxPost({
+      noteUri: inner.id.href,
+      authorActorUri: inner.attributionId?.href ?? announce.actorId.href,
+      content: inner.content?.toString() ?? "",
+      url: inner.url instanceof URL ? inner.url.href : undefined,
+      published,
+      receivedAt: Date.now(),
+      announcedBy: announce.actorId.href,
+    });
   });
 
 // ---------------------------------------------------------------------------
@@ -406,11 +529,28 @@ federation
     return await countFollowers(identifier);
   });
 
-// We don't expose a /following list yet (Phase B will add outbound follows).
-federation.setFollowingDispatcher(
-  `/users/{identifier}/following`,
-  async (_ctx, _identifier, _cursor) => ({ items: [] })
-);
+// Following collection — live from Mongo, only accepted follows count.
+federation
+  .setFollowingDispatcher(
+    `/users/{identifier}/following`,
+    async (_ctx, identifier, cursor) => {
+      if (identifier !== PRIMARY_USERNAME) return null;
+      const cursorMs = cursor ? Number(cursor) : undefined;
+      const { items, nextCursorMs } = await listFollowing(identifier, {
+        limit: 50,
+        cursorMs: Number.isFinite(cursorMs) ? cursorMs : undefined,
+        status: "accepted",
+      });
+      return {
+        items: items.map((f) => new URL(f.actorUri)),
+        nextCursor: nextCursorMs != null ? String(nextCursorMs) : null,
+      };
+    }
+  )
+  .setCounter(async (_ctx, identifier) => {
+    if (identifier !== PRIMARY_USERNAME) return null;
+    return await countFollowing(identifier);
+  });
 
 // ---------------------------------------------------------------------------
 // NodeInfo — tells crawlers what software we run.

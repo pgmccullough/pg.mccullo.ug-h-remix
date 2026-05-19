@@ -43,6 +43,7 @@ export default [
     route("login", "routes/h/login.tsx"),
     route("post/:postID", "routes/h/post/$postID.tsx"),
     route("writing/we-die-in-every-war", "routes/h/writing/we-die-in-every-war.tsx"),
+    route("friends", "routes/h/friends.tsx"),
     // 404 catchall for any /h/* path that doesn't match above
     route("*", "routes/h/$notFound.tsx"),
   ]),
@@ -105,5 +106,9 @@ export default [
     route("user/login", "routes/api/user/login/index.tsx"),
     route("user/logout", "routes/api/user/logout/index.tsx"),
     route("user/register", "routes/api/user/register/index.tsx"),
+
+    // Federation admin actions
+    route("federation/follow", "routes/api/federation/follow/index.ts"),
+    route("federation/unfollow", "routes/api/federation/unfollow/index.ts"),
   ]),
 ] satisfies RouteConfig;

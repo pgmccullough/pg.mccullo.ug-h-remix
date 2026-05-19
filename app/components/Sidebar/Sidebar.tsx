@@ -191,6 +191,14 @@ export const Sidebar: React.FC<{
 
       {!manualSiteData&&user?.role==="administrator"
         ?<>
+          <article className="postcard--left" style={{ padding: "10px 12px", textAlign: "center" }}>
+            <Link
+              to="/h/friends"
+              className="sidebar-session__btn sidebar-session__btn--ghost"
+            >
+              Friends feed
+            </Link>
+          </article>
           {/* <Email /> */}
           <Calendar />
           <Notes />
