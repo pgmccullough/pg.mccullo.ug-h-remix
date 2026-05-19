@@ -34,6 +34,8 @@ interface PostDoc {
     files?: any;
     links?: any;
   };
+  inReplyTo?: string;       // AP URI of the post being replied to (if any)
+  inReplyToAuthor?: string; // AP URI of that post's author (for delivery)
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +190,8 @@ export function postToNote(post: PostDoc, ctx: Context<void>): Note {
     // we're the only poster. Mastodon renders this as HTML.
     content: post.content ?? "",
     attachments: attachments.length ? attachments : undefined,
+    // Threading: link to the post we're replying to (if any).
+    replyTarget: post.inReplyTo ? new URL(post.inReplyTo) : undefined,
   });
 }
 

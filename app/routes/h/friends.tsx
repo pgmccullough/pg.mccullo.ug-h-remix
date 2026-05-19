@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect, useFetcher, useLoaderData } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { getUser } from "~/utils/session.server";
 import {
@@ -17,6 +17,7 @@ import { listFollowing } from "~/utils/federation-following.server";
 import type { FollowingRecord } from "~/utils/federation-following.server";
 import { federation } from "~/utils/federation.server";
 import { lookupObject } from "@fedify/fedify";
+import { getMyReactionsFor } from "~/utils/federation-interactions.server";
 
 const PRIMARY_USERNAME = "patrick";
 
@@ -82,10 +83,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
+  // Lookup which posts we've liked/boosted so the UI can show toggled state.
+  const myReactions = await getMyReactionsFor(posts.map((p) => p.noteUri));
+
+  // Also need each post's author inbox URL (for reaction delivery). Pull
+  // it from the followers/following caches we already have, falling back
+  // to undefined (the react API will dereference if missing).
+  const inboxByActor: Record<string, string | undefined> = {};
+  for (const f of followingItems) {
+    if (f.inboxUri) inboxByActor[f.actorUri] = f.inboxUri;
+  }
+
   return {
     posts,
     actors,
     nextCursorMs,
+    myReactions,
+    inboxByActor,
     following: followingItems.map((f) => ({
       ...f,
       profile: followingActors[f.actorUri] ?? null,
@@ -97,6 +111,8 @@ type LoaderData = {
   posts: InboxPost[];
   actors: Record<string, RemoteActorCache>;
   nextCursorMs: number | null;
+  myReactions: Record<string, { like?: boolean; boost?: boolean }>;
+  inboxByActor: Record<string, string | undefined>;
   following: Array<
     FollowingRecord & { profile: RemoteActorCache | null }
   >;
@@ -115,10 +131,13 @@ function formatWhen(ms: number): string {
 }
 
 export default function Friends() {
-  const { posts, actors, nextCursorMs, following } = useLoaderData<LoaderData>();
+  const { posts, actors, nextCursorMs, following, myReactions, inboxByActor } =
+    useLoaderData<LoaderData>();
   const followForm = useFetcher<{ ok?: boolean; status?: string; error?: string }>();
   const unfollowForm = useFetcher();
   const [handleInput, setHandleInput] = useState("");
+  // Which post (by noteUri) currently has its reply composer open.
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   return (
     <>
@@ -226,6 +245,66 @@ export default function Friends() {
           padding: 8px 14px;
           font-size: 12px;
           color: #666;
+        }
+        .friend-post__actions {
+          display: flex;
+          gap: 6px;
+          padding: 6px 10px;
+          border-top: 1px solid #eee;
+          background: #fafafa;
+        }
+        .friend-post__action,
+        .friend-post__action:visited {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: transparent;
+          border: 1px solid transparent;
+          padding: 4px 10px;
+          border-radius: 999px;
+          cursor: pointer;
+          font: 600 12px 'PGM Sans', sans-serif;
+          color: #888;
+          line-height: 1.2;
+          height: auto;
+          margin: 0;
+          transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+        .friend-post__action:hover {
+          background: #fff;
+          border-color: #ddd;
+          color: #506982;
+        }
+        .friend-post__action--active--like {
+          background: #fde4e4;
+          color: #b03030;
+          border-color: #f3c0c0;
+        }
+        .friend-post__action--active--boost {
+          background: #dff0e3;
+          color: #297a3e;
+          border-color: #b8dfc1;
+        }
+        .reply-composer {
+          padding: 8px 14px 14px;
+          border-top: 1px solid #eee;
+          background: #fafafa;
+        }
+        .reply-composer textarea {
+          width: 100%;
+          min-height: 70px;
+          padding: 8px 10px;
+          font: 14px 'PGM Sans', sans-serif;
+          border: 1px solid #979997;
+          border-radius: 4px;
+          resize: vertical;
+          box-sizing: border-box;
+        }
+        .reply-composer__row {
+          display: flex;
+          justify-content: flex-end;
+          gap: 6px;
+          margin-top: 6px;
         }
       `}</style>
 
@@ -342,6 +421,22 @@ export default function Friends() {
                     )}
                   </div>
                 ) : null}
+                <PostActions
+                  post={p}
+                  myReactions={myReactions[p.noteUri]}
+                  authorInbox={inboxByActor[p.authorActorUri]}
+                  onReplyToggle={() =>
+                    setReplyingTo((cur) => (cur === p.noteUri ? null : p.noteUri))
+                  }
+                  isReplying={replyingTo === p.noteUri}
+                />
+                {replyingTo === p.noteUri && (
+                  <ReplyComposer
+                    post={p}
+                    authorInbox={inboxByActor[p.authorActorUri]}
+                    onDone={() => setReplyingTo(null)}
+                  />
+                )}
                 {p.url && (
                   <footer className="friend-post__footer">
                     <a href={p.url} target="_blank" rel="noreferrer">
@@ -367,4 +462,139 @@ export default function Friends() {
       </section>
     </>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components for actions + reply composer
+// ---------------------------------------------------------------------------
+
+const PostActions: React.FC<{
+  post: InboxPost;
+  myReactions?: { like?: boolean; boost?: boolean };
+  authorInbox?: string;
+  isReplying: boolean;
+  onReplyToggle: () => void;
+}> = ({ post, myReactions, authorInbox, isReplying, onReplyToggle }) => {
+  const fetcher = useFetcher<{ ok?: boolean; status?: string; error?: string }>();
+  // Optimistic state — derive from local fetcher submissions in-flight
+  // so the button toggles instantly even before the round-trip resolves.
+  const liked = fetcher.formData?.get("kind") === "like"
+    ? fetcher.formData.get("undo") !== "1"
+    : myReactions?.like;
+  const boosted = fetcher.formData?.get("kind") === "boost"
+    ? fetcher.formData.get("undo") !== "1"
+    : myReactions?.boost;
+
+  const submit = (kind: "like" | "boost", undo: boolean) => {
+    const fd = new FormData();
+    fd.set("noteUri", post.noteUri);
+    fd.set("authorUri", post.authorActorUri);
+    if (authorInbox) fd.set("inboxUri", authorInbox);
+    fd.set("kind", kind);
+    if (undo) fd.set("undo", "1");
+    fetcher.submit(fd, { method: "post", action: "/api/federation/react" });
+  };
+
+  return (
+    <div className="friend-post__actions">
+      <button
+        type="button"
+        className={`friend-post__action${liked ? " friend-post__action--active--like" : ""}`}
+        onClick={() => submit("like", !!liked)}
+        title={liked ? "Unlike" : "Like"}
+      >
+        {liked ? "♥" : "♡"} Like
+      </button>
+      <button
+        type="button"
+        className={`friend-post__action${boosted ? " friend-post__action--active--boost" : ""}`}
+        onClick={() => submit("boost", !!boosted)}
+        title={boosted ? "Undo boost" : "Boost"}
+      >
+        🔁 {boosted ? "Boosted" : "Boost"}
+      </button>
+      <button
+        type="button"
+        className="friend-post__action"
+        onClick={onReplyToggle}
+        title="Reply"
+      >
+        💬 {isReplying ? "Cancel" : "Reply"}
+      </button>
+    </div>
+  );
+};
+
+const ReplyComposer: React.FC<{
+  post: InboxPost;
+  authorInbox?: string;
+  onDone: () => void;
+}> = ({ post, authorInbox, onDone }) => {
+  const fetcher = useFetcher<{ ok?: boolean; error?: string }>();
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    if (fetcher.data?.ok) {
+      setText("");
+      onDone();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetcher.data]);
+
+  const submit = () => {
+    if (!text.trim()) return;
+    const fd = new FormData();
+    fd.set("parentNoteUri", post.noteUri);
+    fd.set("parentAuthorUri", post.authorActorUri);
+    if (authorInbox) fd.set("parentInboxUri", authorInbox);
+    // Wrap plain text in a <p> so the sanitizer + Mastodon render it
+    // sensibly.
+    fd.set("content", `<p>${escapeHtml(text)}</p>`);
+    fetcher.submit(fd, { method: "post", action: "/api/federation/reply" });
+  };
+
+  return (
+    <div className="reply-composer">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Write a reply..."
+        autoFocus
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") submit();
+        }}
+      />
+      {fetcher.data?.error && (
+        <div style={{ color: "#be0d0d", fontSize: 12, marginTop: 4 }}>
+          {fetcher.data.error}
+        </div>
+      )}
+      <div className="reply-composer__row">
+        <button
+          type="button"
+          className="friends__btn friends__btn--ghost"
+          onClick={onDone}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="friends__btn"
+          onClick={submit}
+          disabled={!text.trim() || fetcher.state !== "idle"}
+        >
+          {fetcher.state !== "idle" ? "Sending…" : "Reply"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

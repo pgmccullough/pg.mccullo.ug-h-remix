@@ -15,6 +15,7 @@ import { PostCard } from "~/components/PostCard/PostCard";
 import { Analytics } from "~/components/Analytics/Analytics";
 import { clientPromise } from "~/lib/mongodb";
 import { serializeDocs } from "~/utils/serialize.server";
+import { countUnreadNotifications } from "~/utils/federation-interactions.server";
 import * as postmark from "postmark";
 import type { Post } from "~/common/types";
 
@@ -118,6 +119,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     user,
     visitors,
     wishList,
+    unreadNotifications:
+      user?.role === "administrator"
+        ? await countUnreadNotifications().catch(() => 0)
+        : 0,
   };
 };
 

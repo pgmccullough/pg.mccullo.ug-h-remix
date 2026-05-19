@@ -26,6 +26,8 @@ export interface InboxPost {
   }>;
   // If this is a boost (Announce), the actor who boosted it.
   announcedBy?: string;
+  // If this is a reply, the URI of the post being replied to.
+  inReplyTo?: string;
   deleted?: boolean;
 }
 

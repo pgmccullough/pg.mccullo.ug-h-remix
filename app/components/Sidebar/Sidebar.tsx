@@ -6,6 +6,49 @@ import { Calendar, Email, Notes, RentalProperties, SiteActivity, TaskTracker, We
 import { TextEditor } from '../TextEditor/TextEditor';
 import { SignInModal } from '../SignInModal/SignInModal';
 
+const NotificationsBadge: React.FC = () => {
+  const data = useLoaderData<{ unreadNotifications?: number }>();
+  const count = data?.unreadNotifications ?? 0;
+  return (
+    <>
+      <style>{`
+        .sidebar-notif {
+          padding: 10px 12px;
+          text-align: center;
+          margin-bottom: 10px;
+        }
+        .sidebar-notif a {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #4A6CBA;
+          text-decoration: none;
+          font: 600 14px 'PGM Sans', sans-serif;
+        }
+        .sidebar-notif a:hover { color: #506982; }
+        .sidebar-notif__count {
+          background: #be0d0d;
+          color: #fff;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 1px 7px;
+          border-radius: 999px;
+          min-width: 18px;
+          text-align: center;
+        }
+      `}</style>
+      <article className="postcard--left sidebar-notif">
+        <Link to="/h/notifications">
+          Notifications
+          {count > 0 && (
+            <span className="sidebar-notif__count">{count > 99 ? "99+" : count}</span>
+          )}
+        </Link>
+      </article>
+    </>
+  );
+};
+
 export const Sidebar: React.FC<{
   manualSiteData?: SiteData,
   manualUser?: User
@@ -189,8 +232,9 @@ export const Sidebar: React.FC<{
         <SignInModal onClose={() => setShowSignInModal(false)} />
       )}
 
-      {!manualSiteData&&user?.role==="administrator"
+      {!manualSiteData && user?.role === "administrator"
         ?<>
+          <NotificationsBadge />
           {/* <Email /> */}
           <Calendar />
           <Notes />

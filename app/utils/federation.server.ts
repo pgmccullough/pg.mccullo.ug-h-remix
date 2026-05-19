@@ -32,6 +32,7 @@ import {
   Update,
   Delete,
   Announce,
+  Like,
   exportJwk,
   importJwk,
   generateCryptoKeyPair,
@@ -65,11 +66,27 @@ import {
   extractActorProfile,
 } from "~/utils/federation-inbox-posts.server";
 import type { InboxPost } from "~/utils/federation-inbox-posts.server";
+import {
+  storeNotification,
+  removeNotification,
+} from "~/utils/federation-interactions.server";
 
 // Hardcoded for now — single-user instance. Phase E (managed hosting) will
 // look this up per request from the host header / Mongo.
 const PRIMARY_USERNAME = "patrick";
 const DOMAIN = "pg.mccullo.ug";
+
+/**
+ * If a Note URI is one of our own posts, return its Mongo _id (string).
+ * Used to detect interactions targeting our content.
+ */
+function localPostIdFromUri(uri: string | undefined | null): string | null {
+  if (!uri) return null;
+  const prefix = `https://${DOMAIN}/users/${PRIMARY_USERNAME}/posts/`;
+  if (!uri.startsWith(prefix)) return null;
+  const id = uri.slice(prefix.length).split(/[/?#]/)[0];
+  return id || null;
+}
 
 // ---------------------------------------------------------------------------
 // Federation object
@@ -339,17 +356,33 @@ federation
     );
   })
   .on(Undo, async (ctx, undo) => {
-    // Only Undo's that wrap a Follow targeting us are interesting.
+    if (!undo.actorId) return;
     const inner = await undo.getObject(ctx);
-    if (!(inner instanceof Follow)) return;
-    if (!inner.objectId || !undo.actorId) return;
+    if (!inner) return;
 
-    const parsed = ctx.parseUri(inner.objectId);
-    if (parsed?.type !== "actor" || parsed.identifier !== PRIMARY_USERNAME) {
+    // Undo Follow → drop the follower.
+    if (inner instanceof Follow) {
+      if (!inner.objectId) return;
+      const parsed = ctx.parseUri(inner.objectId);
+      if (parsed?.type !== "actor" || parsed.identifier !== PRIMARY_USERNAME) {
+        return;
+      }
+      await removeFollower(PRIMARY_USERNAME, undo.actorId.href);
+      console.log(`[federation] removed follower ${undo.actorId.href}`);
       return;
     }
-    await removeFollower(PRIMARY_USERNAME, undo.actorId.href);
-    console.log(`[federation] removed follower ${undo.actorId.href}`);
+
+    // Undo Like / Undo Announce on our posts → remove the notification.
+    if (inner instanceof Like || inner instanceof Announce) {
+      const targetUri = inner.objectId?.href;
+      const ourPostId = localPostIdFromUri(targetUri);
+      if (!ourPostId) return;
+      const kind = inner instanceof Like ? "like" : "boost";
+      await removeNotification(kind, undo.actorId.href, targetUri!);
+      console.log(
+        `[federation] removed ${kind} notification from ${undo.actorId.href}`
+      );
+    }
   })
   // --- B1: responses to follows WE initiated ---
   .on(Accept, async (ctx, accept) => {
@@ -409,6 +442,8 @@ federation
       attachments.push({ type, url, mediaType });
     }
 
+    const inReplyToUri = (inner as any).replyTargetId?.href as string | undefined;
+
     await storeInboxPost({
       noteUri: inner.id.href,
       authorActorUri: create.actorId.href,
@@ -417,7 +452,24 @@ federation
       published,
       receivedAt: Date.now(),
       attachments: attachments.length ? attachments : undefined,
+      inReplyTo: inReplyToUri,
     });
+
+    // If this is a reply to one of OUR posts, create a notification.
+    const targetLocalId = localPostIdFromUri(inReplyToUri);
+    if (targetLocalId) {
+      await storeNotification({
+        kind: "reply",
+        sourceActorUri: create.actorId.href,
+        targetPostId: targetLocalId,
+        targetNoteUri: inReplyToUri!,
+        replyNoteUri: inner.id.href,
+        receivedAt: Date.now(),
+      });
+      console.log(
+        `[federation] reply notification: ${create.actorId.href} replied to our post ${targetLocalId}`
+      );
+    }
 
     console.log(
       `[federation] stored incoming Note ${inner.id.href} from ${create.actorId.href}`
@@ -438,11 +490,40 @@ federation
     await softDeleteInboxPost(del.objectId.href);
   })
   .on(Announce, async (ctx, announce) => {
-    // Boost — the inner object is a Note already published elsewhere. We
-    // store it as if it were a post from the announcer, but flag who
-    // boosted it so the UI can show "Patrick boosted ..."
+    if (!announce.actorId || !announce.objectId) return;
+
+    // Case 1: this is someone boosting one of OUR posts → notification.
+    const ourPostId = localPostIdFromUri(announce.objectId.href);
+    if (ourPostId) {
+      await storeNotification({
+        kind: "boost",
+        sourceActorUri: announce.actorId.href,
+        targetPostId: ourPostId,
+        targetNoteUri: announce.objectId.href,
+        receivedAt: Date.now(),
+      });
+      // Cache the booster so the notification renders with name/avatar.
+      try {
+        const booster = await announce.getActor(ctx);
+        if (booster) {
+          await cacheRemoteActor({
+            ...extractActorProfile(booster, announce.actorId.href),
+            updatedAt: Date.now(),
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+      console.log(
+        `[federation] boost notification: ${announce.actorId.href} boosted our post ${ourPostId}`
+      );
+      return;
+    }
+
+    // Case 2: a friend boosted someone else's post — store the inner Note
+    // as a friends-feed item flagged with "announcedBy".
     const inner = await announce.getObject(ctx);
-    if (!(inner instanceof Note) || !inner.id || !announce.actorId) return;
+    if (!(inner instanceof Note) || !inner.id) return;
     const published = inner.published
       ? Number(inner.published.epochMilliseconds)
       : Date.now();
@@ -455,6 +536,33 @@ federation
       receivedAt: Date.now(),
       announcedBy: announce.actorId.href,
     });
+  })
+  // Likes on our posts → notification.
+  .on(Like, async (ctx, like) => {
+    if (!like.actorId || !like.objectId) return;
+    const ourPostId = localPostIdFromUri(like.objectId.href);
+    if (!ourPostId) return;
+    await storeNotification({
+      kind: "like",
+      sourceActorUri: like.actorId.href,
+      targetPostId: ourPostId,
+      targetNoteUri: like.objectId.href,
+      receivedAt: Date.now(),
+    });
+    try {
+      const liker = await like.getActor(ctx);
+      if (liker) {
+        await cacheRemoteActor({
+          ...extractActorProfile(liker, like.actorId.href),
+          updatedAt: Date.now(),
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+    console.log(
+      `[federation] like notification: ${like.actorId.href} liked our post ${ourPostId}`
+    );
   });
 
 // ---------------------------------------------------------------------------

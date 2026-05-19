@@ -44,6 +44,7 @@ export default [
     route("post/:postID", "routes/h/post/$postID.tsx"),
     route("writing/we-die-in-every-war", "routes/h/writing/we-die-in-every-war.tsx"),
     route("friends", "routes/h/friends.tsx"),
+    route("notifications", "routes/h/notifications.tsx"),
     // 404 catchall for any /h/* path that doesn't match above
     route("*", "routes/h/$notFound.tsx"),
   ]),
@@ -110,6 +111,8 @@ export default [
     // Federation admin actions
     route("federation/follow", "routes/api/federation/follow/index.ts"),
     route("federation/unfollow", "routes/api/federation/unfollow/index.ts"),
+    route("federation/react", "routes/api/federation/react/index.ts"),
+    route("federation/reply", "routes/api/federation/reply/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)
     route("auth/google", "routes/api/auth/google/index.tsx"),
