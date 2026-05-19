@@ -88,9 +88,11 @@ export const Comment: React.FC<{
           {canShowDate?dayjs().to(dayjs(comment.timestamp)):""}
         </div>
         <div className="comment__content-inner" dangerouslySetInnerHTML={{__html: comment.body}} />
-        {user?.role==="administrator"
+        {/* Admin can delete anything; a regular signed-in user can delete
+            only their own comments. The server enforces this too — the UI
+            check is just to avoid showing the button for no-op clicks. */}
+        {user?.id && (user.role === "administrator" || String(user.id) === String(comment.userId))
           ?<>
-            <button>REPLY</button>
             <button onClick={() => deleteComment(comment.id)}>DELETE</button>
           </>
           :""
