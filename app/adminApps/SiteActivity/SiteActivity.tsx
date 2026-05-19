@@ -64,29 +64,45 @@ export const SiteActivity: React.FC<{}> = () => {
     (a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0)
   );
 
-  // Header is a fixed strip pinned to the bottom of the viewport.
-  // Body, when expanded, is a separate fixed strip just above it.
-  // Two distinct elements — no flex parent, no chance of an invisible
-  // empty box pushing things around.
-  const HEADER_PX = 40;
+  // Single container fixed to bottom: 0. Body (above) animates max-height
+  // open/closed; header (below) stays anchored to the container's bottom
+  // edge, which is always at the viewport bottom. As body grows, the
+  // container grows *upward* and the header rides along with it visually
+  // — which is what makes the drawer feel like one thing instead of two.
 
   return (
     <>
       <style>{`
-        .siteActivity__header {
+        .siteActivity {
           position: fixed;
           bottom: 0;
           left: 0;
           width: 360px;
           max-width: 90vw;
-          height: ${HEADER_PX}px;
-          padding: 0 14px;
           z-index: 80;
-          background: #eee;
+          background: #fff;
           border: 1px solid #979997;
           border-bottom: 0;
           border-radius: 4px 4px 0 0;
-          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .siteActivity__body {
+          /* Animated open/close. max-height of 0 collapses to nothing;
+             50vh when open. Both end-states are concrete values so the
+             transition has something to interpolate between. */
+          max-height: 0;
+          overflow-y: auto;
+          transition: max-height 0.28s ease;
+        }
+        .siteActivity__body--open {
+          max-height: 50vh;
+        }
+        .siteActivity__header {
+          padding: 10px 14px;
+          background: #eee;
           font-weight: 600;
           color: #506982;
           display: flex;
@@ -94,33 +110,20 @@ export const SiteActivity: React.FC<{}> = () => {
           align-items: center;
           cursor: pointer;
           user-select: none;
-          box-sizing: border-box;
+          border-top: 1px solid #ddd;
+          /* Header is always visible at the bottom of the drawer. */
         }
         .siteActivity__header:hover { background: #e6e6e6; }
         .siteActivity__caret {
           font-size: 1.25rem;
           color: #777;
           line-height: 1;
-          transition: transform 0.15s ease;
+          transition: transform 0.2s ease;
         }
-        /* "^" character points up by default; rotate when expanded so it
-           points down, suggesting "click to collapse". */
+        /* "^" points up by default; rotate when expanded so it points
+           down, suggesting "click to collapse". */
         .siteActivity__caret--down { transform: rotate(180deg); }
-        .siteActivity__body {
-          position: fixed;
-          bottom: ${HEADER_PX}px;
-          left: 0;
-          width: 360px;
-          max-width: 90vw;
-          max-height: 50vh;
-          overflow-y: auto;
-          z-index: 80;
-          background: #fff;
-          border: 1px solid #979997;
-          border-bottom: 0;
-          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-          box-sizing: border-box;
-        }
+
         .siteActivity__row {
           padding: 8px 14px;
           border-bottom: 1px solid #f0f0f0;
@@ -136,8 +139,11 @@ export const SiteActivity: React.FC<{}> = () => {
         }
       `}</style>
 
-      {expanded && (
-        <div className="siteActivity__body">
+      <div className="siteActivity">
+        <div
+          className={`siteActivity__body${expanded ? " siteActivity__body--open" : ""}`}
+          aria-hidden={!expanded}
+        >
           {sorted.length === 0 ? (
             <div className="siteActivity__row" style={{ color: "#888" }}>
               No visits recorded yet.
@@ -159,18 +165,17 @@ export const SiteActivity: React.FC<{}> = () => {
             ))
           )}
         </div>
-      )}
-
-      <div
-        className="siteActivity__header"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <span>Recent visitors ({sorted.length})</span>
-        <span
-          className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
+        <div
+          className="siteActivity__header"
+          onClick={() => setExpanded(!expanded)}
         >
-          ^
-        </span>
+          <span>Recent visitors ({sorted.length})</span>
+          <span
+            className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
+          >
+            ^
+          </span>
+        </div>
       </div>
     </>
   );
