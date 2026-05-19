@@ -56,36 +56,76 @@ export const federation =
   }));
 
 // ---------------------------------------------------------------------------
-// Key management — RSA keypair per actor, persisted in Mongo
+// Key management — RSA + Ed25519 keypairs per actor, persisted in Mongo
 // ---------------------------------------------------------------------------
+//
+// We generate TWO keypairs:
+//   - RSASSA-PKCS1-v1_5: used by Mastodon for HTTP signature verification.
+//     This is what shows up in the actor doc's legacy `publicKey` field.
+//   - Ed25519: used for FEP-8b32 Data Integrity proofs (Multikey).
+//     Shows up in `assertionMethod`. Newer/better, but not all servers
+//     understand it yet.
+//
+// Returning both from setKeyPairsDispatcher means Fedify emits both forms,
+// maximizing interop. The RSA one is the must-have for Mastodon.
+//
+// All key-loading errors are caught and logged so the dispatcher never
+// throws — a thrown dispatcher would leave the actor doc with no key
+// fields at all (which is what was happening before this fix).
+
+type Algorithm = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
 interface StoredKey {
   handle: string;
+  algorithm: Algorithm;
   privateKey: object; // JWK
   publicKey: object;  // JWK
   created: number;
 }
 
-async function loadOrCreateKeyPair(handle: string) {
+const ALGORITHMS: Algorithm[] = ["RSASSA-PKCS1-v1_5", "Ed25519"];
+
+async function loadOrCreateOneKeyPair(
+  handle: string,
+  algorithm: Algorithm
+): Promise<CryptoKeyPair> {
   const client = await clientPromise;
   const db = client.db("user_posts");
   const col = db.collection<StoredKey>("federation_keys");
 
-  const existing = await col.findOne({ handle });
+  const existing = await col.findOne({ handle, algorithm });
   if (existing) {
     const privateKey = await importJwk(existing.privateKey as any, "private");
     const publicKey = await importJwk(existing.publicKey as any, "public");
-    return [{ privateKey, publicKey }];
+    return { privateKey, publicKey };
   }
 
-  const { privateKey, publicKey } = await generateCryptoKeyPair("RSASSA-PKCS1-v1_5");
+  const { privateKey, publicKey } = await generateCryptoKeyPair(algorithm);
   await col.insertOne({
     handle,
+    algorithm,
     privateKey: await exportJwk(privateKey),
     publicKey: await exportJwk(publicKey),
     created: Date.now(),
   });
-  return [{ privateKey, publicKey }];
+  return { privateKey, publicKey };
+}
+
+async function loadOrCreateKeyPairs(handle: string): Promise<CryptoKeyPair[]> {
+  const pairs: CryptoKeyPair[] = [];
+  for (const algorithm of ALGORITHMS) {
+    try {
+      pairs.push(await loadOrCreateOneKeyPair(handle, algorithm));
+    } catch (err) {
+      // Log but don't throw — we'd rather emit a partial actor doc with the
+      // keys we do have than throw and emit nothing.
+      console.error(
+        `[federation] failed to load/create ${algorithm} keypair for ${handle}:`,
+        err
+      );
+    }
+  }
+  return pairs;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,15 +136,23 @@ federation
   .setActorDispatcher(`/users/{identifier}`, async (ctx, identifier) => {
     if (identifier !== PRIMARY_USERNAME) return null;
 
-    // Pull profile data from Mongo (siteData lives on the admin user record).
-    const client = await clientPromise;
-    const db = client.db("user_posts");
-    const [user] = await db
-      .collection("myUsers")
-      .find({ user_name: "PGMcCullough" })
-      .toArray();
+    let user: any = null;
+    try {
+      const client = await clientPromise;
+      const db = client.db("user_posts");
+      [user] = await db
+        .collection("myUsers")
+        .find({ user_name: "PGMcCullough" })
+        .toArray();
+    } catch (err) {
+      console.error(`[federation] actor dispatcher mongo lookup failed:`, err);
+      return null;
+    }
 
-    if (!user) return null;
+    if (!user) {
+      console.error(`[federation] actor dispatcher: no user found for "PGMcCullough"`);
+      return null;
+    }
 
     const name =
       [user.first_name, user.last_name].filter(Boolean).join(" ") || "Patrick";
@@ -138,7 +186,12 @@ federation
   })
   .setKeyPairsDispatcher(async (_ctx, identifier) => {
     if (identifier !== PRIMARY_USERNAME) return [];
-    return loadOrCreateKeyPair(identifier);
+    try {
+      return await loadOrCreateKeyPairs(identifier);
+    } catch (err) {
+      console.error(`[federation] key dispatcher failed for ${identifier}:`, err);
+      return [];
+    }
   });
 
 // Absolute-URL-ify the protocol-relative or root-relative paths we sometimes
