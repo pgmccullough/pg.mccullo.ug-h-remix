@@ -1,9 +1,9 @@
-import type { ActionArgs, LoaderFunction, LoaderArgs } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunction, LoaderFunctionArgs } from "react-router";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
 
-export const loader: LoaderFunction = async({request}: LoaderArgs) => {
+export const loader: LoaderFunction = async({request}: LoaderFunctionArgs) => {
   const client = await clientPromise;
   const db = client.db("user_posts");
   const url = new URL(request.url)
@@ -17,7 +17,7 @@ export const loader: LoaderFunction = async({request}: LoaderArgs) => {
   return { additionalPosts };
 }
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");

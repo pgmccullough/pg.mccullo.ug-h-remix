@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useFetcher } from "@remix-run/react";
+import { useFetcher } from "react-router";
 
 export const Weblink: React.FC<{src:string|any,alt:string}>  = ({src,alt}) => {
   if(!src.video) {

@@ -1,8 +1,8 @@
-import { json, type ActionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "react-router";
 import { ObjectId } from "~/lib/mongodb";
 import { clientPromise } from "~/lib/mongodb";
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
     const [ ...properties ] = await request.json();
     if(!properties.length) return {err: "Error: No properties received."};
     const yearNow = new Date().getFullYear();
@@ -27,7 +27,7 @@ export const action = async ({ request }: ActionArgs) => {
       }
     }
 
-    return json(
+    return Response.json(
       { storedProperties },
       {
         headers: {

@@ -1,8 +1,8 @@
-import { LoaderArgs, LoaderFunction } from "@remix-run/node";
+import { LoaderFunctionArgs, LoaderFunction } from "react-router";
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
 
-export const loader: LoaderFunction = async ({ request }: LoaderArgs) => {
+export const loader: LoaderFunction = async ({ request }: LoaderFunctionArgs) => {
   const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");

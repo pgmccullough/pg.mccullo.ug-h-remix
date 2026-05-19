@@ -1,7 +1,10 @@
 import { LinkPreview, UploadPreview } from ".";
 import { SetStateAction, useCallback } from "react";
 import type { YouTubeVideo } from "~/common/types";
-// import { readAndCompressImage } from 'browser-image-resizer';
+// browser-image-resizer is browser-only (references `self` at module load),
+// so it can't be imported statically — that would pull it into the SSR
+// bundle and crash. Loaded via dynamic import() inside the resize callback,
+// which only runs after the user picks a file in the browser.
 
 export const FileUpload: React.FC<{
   fileInputRef: any,
@@ -13,8 +16,11 @@ export const FileUpload: React.FC<{
 }> = ({ fileInputRef, imagesUploading, pendingUploads, setPendingUploads, youTubePreviews, setYouTubePreviews }) => {
 
   const imgResize = useCallback(async(file:File, config: {maxWidth: number}) => {
-    const resize = require('browser-image-resizer');
-    return await resize.readAndCompressImage(file,config);
+    const bir = (await import("browser-image-resizer")) as unknown as {
+      readAndCompressImage: (file: File, config: any) => Promise<Blob>;
+    } & { default?: { readAndCompressImage: (file: File, config: any) => Promise<Blob> } };
+    const readAndCompressImage = bir.readAndCompressImage ?? bir.default!.readAndCompressImage;
+    return await readAndCompressImage(file, config);
   },[])
 
   const removeFile = (name: string) => {

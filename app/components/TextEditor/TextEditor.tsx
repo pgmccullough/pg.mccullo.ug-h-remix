@@ -69,19 +69,27 @@ export const TextEditor: React.FC<{
     setLinkBox({ ...linkBox, editor, linkNode: event.target, editRemove: true, posX: layerX, posY: layerY, url: href, text: innerText });
   }
 
+  // Note: this used to read `node.__children` directly. Lexical no longer
+  // exposes that internal field — we use the public `getChildren()` API and
+  // operate on the resulting array instead.
   const traverseNodes = (node: LexicalNode, updatedLinkNode: LexicalNode) => {
-    if(!node.__children) return;
-    if($isLinkNode(node)&&
-      node.__children.includes(linkBox.linkNode[Object.keys(linkBox.linkNode)[0]])
-    ) {
-      node.replace(updatedLinkNode);
+    // Element-node check: only ElementNode subclasses have children.
+    const maybeWithChildren = node as LexicalNode & {
+      getChildren?: () => LexicalNode[];
+    };
+    if (typeof maybeWithChildren.getChildren !== "function") return;
+
+    const children = maybeWithChildren.getChildren();
+    if ($isLinkNode(node)) {
+      const linkRef = linkBox.linkNode?.[Object.keys(linkBox.linkNode)[0]];
+      if (linkRef && children.includes(linkRef as LexicalNode)) {
+        node.replace(updatedLinkNode);
+        return;
+      }
     }
-    const children = node.getChildren();
-    if(children.length) {
-      children.forEach((child: LexicalNode) => {
-        traverseNodes(child, updatedLinkNode);
-      })
-    }
+    children.forEach((child: LexicalNode) => {
+      traverseNodes(child, updatedLinkNode);
+    });
   }
 
   const removeLink = () => {
@@ -236,7 +244,9 @@ const InitialText = ({htmlString}:any) => {
   const [ editor ] = useLexicalComposerContext();
   useEffect(() => {
     editor.update(() => {
-      if($getRoot().__children.length <= 1) {
+      // Was `$getRoot().__children.length <= 1`; modern Lexical hides the
+      // private __children field and exposes `getChildrenSize()` instead.
+      if($getRoot().getChildrenSize() <= 1) {
         const parser = new DOMParser();
         const dom = parser.parseFromString(htmlString||"", 'text/html');
         const nodes = $generateNodesFromDOM(editor, dom);
@@ -245,6 +255,7 @@ const InitialText = ({htmlString}:any) => {
         $getRoot().append(paragraphNode);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[])
 
   return (<></>)

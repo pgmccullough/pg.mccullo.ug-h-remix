@@ -1,4 +1,4 @@
-import { useFetcher, useLoaderData } from '@remix-run/react';
+import { useFetcher, useLoaderData } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useSwipe } from '~/utils/hooks/useSwipe';
 import { CalendarModal } from './CalendarModal';

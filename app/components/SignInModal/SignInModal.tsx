@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useFetcher, Link } from "@remix-run/react";
+import { useFetcher, Link } from "react-router";
 import { GitHubLogo } from "~/assets/svgs/GitHubLogo";
 import { GoogleLogo } from "~/assets/svgs/GoogleLogo";
 

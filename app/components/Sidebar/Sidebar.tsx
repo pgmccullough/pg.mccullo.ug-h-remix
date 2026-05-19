@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { Link } from 'react-router';
+import { useFetcher, useLoaderData } from "react-router";
 import { useEffect, useState } from 'react';
 import type { User, SiteData } from '../../common/types';
 import { Calendar, Email, Notes, RentalProperties, SiteActivity, TaskTracker, Webcam, WishList } from '~/adminApps';

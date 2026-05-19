@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { useFetcher } from '@remix-run/react';
+import { useFetcher } from 'react-router';
 import type { DateForm, DayEvent, niceDay } from '../../common/types';
 
 export const CalendarModal: React.FC<{

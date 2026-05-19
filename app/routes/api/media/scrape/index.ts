@@ -1,6 +1,6 @@
-import type { ActionArgs, ActionFunction } from '@remix-run/node';
+import type { ActionFunctionArgs, ActionFunction } from 'react-router';
 
-export const action: ActionFunction = async ({ request }: ActionArgs) => {
+export const action: ActionFunction = async ({ request }: ActionFunctionArgs) => {
   const scrapeURL = (await request.formData()).get("scrapeURL")?.toString();
 
   const fetchData = await fetch(

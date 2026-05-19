@@ -1,54 +1,52 @@
-import type { LinksFunction, LoaderArgs } from "@remix-run/node";
-import { LoaderFunction, MetaFunction } from "@remix-run/node";
 import {
   Links,
-  LiveReload,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
-  useCatch,
   useLoaderData,
-  useLocation
-} from "@remix-run/react";
+  useLocation,
+} from "react-router";
+import type {
+  LinksFunction,
+  LoaderFunctionArgs,
+  MetaFunction,
+} from "react-router";
 import { useEffect } from "react";
-import * as gtag from "~/utils/gtags.client";
 
-import styles from "~/styles/App.css";
+import * as gtag from "~/utils/gtags.client";
+import styles from "~/styles/App.css?url";
 
 export const links: LinksFunction = () => {
   return process.env.NODE_ENV === "development"
-    ?[
-      { rel: "stylesheet", href: styles },
-      { rel: 'icon', href: '/pgm-icon-dev.svg', type: 'image/svg+xml' },
-    ]
-    :[
-      { rel: "stylesheet", href: styles },
-      { rel: 'icon', href: '/pgm-icon.svg', type: 'image/svg+xml' },
-      { rel: 'icon', href: '/favicon.ico', sizes: '32x32' },
-      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
-      { rel: 'manifest', href: '/manifest.webmanifest' }
-    ]
-}
+    ? [
+        { rel: "stylesheet", href: styles },
+        { rel: "icon", href: "/pgm-icon-dev.svg", type: "image/svg+xml" },
+      ]
+    : [
+        { rel: "stylesheet", href: styles },
+        { rel: "icon", href: "/pgm-icon.svg", type: "image/svg+xml" },
+        { rel: "icon", href: "/favicon.ico", sizes: "32x32" },
+        { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+        { rel: "manifest", href: "/manifest.webmanifest" },
+      ];
+};
 
-export const meta: MetaFunction = () => ({
-  charset: "utf-8",
-  title: "Patrick Glendon McCullough",
-  viewport: "width=device-width,initial-scale=1",
-});
+// React Router v7 meta returns an array of descriptors instead of an object.
+export const meta: MetaFunction = () => [
+  { charSet: "utf-8" },
+  { title: "Patrick Glendon McCullough" },
+  { name: "viewport", content: "width=device-width,initial-scale=1" },
+];
 
-export const loader: LoaderFunction = async ({ request }: LoaderArgs) => {
-  return {gaTrackingId: "G-48Y17ZTWTK"};
-}
-
-export function CatchBoundary() {
-
-}
+export const loader = async (_args: LoaderFunctionArgs) => {
+  return { gaTrackingId: "G-48Y17ZTWTK" };
+};
 
 export default function App() {
   const location = useLocation();
   const { gaTrackingId } = useLoaderData<typeof loader>();
-  
+
   useEffect(() => {
     if (gaTrackingId?.length) {
       gtag.pageview(location.pathname, gaTrackingId);
@@ -87,7 +85,6 @@ export default function App() {
         <Outlet />
         <ScrollRestoration />
         <Scripts />
-        <LiveReload />
       </body>
     </html>
   );

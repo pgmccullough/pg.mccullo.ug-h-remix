@@ -1,7 +1,24 @@
 node_modules
 
-/.cache
+# React Router build output
 /build
-/public/build
+/.cache
+
+# RR7-generated typegen output
+.react-router
+
+# Vite cache
+.vite
+
+# Vercel
+.vercel
+
+# Env
 .env
+.env.local
+
+# OS
+.DS_Store
+
+# CSS sourcemaps from the sass watcher
 *.css.map

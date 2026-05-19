@@ -1,4 +1,4 @@
-import type { ActionArgs, LoaderArgs, LoaderFunction } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs, LoaderFunction } from "react-router";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 
 const getFromId = async(userId: string) => {
@@ -14,7 +14,7 @@ const getFromId = async(userId: string) => {
   }
 }
 
-export const loader: LoaderFunction = async({request}: LoaderArgs) => {
+export const loader: LoaderFunction = async({request}: LoaderFunctionArgs) => {
   const url = new URL(request.url)
   const userId = url.searchParams.get('userId');
   const fullUser: any = await getFromId(userId||"");
@@ -22,7 +22,7 @@ export const loader: LoaderFunction = async({request}: LoaderArgs) => {
   return {cover_image, profile_image, site_description, site_name, watchword};
 }
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const userId = (await request.formData()).get("userId")?.toString();
   return await getFromId(userId||"");
 }

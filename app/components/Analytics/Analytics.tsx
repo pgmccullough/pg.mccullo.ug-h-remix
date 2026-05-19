@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useFetcher, useLoaderData, useMatches } from '@remix-run/react';
+import { useFetcher, useLoaderData, useMatches } from 'react-router';
 import { IPData, User, Visitor } from "~/common/types";
 
 export const Analytics: React.FC<{IPSTACK_APIKEY: {IPSTACK_APIKEY: string}}> = ({IPSTACK_APIKEY}) => {

@@ -1,5 +1,5 @@
 import { SetStateAction, useEffect, useState } from "react"
-import { useFetcher } from "@remix-run/react"
+import { useFetcher } from "react-router"
 
 export const SearchBar: React.FC<{
   alterPostArray: SetStateAction<any>,

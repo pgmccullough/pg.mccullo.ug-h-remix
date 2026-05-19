@@ -1,55 +1,56 @@
-import type { ActionArgs, UploadHandler } from "@remix-run/node";
-import {
-  json,
-  unstable_composeUploadHandlers as composeUploadHandlers,
-  unstable_createMemoryUploadHandler as createMemoryUploadHandler,
-  unstable_parseMultipartFormData as parseMultipartFormData,
-} from "@remix-run/node";
-import AWS from "aws-sdk";
+import type { ActionFunctionArgs } from "react-router";
+import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
 
-import { s3UploadHandler } from "~/utils/s3.server";
+import { uploadFileToS3 } from "~/utils/s3.server";
 
-export const action = async ({ request }: ActionArgs) => {
-  const uploadHandler: UploadHandler = composeUploadHandlers(
-    s3UploadHandler,
-    createMemoryUploadHandler()
-  );
-  const formData = await parseMultipartFormData(request, uploadHandler);
-  const imgSrc = formData.get("img");
+const { S3_BUCKET, S3_REGION, S3_KEY, S3_SECRET } = process.env;
 
+const s3Client = new S3Client({
+  region: S3_REGION,
+  credentials: {
+    accessKeyId: S3_KEY!,
+    secretAccessKey: S3_SECRET!,
+  },
+});
 
-  const {
-    S3_BUCKET,
-    S3_KEY,
-    S3_SECRET,
-  } = process.env;
+export const action = async ({ request }: ActionFunctionArgs) => {
+  // RR7 removed the Remix v1 unstable_* upload-handler API. Use the
+  // standard Web FormData API; the request body is parsed for us and the
+  // file comes back as a File instance.
+  const formData = await request.formData();
+  const file = formData.get("img");
 
-  const s3 = new AWS.S3({
-    accessKeyId: S3_KEY,
-    secretAccessKey: S3_SECRET
-  });
-
-  const s3params = {
-    Bucket: S3_BUCKET!,
-    Key: imgSrc?.toString().replace("https://s3.amazonaws.com/pg.mccullo.ug/","")!
-  }
-
-  let baseOutput = await s3.getObject(s3params).promise()
-
-  if (!imgSrc) {
-    return json({
+  if (!(file instanceof File)) {
+    return Response.json({
       errorMsg: "Something went wrong while uploading",
     });
   }
-  if(imgSrc.toString().includes('/images/emailAttachments/')) {
-    return json({
+
+  const { Location } = await uploadFileToS3(file);
+
+  // For email attachments, look up the file's content length so the composer
+  // can match content back to attachment metadata.
+  if (Location.includes("/images/emailAttachments/")) {
+    const key = Location.replace(
+      `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/`,
+      ""
+    );
+    let contentLength: number | undefined;
+    try {
+      const head = await s3Client.send(
+        new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: key })
+      );
+      contentLength = head.ContentLength;
+    } catch (_err) {
+      contentLength = undefined;
+    }
+    return Response.json({
       imgSrc: {
-        file: imgSrc,
-        ContentLength: baseOutput.ContentLength
+        file: Location,
+        ContentLength: contentLength,
       },
-    });  
+    });
   }
-  return json({
-    imgSrc,
-  });
+
+  return Response.json({ imgSrc: Location });
 };
