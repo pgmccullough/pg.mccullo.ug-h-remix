@@ -5,7 +5,8 @@ import { IndEmail } from './IndEmail';
 import { Composer } from './Composer';
 import { EmailInterface } from '~/common/types';
 import { AnchorHTMLAttributes, useEffect, useRef, useState } from 'react';
-import Pusher from "pusher-js";
+// pusher-js is browser-only — loaded via dynamic import() inside useEffect
+// to keep it out of the SSR bundle.
 
 export const Email: React.FC<{}> = () => {
 
@@ -64,49 +65,61 @@ export const Email: React.FC<{}> = () => {
   };
 
   useEffect(() => {
-    const pusher = new Pusher('1463cc5404c5aa8377ba', {
-      cluster: 'mt1'
-    });
+    let cleanup: (() => void) | undefined;
+    let cancelled = false;
 
-    const newChannel = pusher.subscribe("client-receive-email");
-    newChannel.bind("refresh", function (email:{email: {acknowledged: boolean, insertedId: string }}) {
-      fetcher.submit(
-        { singleEmailId: email.email.insertedId },
-        { method: "post", action: `/api/email/fetchOneById?index` }
-      );
-    });
+    (async () => {
+      const { default: Pusher } = await import("pusher-js");
+      if (cancelled) return;
 
-    const deleteChannel = pusher.subscribe("client-delete-email");
-    deleteChannel.bind("refresh", function (deletedIds:{email: any[]}) {
-      let emArrClone = [...emailArray];
-      emArrClone = emArrClone.filter((email:any) => !deletedIds.email.includes(email._id));
-      alterEmailArray(emArrClone);
-    });
+      const pusher = new Pusher('1463cc5404c5aa8377ba', { cluster: 'mt1' });
 
-    const readChannel = pusher.subscribe("client-read-email");
-    readChannel.bind("refresh", function (readIds:{email: any[]}) {
-      let emArrClone = [...emailArray];
-      emArrClone.forEach((email:any) => readIds.email.includes(email._id)?email.unread=0:"");
-      alterEmailArray(emArrClone);
-    });
+      const newChannel = pusher.subscribe("client-receive-email");
+      newChannel.bind("refresh", function (email:{email: {acknowledged: boolean, insertedId: string }}) {
+        fetcher.submit(
+          { singleEmailId: email.email.insertedId },
+          { method: "post", action: `/api/email/fetchOneById?index` }
+        );
+      });
 
-    const sendChannel = pusher.subscribe("client-send-email");
-    sendChannel.bind("refresh", function (sentEmail:{email: {acknowledged: boolean, insertedId: string }}) {
-      sentFetcher.submit(
-        { singleEmailId: sentEmail.email.insertedId },
-        { method: "post", action: `/api/email/fetchOneById?index` }
-      );
-    });
+      const deleteChannel = pusher.subscribe("client-delete-email");
+      deleteChannel.bind("refresh", function (deletedIds:{email: any[]}) {
+        let emArrClone = [...emailArray];
+        emArrClone = emArrClone.filter((email:any) => !deletedIds.email.includes(email._id));
+        alterEmailArray(emArrClone);
+      });
+
+      const readChannel = pusher.subscribe("client-read-email");
+      readChannel.bind("refresh", function (readIds:{email: any[]}) {
+        let emArrClone = [...emailArray];
+        emArrClone.forEach((email:any) => readIds.email.includes(email._id)?email.unread=0:"");
+        alterEmailArray(emArrClone);
+      });
+
+      const sendChannel = pusher.subscribe("client-send-email");
+      sendChannel.bind("refresh", function (sentEmail:{email: {acknowledged: boolean, insertedId: string }}) {
+        sentFetcher.submit(
+          { singleEmailId: sentEmail.email.insertedId },
+          { method: "post", action: `/api/email/fetchOneById?index` }
+        );
+      });
+
+      cleanup = () => {
+        newChannel.unbind_all();
+        newChannel.unsubscribe();
+        deleteChannel.unbind_all();
+        deleteChannel.unsubscribe();
+        readChannel.unbind_all();
+        readChannel.unsubscribe();
+        sendChannel.unbind_all();
+        sendChannel.unsubscribe();
+        pusher.disconnect();
+      };
+    })();
 
     return () => {
-      newChannel.unbind_all();
-      newChannel.unsubscribe();
-      deleteChannel.unbind_all();
-      deleteChannel.unsubscribe();
-      readChannel.unbind_all();
-      readChannel.unsubscribe();
-      sendChannel.unbind_all();
-      sendChannel.unsubscribe();
+      cancelled = true;
+      cleanup?.();
     };
   }, [ alterEmailArray, emailArray ]);
 

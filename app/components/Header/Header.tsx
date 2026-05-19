@@ -10,7 +10,9 @@ import { v4 as uuidv4 } from 'uuid';
 // resolves over ESM. Use the default export and call exifr.gps() instead.
 import exifr from 'exifr';
 const getGPS = (input: any) => exifr.gps(input);
-import Pusher from "pusher-js";
+// pusher-js is a browser-only library — it references `self` at module load
+// time and crashes if imported into the SSR bundle. Loaded dynamically below
+// from inside useEffect (which only runs in the browser).
 
 export const Header: React.FC<{
   manualSiteData?: SiteData,
@@ -157,36 +159,50 @@ export const Header: React.FC<{
 
 
   useEffect(() => {
-    const pusher = new Pusher('1463cc5404c5aa8377ba', {
-      cluster: 'mt1'
-    });
-
-    const watchwordChannel = pusher.subscribe("client-change-watchword");
-    watchwordChannel.bind("refresh", (watchword: { watchword: string }) => {
-      if(watchWordRef.current) watchWordRef.current.innerText = watchword.watchword;
-    });
-
-    const storyImgChannel = pusher.subscribe("client-change-storyImg");
-    storyImgChannel.bind("refresh", (storyImgData: { storyImg: { gps: string|null, timestamp: number, image: string } }) =>  {
-      storyImage.current!.src = storyImgData.storyImg?.image;
-      storyTimestamp.current!.innerText = stampToTime(storyImgData.storyImg.timestamp);
-    });
-
-    const profileImgChannel = pusher.subscribe("client-change-profileImg");
-    profileImgChannel.bind("refresh", (profImgData: { profileImg: { gps: string|null, timestamp: number, image: string } }) =>  {
-      profileImage.current!.style.backgroundImage = `url(${profImgData.profileImg?.image})`;
-      profTimestamp.current!.innerText = stampToTime(profImgData.profileImg.timestamp);
-    });
-
     setCanShowDate(true);
 
+    let cleanup: (() => void) | undefined;
+    let cancelled = false;
+
+    // Dynamic import keeps pusher-js out of the SSR bundle (it references
+    // browser globals at module load time).
+    (async () => {
+      const { default: Pusher } = await import("pusher-js");
+      if (cancelled) return;
+
+      const pusher = new Pusher("1463cc5404c5aa8377ba", { cluster: "mt1" });
+
+      const watchwordChannel = pusher.subscribe("client-change-watchword");
+      watchwordChannel.bind("refresh", (watchword: { watchword: string }) => {
+        if (watchWordRef.current) watchWordRef.current.innerText = watchword.watchword;
+      });
+
+      const storyImgChannel = pusher.subscribe("client-change-storyImg");
+      storyImgChannel.bind("refresh", (storyImgData: { storyImg: { gps: string | null; timestamp: number; image: string } }) => {
+        storyImage.current!.src = storyImgData.storyImg?.image;
+        storyTimestamp.current!.innerText = stampToTime(storyImgData.storyImg.timestamp);
+      });
+
+      const profileImgChannel = pusher.subscribe("client-change-profileImg");
+      profileImgChannel.bind("refresh", (profImgData: { profileImg: { gps: string | null; timestamp: number; image: string } }) => {
+        profileImage.current!.style.backgroundImage = `url(${profImgData.profileImg?.image})`;
+        profTimestamp.current!.innerText = stampToTime(profImgData.profileImg.timestamp);
+      });
+
+      cleanup = () => {
+        watchwordChannel.unbind_all();
+        watchwordChannel.unsubscribe();
+        storyImgChannel.unbind_all();
+        storyImgChannel.unsubscribe();
+        profileImgChannel.unbind_all();
+        profileImgChannel.unsubscribe();
+        pusher.disconnect();
+      };
+    })();
+
     return () => {
-      watchwordChannel.unbind_all();
-      watchwordChannel.unsubscribe();
-      storyImgChannel.unbind_all();
-      storyImgChannel.unsubscribe();
-      profileImgChannel.unbind_all();
-      profileImgChannel.unsubscribe();
+      cancelled = true;
+      cleanup?.();
     };
   }, []);
 

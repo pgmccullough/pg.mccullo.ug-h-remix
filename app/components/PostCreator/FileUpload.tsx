@@ -1,12 +1,10 @@
 import { LinkPreview, UploadPreview } from ".";
 import { SetStateAction, useCallback } from "react";
-// browser-image-resizer is CJS-only — `import { readAndCompressImage }` only
-// resolves once Vite bundles the module (see noExternal in vite.config.ts).
-// Importing the default and reading the property off it is robust either way.
-import bir from "browser-image-resizer";
 import type { YouTubeVideo } from "~/common/types";
-const { readAndCompressImage } =
-  bir as unknown as { readAndCompressImage: (file: File, config: any) => Promise<Blob> };
+// browser-image-resizer is browser-only (references `self` at module load),
+// so it can't be imported statically — that would pull it into the SSR
+// bundle and crash. Loaded via dynamic import() inside the resize callback,
+// which only runs after the user picks a file in the browser.
 
 export const FileUpload: React.FC<{
   fileInputRef: any,
@@ -18,6 +16,10 @@ export const FileUpload: React.FC<{
 }> = ({ fileInputRef, imagesUploading, pendingUploads, setPendingUploads, youTubePreviews, setYouTubePreviews }) => {
 
   const imgResize = useCallback(async(file:File, config: {maxWidth: number}) => {
+    const bir = (await import("browser-image-resizer")) as unknown as {
+      readAndCompressImage: (file: File, config: any) => Promise<Blob>;
+    } & { default?: { readAndCompressImage: (file: File, config: any) => Promise<Blob> } };
+    const readAndCompressImage = bir.readAndCompressImage ?? bir.default!.readAndCompressImage;
     return await readAndCompressImage(file, config);
   },[])
 

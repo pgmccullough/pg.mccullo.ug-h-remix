@@ -8,18 +8,19 @@ export default defineConfig({
     port: 3000,
   },
   ssr: {
-    // These packages ship CommonJS-only (or have an `exports` field that
-    // doesn't expose the named exports we use). When Vite leaves them as
-    // bare external imports in the SSR bundle, Node's ESM loader trips
-    // on the named-import syntax. Telling Vite to bundle them ourselves
-    // lets Vite handle the CJS<->ESM interop properly.
+    // CJS-only server-side packages whose named exports don't resolve over
+    // Node's strict ESM loader unless Vite bundles them itself.
+    //
+    // NOTE: browser-only libraries (pusher-js, browser-image-resizer) must
+    // NOT be listed here — bundling them into the SSR output would cause
+    // them to reference browser globals like `self` at server load time
+    // and crash with "self is not defined". Those are loaded via dynamic
+    // import() inside client-only code paths (useEffect / event handlers).
     noExternal: [
-      "browser-image-resizer",
       "exifr",
-      "pusher",
-      "pusher-js",
       "bcryptjs",
       "postmark",
+      "pusher",
     ],
   },
 });
