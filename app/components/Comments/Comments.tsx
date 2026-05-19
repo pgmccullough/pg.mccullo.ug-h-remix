@@ -99,16 +99,15 @@ export const Comments: React.FC<
         :<>
           <style>{`
             .comment-signin {
-              /* Pull left to align with the React button. The wrapping
-                 .postcard__content__meta has padding, and the Comments
-                 stream renders flush with that padding, so a small
-                 negative margin lines this up with the React button. */
-              margin: 12px 0 4px -4px;
+              margin: 12px 0 4px 0;
             }
+            /* NOTE: deliberately not resetting margin on the button —
+               we want it to keep the global `margin: 0 8px` from
+               _global.scss so it lines up horizontally with the React
+               button (which inherits the same margin). */
             .comment-signin__btn,
             .comment-signin__btn:visited {
               height: auto;
-              margin: 0;
               display: inline-block;
               padding: 6px 14px;
               background: #4A6CBA;
