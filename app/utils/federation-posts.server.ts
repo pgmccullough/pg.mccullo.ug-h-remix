@@ -187,6 +187,22 @@ export function postToNote(post: PostDoc, ctx: Context<void>): Note {
     }
   }
 
+  // Mark the Note as edited when lastEdited differs from created — without
+  // this, Mastodon treats an Update activity as a redundant resend and
+  // silently discards it (their server: "I already have this version").
+  let updated: Temporal.Instant | undefined;
+  if (
+    typeof post.lastEdited === "number" &&
+    Number.isFinite(post.lastEdited) &&
+    post.lastEdited !== post.created
+  ) {
+    try {
+      updated = Temporal.Instant.fromEpochMilliseconds(post.lastEdited * 1000);
+    } catch {
+      updated = undefined;
+    }
+  }
+
   const attachments = collectAttachments(post);
 
   // Note in Fedify accepts both `attribution` (the actor object or URL)
@@ -200,6 +216,7 @@ export function postToNote(post: PostDoc, ctx: Context<void>): Note {
     to: PUBLIC_COLLECTION,
     cc: followersUri,
     published,
+    updated,
     // post.content is HTML written via Lexical. We trust ourselves since
     // we're the only poster. Mastodon renders this as HTML.
     content: post.content ?? "",
