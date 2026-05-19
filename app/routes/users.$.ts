@@ -28,12 +28,19 @@ function wantsActivityPub(request: Request): boolean {
 
 export const loader = ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
-  // Only redirect for the bare actor URL — sub-paths like /inbox or
-  // /outbox should always be handed to Fedify.
+
+  // Bare actor URL — browser visitors get the human site instead of JSON-LD.
   const isBareActor = /^\/users\/[^/]+\/?$/.test(url.pathname);
   if (isBareActor && !wantsActivityPub(request)) {
     return redirect("/h");
   }
+
+  // Post URL — browser visitors get the post's permalink page.
+  const postMatch = url.pathname.match(/^\/users\/[^/]+\/posts\/([^/]+)\/?$/);
+  if (postMatch && !wantsActivityPub(request)) {
+    return redirect(`/h/post/${postMatch[1]}`);
+  }
+
   return federation.fetch(request, { contextData: undefined });
 };
 

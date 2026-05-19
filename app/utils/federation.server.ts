@@ -23,6 +23,7 @@ import {
   Endpoints,
   CryptographicKey,
   Multikey,
+  Note,
   Follow,
   Undo,
   Accept,
@@ -38,6 +39,13 @@ import {
   countFollowers,
   listFollowers,
 } from "~/utils/federation-followers.server";
+import {
+  countPublicPosts,
+  findPublicPostById,
+  listPublicPosts,
+  postToNote,
+  postToCreate,
+} from "~/utils/federation-posts.server";
 
 // Hardcoded for now — single-user instance. Phase E (managed hosting) will
 // look this up per request from the host header / Mongo.
@@ -326,13 +334,46 @@ federation
   });
 
 // ---------------------------------------------------------------------------
-// Outbox stub (Phase A3 will replace with real post listing)
+// Note object dispatcher — resolves /users/{identifier}/posts/{id}
 // ---------------------------------------------------------------------------
 
-federation.setOutboxDispatcher(
-  `/users/{identifier}/outbox`,
-  async (_ctx, _identifier, _cursor) => ({ items: [] })
+federation.setObjectDispatcher(
+  Note,
+  `/users/{identifier}/posts/{id}`,
+  async (ctx, { identifier, id }) => {
+    if (identifier !== PRIMARY_USERNAME) return null;
+    const post = await findPublicPostById(id);
+    if (!post) return null;
+    return postToNote(post, ctx);
+  }
 );
+
+// ---------------------------------------------------------------------------
+// Outbox dispatcher — A3: live listing of public posts as Create activities
+// ---------------------------------------------------------------------------
+
+federation
+  .setOutboxDispatcher(
+    `/users/{identifier}/outbox`,
+    async (ctx, identifier, cursor) => {
+      if (identifier !== PRIMARY_USERNAME) return null;
+      const beforeCreated = cursor ? Number(cursor) : undefined;
+      const { items, nextCursor } = await listPublicPosts({
+        limit: 20,
+        beforeCreated: Number.isFinite(beforeCreated)
+          ? beforeCreated
+          : undefined,
+      });
+      return {
+        items: items.map((post) => postToCreate(post, ctx)),
+        nextCursor: nextCursor != null ? String(nextCursor) : null,
+      };
+    }
+  )
+  .setCounter(async (_ctx, identifier) => {
+    if (identifier !== PRIMARY_USERNAME) return null;
+    return await countPublicPosts();
+  });
 
 // ---------------------------------------------------------------------------
 // Followers dispatcher — A2: live from Mongo
