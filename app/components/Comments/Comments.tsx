@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useFetcher, useLoaderData } from "react-router";
+import { Link, useFetcher, useLoaderData } from "react-router";
 import { TextEditor } from "../TextEditor/TextEditor";
 import { Comment } from "./Comment";
  
@@ -17,22 +17,20 @@ export const Comments: React.FC<
 
   const [ inStateComments, setInStateComments ] = useState<CommentI[]>(comments);
   const [ commentBody, setCommentBody ] = useState<string>("");
-  const [ guestUUID, setGuestUUID ] = useState<string>("");
   const [ clearContent, setClearContent ] = useState<boolean>(false);
-  
+
   const { user } = useLoaderData<{
     user: {id: string, user_name: string, role: string, first_name: string, last_name: string, profile_image: string},
   }>();
 
-  const postComment = useFetcher();
+  const postComment = useFetcher<{ newCommentObj?: CommentI[]; error?: string }>();
 
   useEffect(() => {
     if(postComment.data?.newCommentObj) {
       setInStateComments(postComment.data.newCommentObj);
-      delete postComment.data.newCommentObj;
+      // Don't mutate fetcher.data — it's frozen in v7.
       setClearContent(true);
     }
-    setGuestUUID(user?.id||window.localStorage.guestUUID||"anon");
   },[ postComment ]);
 
   useEffect(() => {
@@ -69,9 +67,9 @@ export const Comments: React.FC<
           
         )
       }
-      {user?.role === "administrator"
+      {user?.id
         ?<>
-          <TextEditor 
+          <TextEditor
             contentStateSetter={setCommentBody}
             clearContent={clearContent}
             placeholderText={"Write a comment..."}
@@ -81,25 +79,24 @@ export const Comments: React.FC<
             method="post"
             action={`/api/comment/new?index`}
           >
-            <input 
+            <input
               name="commentBody"
               type="hidden"
               value={commentBody}
             />
-            <input 
+            <input
               name="postId"
               type="hidden"
               value={postId}
             />
-            <input 
-              name="userId"
-              type="hidden"
-              value={guestUUID}
-            />
+            {/* userId is no longer trusted from the client — the server
+                pulls it from the session cookie. */}
             <button>SUBMIT</button>
           </postComment.Form>
         </>
-        :""}
+        :<div className="comment__signin-prompt">
+          <Link to="/h/login">Sign in</Link> to leave a comment.
+        </div>}
     </>
   )
 };

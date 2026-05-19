@@ -91,6 +91,7 @@ export default [
 
     route("user/fetch", "routes/api/user/fetch/index.tsx"),
     route("user/login", "routes/api/user/login/index.tsx"),
+    route("user/logout", "routes/api/user/logout/index.tsx"),
     route("user/register", "routes/api/user/register/index.tsx"),
   ]),
 ] satisfies RouteConfig;

@@ -96,6 +96,28 @@ export const Sidebar: React.FC<{
           </div>
         </div>
       </article>
+
+      {/* Session controls — visible to everyone. Inline styles to avoid
+          requiring a SCSS recompile. */}
+      <article
+        className="postcard--left"
+        style={{
+          textAlign: "center",
+          fontSize: "0.9rem",
+          padding: "0.75rem 1rem",
+        }}
+      >
+        {user?.id
+          ? <>
+              <span style={{ marginRight: "0.5rem" }}>
+                Signed in as <strong>{user.user_name}</strong>
+              </span>
+              <Link to="/api/user/logout">Sign out</Link>
+            </>
+          : <Link to="/h/login">Sign in / Sign up</Link>
+        }
+      </article>
+
       {!manualSiteData&&user?.role==="administrator"
         ?<>
           {/* <Email /> */}
