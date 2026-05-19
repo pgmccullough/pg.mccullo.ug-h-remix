@@ -11,7 +11,7 @@
 }
 
 .pagesbg {
-  background-image: url('~/assets/images/twopages.png');
+  background-image: url('/assets/images/twopages.png');
   background-size: 108.46vmin 90vmin;
   width: 108.46vmin;
   height: 90vmin;
@@ -45,7 +45,7 @@
 
 .covericon {
   margin-top: 7vh;
-  background-image: url('~/assets/images/covericon.png');
+  background-image: url('/assets/images/covericon.png');
   background-size: contain;
   background-repeat: no-repeat;
   height: 16vh;
