@@ -90,18 +90,6 @@ export default function Friends() {
           color: #506982;
           margin: 0 0 0.75rem 0;
         }
-        .friends__follow-row {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 1.25rem;
-        }
-        .friends__follow-row input {
-          flex: 1;
-          font: 14px 'PGM Sans', sans-serif;
-          padding: 8px 12px;
-          border: 1px solid #979997;
-          border-radius: 4px;
-        }
         .friends__btn,
         .friends__btn:visited {
           height: auto;
@@ -200,25 +188,31 @@ export default function Friends() {
       `}</style>
 
       <section className="friends">
-        <h2>Follow someone</h2>
         <followForm.Form
           method="post"
           action="/api/federation/follow"
-          className="friends__follow-row"
-          onSubmit={(e) => {
+          className="search"
+          onSubmit={() => {
             // Clear after submit if it looks successful — best effort.
             setTimeout(() => setHandleInput(""), 100);
           }}
         >
           <input
+            className="search__input"
             type="text"
             name="handle"
             placeholder="@user@server.tld  or  https://server.tld/users/user"
             value={handleInput}
             onChange={(e) => setHandleInput(e.target.value)}
           />
-          <button type="submit" className="friends__btn">
-            Follow
+          <button
+            type="submit"
+            className={`search__button${
+              handleInput.length === 0 ? " search__button--disabled" : ""
+            }`}
+            disabled={handleInput.length === 0}
+          >
+            FOLLOW
           </button>
         </followForm.Form>
         {followForm.data?.error && (
