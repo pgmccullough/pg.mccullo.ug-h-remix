@@ -5,6 +5,7 @@ import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
 import { SearchBar } from "~/components/SearchBar/SearchBar";
 import { clientPromise } from "~/lib/mongodb";
+import { serializeDocs } from "~/utils/serialize.server";
 import { v4 as uuidv4 } from "uuid";
 import type { Post } from "~/common/types";
 
@@ -60,7 +61,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       .toArray();
   }
 
-  return { onThisDay, posts, siteData: { ...siteData[0] }, user };
+  return {
+    onThisDay: serializeDocs(onThisDay ?? []),
+    posts: serializeDocs(posts ?? []),
+    siteData: { ...siteData[0] },
+    user,
+  };
 };
 
 export default function Index() {

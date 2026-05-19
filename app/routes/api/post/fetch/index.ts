@@ -2,6 +2,7 @@ import type { ActionFunctionArgs, LoaderFunction, LoaderFunctionArgs } from "rea
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
+import { serializeDocs } from "~/utils/serialize.server";
 
 export const loader: LoaderFunction = async({request}: LoaderFunctionArgs) => {
   const client = await clientPromise;
@@ -13,8 +14,8 @@ export const loader: LoaderFunction = async({request}: LoaderFunctionArgs) => {
     additionalPosts = await db.collection("myPosts").find({ privacy : "Public" }).sort({created:-1}).skip(Number(loadOffset)).limit(25).toArray();
   } catch (err) {
     additionalPosts = null;
-  }    
-  return { additionalPosts };
+  }
+  return { additionalPosts: additionalPosts ? serializeDocs(additionalPosts) : null };
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -34,7 +35,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       additionalPosts = await db.collection("myPosts").find({ privacy : "Public" }).sort({created:-1}).skip(Number(loadOffset)).limit(25).toArray();
     } catch (err) {
       additionalPosts = null;
-    }    
+    }
   }
-  return { additionalPosts };
+  return { additionalPosts: additionalPosts ? serializeDocs(additionalPosts) : null };
 }

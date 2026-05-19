@@ -12,6 +12,7 @@ import { Sidebar } from "~/components/Sidebar/Sidebar";
 import { PostCard } from "~/components/PostCard/PostCard";
 // import { Analytics } from "~/components/Analytics/Analytics";
 import { clientPromise } from "~/lib/mongodb";
+import { serializeDocs } from "~/utils/serialize.server";
 import * as postmark from "postmark";
 import type { Post } from "~/common/types";
 
@@ -111,7 +112,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     sentEmails,
     serverTime,
     siteData: { ...siteData[0] },
-    storyPost,
+    storyPost: serializeDocs(storyPost),
     user,
     visitors,
     wishList,

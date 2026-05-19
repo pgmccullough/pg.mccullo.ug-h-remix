@@ -4,6 +4,7 @@ import { useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
+import { serializeDoc } from "~/utils/serialize.server";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { postID = "" } = params;
@@ -23,7 +24,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       statusText: "Sorry, this page either doesn't exist (check the spelling in the URL?) or maybe it does and you're just not allowed to see it...",
     });
   }
-  return { post, user };
+  return { post: serializeDoc(post), user };
 }
 
 export default function SinglePost() {
