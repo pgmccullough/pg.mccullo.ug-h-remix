@@ -97,24 +97,65 @@ export const Sidebar: React.FC<{
         </div>
       </article>
 
-      {/* Session controls — visible to everyone. Inline styles to avoid
-          requiring a SCSS recompile. */}
-      <article
-        className="postcard--left"
-        style={{
-          textAlign: "center",
-          fontSize: "0.9rem",
-          padding: "0.75rem 1rem",
-        }}
-      >
+      {/* Session controls — visible to everyone. Styled via a scoped
+          <style> tag so hover/focus states work without needing an SCSS
+          recompile. */}
+      <style>{`
+        .sidebar-session {
+          text-align: center;
+          padding: 1rem;
+        }
+        .sidebar-session__line {
+          font-size: 0.85rem;
+          color: #555;
+          margin-bottom: 0.6rem;
+        }
+        .sidebar-session__btn {
+          display: inline-block;
+          padding: 0.55rem 1.25rem;
+          border-radius: 999px;
+          background: #1a1a1a;
+          color: #fff;
+          text-decoration: none;
+          font-size: 0.9rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          transition: background-color 0.15s ease, transform 0.05s ease;
+          border: 1px solid #1a1a1a;
+        }
+        .sidebar-session__btn:hover,
+        .sidebar-session__btn:focus-visible {
+          background: #333;
+          outline: none;
+        }
+        .sidebar-session__btn:active {
+          transform: translateY(1px);
+        }
+        .sidebar-session__btn--ghost {
+          background: transparent;
+          color: #1a1a1a;
+        }
+        .sidebar-session__btn--ghost:hover,
+        .sidebar-session__btn--ghost:focus-visible {
+          background: #f0f0f0;
+        }
+      `}</style>
+      <article className="postcard--left sidebar-session">
         {user?.id
           ? <>
-              <span style={{ marginRight: "0.5rem" }}>
+              <div className="sidebar-session__line">
                 Signed in as <strong>{user.user_name}</strong>
-              </span>
-              <Link to="/api/user/logout">Sign out</Link>
+              </div>
+              <Link
+                to="/api/user/logout"
+                className="sidebar-session__btn sidebar-session__btn--ghost"
+              >
+                Sign out
+              </Link>
             </>
-          : <Link to="/h/login">Sign in / Sign up</Link>
+          : <Link to="/h/login" className="sidebar-session__btn">
+              Sign in / Sign up
+            </Link>
         }
       </article>
 
