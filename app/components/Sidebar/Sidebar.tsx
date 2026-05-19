@@ -67,6 +67,22 @@ export const Sidebar: React.FC<{
   const [ editPrompt, toggleEditPrompt ] = useState<boolean>(false);
   const [ bioContent, setBioContent ] = useState<string|undefined>(siteData?.site_description);
   const [ showSignInModal, setShowSignInModal ] = useState<boolean>(false);
+  const [ mobileOpen, setMobileOpen ] = useState<boolean>(false);
+
+  // Close mobile overlay on Escape, and lock body scroll while it's open.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileOpen]);
 
   const bioFetch = useFetcher();
 
@@ -86,13 +102,91 @@ export const Sidebar: React.FC<{
   
 
   return (
-    <div id="sidebar">
-      <article className="postcard--left">
-        <div className="postcard__time" style={{ justifyContent: "center" }}>
-          <div className="postcard__time__link--unlink">
-            <Link to="/h/">{!siteData?.site_name||"Patrick Glendon McCullough"}</Link>
-          </div>
-          {user?.role==="administrator"
+    <>
+      {/* Mobile-only sidebar overlay behavior. Below 992px the sidebar is
+          hidden offscreen by default; a small tab on the left edge of the
+          viewport slides it in as an overlay. Above 992px, none of this
+          applies and the original two-column layout is unchanged. */}
+      <style>{`
+        @media (max-width: 991px) {
+          #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 320px;
+            max-width: 85vw;
+            z-index: 200;
+            background: #eee url('/assets/images/bgPattern.png');
+            padding: 12px;
+            overflow-y: auto;
+            box-sizing: border-box;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.25);
+          }
+          #sidebar.sidebar--mobile-open {
+            transform: translateX(0);
+          }
+          .sidebar-mobile-tab {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            z-index: 150;
+            background: #506982;
+            color: #fff;
+            padding: 18px 8px;
+            border: 0;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            font: 700 18px 'PGM Sans', sans-serif;
+            line-height: 1;
+            box-shadow: 2px 0 6px rgba(0,0,0,0.2);
+            height: auto;
+            margin: 0;
+          }
+          .sidebar-mobile-tab:hover { background: #4A6CBA; }
+          .sidebar-mobile-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 199;
+            border: 0;
+            padding: 0;
+            cursor: pointer;
+          }
+          /* When the overlay is open, hide the tab — they're redundant. */
+          #sidebar.sidebar--mobile-open ~ .sidebar-mobile-tab {
+            display: none;
+          }
+        }
+        @media (min-width: 992px) {
+          .sidebar-mobile-tab,
+          .sidebar-mobile-backdrop { display: none !important; }
+        }
+      `}</style>
+
+      {mobileOpen && (
+        <button
+          type="button"
+          className="sidebar-mobile-backdrop"
+          aria-label="Close sidebar"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <div
+        id="sidebar"
+        className={mobileOpen ? "sidebar--mobile-open" : undefined}
+      >
+        <article className="postcard--left">
+          <div className="postcard__time" style={{ justifyContent: "center" }}>
+            <div className="postcard__time__link--unlink">
+              <Link to="/h/" onClick={() => setMobileOpen(false)}>
+                {!siteData?.site_name||"Patrick Glendon McCullough"}
+              </Link>
+            </div>
+            {user?.role==="administrator"
             ?<div className="postcard__time__option" onClick={() => {toggleEditPrompt(!editPrompt)}}>
               <p className="postcard__time__option__chevron">^</p>
             </div>
@@ -245,6 +339,19 @@ export const Sidebar: React.FC<{
           <SiteActivity />
         </>
         :""}
-    </div>
+      </div>
+
+      {/* Mobile-only left-edge tab to slide the sidebar in. Sibling AFTER
+          the sidebar so the `~` selector in the <style> block can hide it
+          when the sidebar is open. */}
+      <button
+        type="button"
+        className="sidebar-mobile-tab"
+        aria-label="Open sidebar"
+        onClick={() => setMobileOpen(true)}
+      >
+        ›
+      </button>
+    </>
   )
 }
