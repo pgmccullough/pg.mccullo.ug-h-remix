@@ -16,7 +16,10 @@ import {
   recordPendingFollow,
   findFollowingByActor,
 } from "~/utils/federation-following.server";
-import { cacheRemoteActor } from "~/utils/federation-inbox-posts.server";
+import {
+  cacheRemoteActor,
+  extractActorProfile,
+} from "~/utils/federation-inbox-posts.server";
 import { Follow, lookupObject } from "@fedify/fedify";
 
 const PRIMARY_USERNAME = "patrick";
@@ -99,16 +102,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // Cache the actor's display info for the friends-feed page.
   await cacheRemoteActor({
-    actorUri,
-    handle:
-      (actor as any).preferredUsername?.toString() ?? undefined,
-    fqHandle: (actor as any).preferredUsername
-      ? `@${(actor as any).preferredUsername}@${new URL(actorUri).host}`
-      : undefined,
-    displayName: (actor as any).name?.toString() ?? undefined,
-    avatarUrl: (actor as any).iconId?.href,
-    profileUrl:
-      (actor as any).url instanceof URL ? (actor as any).url.href : undefined,
+    ...extractActorProfile(actor, actorUri),
     updatedAt: Date.now(),
   });
 

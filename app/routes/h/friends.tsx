@@ -3,13 +3,20 @@ import { redirect, useFetcher, useLoaderData } from "react-router";
 import { useState } from "react";
 
 import { getUser } from "~/utils/session.server";
-import { listInboxPosts, getRemoteActors } from "~/utils/federation-inbox-posts.server";
+import {
+  listInboxPosts,
+  getRemoteActors,
+  cacheRemoteActor,
+  extractActorProfile,
+} from "~/utils/federation-inbox-posts.server";
 import type {
   InboxPost,
   RemoteActorCache,
 } from "~/utils/federation-inbox-posts.server";
 import { listFollowing } from "~/utils/federation-following.server";
 import type { FollowingRecord } from "~/utils/federation-following.server";
+import { federation } from "~/utils/federation.server";
+import { lookupObject } from "@fedify/fedify";
 
 const PRIMARY_USERNAME = "patrick";
 
@@ -36,9 +43,44 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { items: followingItems } = await listFollowing(PRIMARY_USERNAME, {
     limit: 200,
   });
-  const followingActors = await getRemoteActors(
+  let followingActors = await getRemoteActors(
     followingItems.map((f) => f.actorUri)
   );
+
+  // Self-heal: if any follow we know about has no cached avatar (likely
+  // because they were followed before the extractor was robust), refetch
+  // the actor doc and cache it. Bounded: at most 5 per page render to
+  // keep loads snappy.
+  const needRefresh = followingItems
+    .filter((f) => !followingActors[f.actorUri]?.avatarUrl)
+    .slice(0, 5);
+  if (needRefresh.length) {
+    const ctx = federation.createContext(new URL(url.origin), undefined);
+    await Promise.allSettled(
+      needRefresh.map(async (f) => {
+        try {
+          const actor = await lookupObject(f.actorUri, {
+            documentLoader: ctx.documentLoader,
+          });
+          if (actor && (actor as any).id) {
+            await cacheRemoteActor({
+              ...extractActorProfile(actor, f.actorUri),
+              updatedAt: Date.now(),
+            });
+          }
+        } catch (err) {
+          console.error(
+            `[friends] failed to refresh actor ${f.actorUri}:`,
+            err
+          );
+        }
+      })
+    );
+    // Re-read after the refresh writes.
+    followingActors = await getRemoteActors(
+      followingItems.map((f) => f.actorUri)
+    );
+  }
 
   return {
     posts,

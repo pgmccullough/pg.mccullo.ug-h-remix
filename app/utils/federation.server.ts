@@ -62,6 +62,7 @@ import {
   updateInboxPost,
   softDeleteInboxPost,
   cacheRemoteActor,
+  extractActorProfile,
 } from "~/utils/federation-inbox-posts.server";
 import type { InboxPost } from "~/utils/federation-inbox-posts.server";
 
@@ -384,14 +385,7 @@ federation
     const author = await create.getActor(ctx);
     if (author) {
       await cacheRemoteActor({
-        actorUri: create.actorId.href,
-        handle: author.preferredUsername?.toString() ?? undefined,
-        fqHandle: author.preferredUsername
-          ? `@${author.preferredUsername}@${new URL(create.actorId.href).host}`
-          : undefined,
-        displayName: author.name?.toString() ?? undefined,
-        avatarUrl: author.iconId?.href,
-        profileUrl: author.url instanceof URL ? author.url.href : undefined,
+        ...extractActorProfile(author, create.actorId.href),
         updatedAt: Date.now(),
       });
     }

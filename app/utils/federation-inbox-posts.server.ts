@@ -125,3 +125,65 @@ export async function getRemoteActors(
   for (const d of docs) out[d.actorUri] = d;
   return out;
 }
+
+/**
+ * Walk an actor object (Fedify Person/Service/etc.) and pull out the
+ * profile fields we care about. Defensive about where the data lives —
+ * different implementations expose the icon URL in different ways.
+ */
+export function extractActorProfile(
+  actor: any,
+  actorUri: string
+): Omit<RemoteActorCache, "updatedAt"> {
+  // Avatar — try every place it might live.
+  let avatarUrl: string | undefined;
+  const iconCandidates: any[] = [actor?.icon, actor?.iconId];
+  for (const cand of iconCandidates) {
+    if (!cand) continue;
+    if (cand instanceof URL) {
+      avatarUrl = cand.href;
+      break;
+    }
+    // Image object — url may be URL, string, or array
+    const u = cand?.url ?? cand?.urlObject;
+    if (u instanceof URL) {
+      avatarUrl = u.href;
+      break;
+    }
+    if (typeof u === "string") {
+      avatarUrl = u;
+      break;
+    }
+    if (Array.isArray(u) && u.length) {
+      const first = u[0];
+      avatarUrl = first instanceof URL ? first.href : String(first?.href ?? first);
+      break;
+    }
+  }
+
+  // Profile URL (human-facing).
+  let profileUrl: string | undefined;
+  const urlCand = actor?.url;
+  if (urlCand instanceof URL) profileUrl = urlCand.href;
+  else if (typeof urlCand === "string") profileUrl = urlCand;
+  else if (urlCand?.href) profileUrl = String(urlCand.href);
+
+  const handle = actor?.preferredUsername?.toString();
+  let fqHandle: string | undefined;
+  if (handle) {
+    try {
+      fqHandle = `@${handle}@${new URL(actorUri).host}`;
+    } catch {
+      /* malformed actorUri — skip */
+    }
+  }
+
+  return {
+    actorUri,
+    handle,
+    fqHandle,
+    displayName: actor?.name?.toString() ?? undefined,
+    avatarUrl,
+    profileUrl,
+  };
+}
