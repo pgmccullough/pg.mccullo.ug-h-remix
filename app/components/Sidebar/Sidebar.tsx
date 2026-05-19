@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { useFetcher, useLoaderData } from "react-router";
 import { useEffect, useState } from 'react';
 import type { User, SiteData } from '../../common/types';
-import { Calendar, Email, Notes, RentalProperties, SiteActivity, TaskTracker, Webcam, WishList } from '~/adminApps';
+import { Calendar, Email, Notes, RentalProperties, TaskTracker, Webcam, WishList } from '~/adminApps';
 import { TextEditor } from '../TextEditor/TextEditor';
 import { SignInModal } from '../SignInModal/SignInModal';
 
@@ -116,7 +116,7 @@ export const Sidebar: React.FC<{
             top: 0;
             left: 0;
             bottom: 0;
-            width: calc(100vw - 40px);
+            width: calc(100vw - 28px);
             z-index: 200;
             background: #eee url('/assets/images/bgPattern.png');
             padding: 12px;
@@ -133,28 +133,36 @@ export const Sidebar: React.FC<{
             position: fixed;
             top: 50%;
             left: 0;
-            transform: translateY(-50%);
             z-index: 201;
-            width: 40px;
-            height: 64px;
+            width: 28px;
+            height: 48px;
             background: #506982;
             color: #fff;
             border: 0;
-            border-radius: 0 8px 8px 0;
+            border-radius: 0 6px 6px 0;
             cursor: pointer;
-            font: 700 22px 'PGM Sans', sans-serif;
-            line-height: 1;
             box-shadow: 2px 0 6px rgba(0,0,0,0.2);
             padding: 0;
             margin: 0;
-            transition: left 0.25s ease, border-radius 0.25s ease;
+            /* Center the chevron rather than leaning on font-baseline. */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font: 700 18px 'PGM Sans', sans-serif;
+            line-height: 1;
+            /* The default transform also handles vertical centering. */
+            transform: translateY(-50%);
+            transition: left 0.25s ease, transform 0.25s ease;
           }
           .sidebar-mobile-tab:hover { background: #4A6CBA; }
-          /* When the sidebar is open, slide the tab to the right edge so
-             it becomes the close affordance. */
+          /* When the sidebar is open: slide tab to the right edge AND
+             flip it horizontally. scaleX(-1) mirrors the whole element so
+             the rounded corners end up against the sidebar's right edge,
+             and the chevron — still rendered as "›" — visually points
+             left (a built-in symmetry, no JS swap needed). */
           #sidebar.sidebar--mobile-open ~ .sidebar-mobile-tab {
-            left: calc(100vw - 40px);
-            border-radius: 8px 0 0 8px;
+            left: calc(100vw - 28px);
+            transform: translateY(-50%) scaleX(-1);
             box-shadow: -2px 0 6px rgba(0,0,0,0.2);
           }
         }
@@ -323,7 +331,9 @@ export const Sidebar: React.FC<{
           <WishList />
           {/* <RentalProperties /> */}
           {/* <Webcam /> */}
-          <SiteActivity />
+          {/* SiteActivity is rendered in h.tsx so it lives outside the
+              sidebar's transformed-on-mobile container. position:fixed
+              elements need the viewport as their containing block. */}
         </>
         :""}
       </div>
@@ -338,7 +348,7 @@ export const Sidebar: React.FC<{
         aria-label={mobileOpen ? "Close sidebar" : "Open sidebar"}
         onClick={() => setMobileOpen((o) => !o)}
       >
-        {mobileOpen ? "‹" : "›"}
+        ›
       </button>
     </>
   )

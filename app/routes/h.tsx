@@ -11,6 +11,7 @@ import { useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from "~/components/Sidebar/Sidebar";
+import { SiteActivity } from "~/adminApps/SiteActivity/SiteActivity";
 import { PostCard } from "~/components/PostCard/PostCard";
 import { Analytics } from "~/components/Analytics/Analytics";
 import { clientPromise } from "~/lib/mongodb";
@@ -175,6 +176,7 @@ export default function Index() {
   return (
     <>
       <Analytics />
+      {user?.role === "administrator" ? <SiteActivity /> : null}
       {user?.role === "administrator" ? (
         <Header setNewPost={setNewPost} storyPost={storyPost} />
       ) : (
