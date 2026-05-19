@@ -110,5 +110,13 @@ export default [
     // Federation admin actions
     route("federation/follow", "routes/api/federation/follow/index.ts"),
     route("federation/unfollow", "routes/api/federation/unfollow/index.ts"),
+
+    // OAuth (Google / GitHub / Mastodon)
+    route("auth/google", "routes/api/auth/google/index.tsx"),
+    route("auth/google/callback", "routes/api/auth/google/callback/index.tsx"),
+    route("auth/github", "routes/api/auth/github/index.tsx"),
+    route("auth/github/callback", "routes/api/auth/github/callback/index.tsx"),
+    route("auth/mastodon", "routes/api/auth/mastodon/index.tsx"),
+    route("auth/mastodon/callback", "routes/api/auth/mastodon/callback/index.tsx"),
   ]),
 ] satisfies RouteConfig;
