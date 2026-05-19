@@ -155,14 +155,13 @@ export const Sidebar: React.FC<{
             transition: left 0.25s ease, transform 0.25s ease;
           }
           .sidebar-mobile-tab:hover { background: #4A6CBA; }
-          /* When the sidebar is open: slide tab to the right edge AND
-             flip it horizontally. scaleX(-1) mirrors the whole element so
-             the rounded corners end up against the sidebar's right edge,
-             and the chevron — still rendered as "›" — visually points
-             left (a built-in symmetry, no JS swap needed). */
+          /* When the sidebar is open: slide tab to the right edge of the
+             viewport. Don't flip — the flat side stays against the
+             sidebar's right edge (or the screen edge when closed), and
+             the rounded corners always face outward. Only the chevron
+             glyph changes (toggled in JSX). */
           #sidebar.sidebar--mobile-open ~ .sidebar-mobile-tab {
             left: calc(100vw - 28px);
-            transform: translateY(-50%) scaleX(-1);
             box-shadow: -2px 0 6px rgba(0,0,0,0.2);
           }
         }
@@ -348,7 +347,7 @@ export const Sidebar: React.FC<{
         aria-label={mobileOpen ? "Close sidebar" : "Open sidebar"}
         onClick={() => setMobileOpen((o) => !o)}
       >
-        ›
+        {mobileOpen ? "‹" : "›"}
       </button>
     </>
   )
