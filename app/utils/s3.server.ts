@@ -4,8 +4,7 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-
-const sharp = require("sharp");
+import sharp from "sharp";
 
 const { S3_BUCKET, S3_REGION, S3_KEY, S3_SECRET } = process.env;
 

@@ -1,7 +1,7 @@
 import { LinkPreview, UploadPreview } from ".";
 import { SetStateAction, useCallback } from "react";
+import { readAndCompressImage } from "browser-image-resizer";
 import type { YouTubeVideo } from "~/common/types";
-// import { readAndCompressImage } from 'browser-image-resizer';
 
 export const FileUpload: React.FC<{
   fileInputRef: any,
@@ -13,8 +13,7 @@ export const FileUpload: React.FC<{
 }> = ({ fileInputRef, imagesUploading, pendingUploads, setPendingUploads, youTubePreviews, setYouTubePreviews }) => {
 
   const imgResize = useCallback(async(file:File, config: {maxWidth: number}) => {
-    const resize = require('browser-image-resizer');
-    return await resize.readAndCompressImage(file,config);
+    return await readAndCompressImage(file, config);
   },[])
 
   const removeFile = (name: string) => {
