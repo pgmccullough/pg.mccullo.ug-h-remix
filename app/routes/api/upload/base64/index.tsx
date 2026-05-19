@@ -70,11 +70,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     })();
 
-    // Mirror the v2 SDK's response shape that the original caller relied on.
+    // Mirror BOTH casings of the v2 SDK's response shape — the PostCreator
+    // client expects lowercase `key` (and `location`), but other call sites
+    // historically used capitalized variants. Return both to be safe.
+    const Location = `https://s3.${S3_REGION}.amazonaws.com/${S3_BUCKET}/${key}`;
     return {
+      key,
       Key: key,
+      location: Location,
+      Location,
       ETag: putResult.ETag,
-      Location: `https://s3.${S3_REGION}.amazonaws.com/${S3_BUCKET}/${key}`,
     };
   };
 

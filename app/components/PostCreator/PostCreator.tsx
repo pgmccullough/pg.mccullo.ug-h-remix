@@ -76,12 +76,26 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
     if(fileUploadForm.data?.uploaded) {
       setImagesUploading(imagesUploading-1)
       const uploadsServer = [...fileUploadForm.data.uploaded];
-      const uploadsClient = [...pendingUploads].map((file:{data: any, meta: any}) => {
-        return uploadsServer.find(
-          (upload:{name: string, upload: string, uploadRes: any}) => 
-          file.meta.name === upload.name
-        ).uploadRes.key.split("/").pop();
-      })
+      // Defensive: the server response shape has shifted between AWS SDK
+      // versions (key vs Key, location vs Location). Read whichever is
+      // present, and skip the upload silently rather than crashing the
+      // whole page if a match wasn't found.
+      const uploadsClient = [...pendingUploads]
+        .map((file:{data: any, meta: any}) => {
+          const match = uploadsServer.find(
+            (upload:{name: string, upload: string, uploadRes: any}) =>
+              file.meta.name === upload.name
+          );
+          const res = match?.uploadRes;
+          const keyish: string | undefined =
+            res?.key ?? res?.Key ?? res?.location ?? res?.Location;
+          if (!keyish || typeof keyish !== "string") {
+            console.warn("[PostCreator] upload result missing key/location:", res);
+            return null;
+          }
+          return keyish.split("/").pop();
+        })
+        .filter((x): x is string => typeof x === "string" && x.length > 0);
       fileUploadForm.data.uploaded = null;
       const media = {...postObject.media, directory: "images/", images: uploadsClient}
       // Not currently evaluating file types to organize into videos/images/autio/files
