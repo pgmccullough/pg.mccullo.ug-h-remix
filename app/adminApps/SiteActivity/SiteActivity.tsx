@@ -50,7 +50,9 @@ function identity(visitor: VisitorDoc): string {
 
 export const SiteActivity: React.FC<{}> = () => {
   const { visitors } = useLoaderData<{ visitors: VisitorDoc[] }>();
-  const [expanded, setExpanded] = useState<boolean>(true);
+  // Collapsed by default — the drawer just shows its header tab at the
+  // bottom of the screen until clicked.
+  const [expanded, setExpanded] = useState<boolean>(false);
 
   const sorted = [...(visitors ?? [])].sort(
     (a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0)
@@ -60,10 +62,20 @@ export const SiteActivity: React.FC<{}> = () => {
     <>
       <style>{`
         .siteActivity {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 360px;
+          max-width: 90vw;
+          z-index: 80;
           background: #fff;
           border: 1px solid #979997;
-          border-radius: 4px;
-          margin-bottom: 10px;
+          border-bottom: 0;
+          border-radius: 4px 4px 0 0;
+          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+          /* Header sits at the bottom; body grows upward above it. */
+          display: flex;
+          flex-direction: column-reverse;
           overflow: hidden;
         }
         .siteActivity__header {
@@ -75,15 +87,23 @@ export const SiteActivity: React.FC<{}> = () => {
           justify-content: space-between;
           align-items: center;
           cursor: pointer;
-          border-bottom: 1px solid #ddd;
+          border-top: 1px solid #ddd;
+          user-select: none;
         }
+        .siteActivity__header:hover { background: #e6e6e6; }
         .siteActivity__caret {
-          font-size: 1.5rem;
+          font-size: 1.25rem;
           color: #777;
+          line-height: 1;
           transition: transform 0.15s ease;
         }
-        .siteActivity__caret--up { transform: rotate(180deg); }
-        .siteActivity__body { padding: 0; max-height: 360px; overflow-y: auto; }
+        /* "^" character points up by default; rotate when expanded so it
+           points down, suggesting "click to collapse". */
+        .siteActivity__caret--down { transform: rotate(180deg); }
+        .siteActivity__body {
+          max-height: 50vh;
+          overflow-y: auto;
+        }
         .siteActivity__row {
           padding: 8px 14px;
           border-bottom: 1px solid #f0f0f0;
@@ -99,16 +119,8 @@ export const SiteActivity: React.FC<{}> = () => {
         }
       `}</style>
       <section className="siteActivity">
-        <header
-          className="siteActivity__header"
-          onClick={() => setExpanded(!expanded)}
-        >
-          <span>Recent visitors ({sorted.length})</span>
-          <span className={`siteActivity__caret${expanded ? " siteActivity__caret--up" : ""}`}>
-            ^
-          </span>
-        </header>
-        {expanded ? (
+        {/* Body first in JSX; column-reverse puts header visually below. */}
+        {expanded && (
           <div className="siteActivity__body">
             {sorted.length === 0 ? (
               <div className="siteActivity__row" style={{ color: "#888" }}>
@@ -131,7 +143,18 @@ export const SiteActivity: React.FC<{}> = () => {
               ))
             )}
           </div>
-        ) : null}
+        )}
+        <header
+          className="siteActivity__header"
+          onClick={() => setExpanded(!expanded)}
+        >
+          <span>Recent visitors ({sorted.length})</span>
+          <span
+            className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
+          >
+            ^
+          </span>
+        </header>
       </section>
     </>
   );
