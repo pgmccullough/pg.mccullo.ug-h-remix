@@ -104,6 +104,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   }
 
+  // Some replies carry their own snapshot of the parent (currently:
+  // Bluesky replies, because we don't persist Bluesky timeline posts in
+  // federation_inbox_posts). Fill in any parents not already covered by
+  // the inbox lookup above.
+  for (const p of allPosts as any[]) {
+    if (
+      p.inReplyTo &&
+      !parentsByUri[p.inReplyTo] &&
+      p.parentSnapshot &&
+      typeof p.parentSnapshot === "object"
+    ) {
+      const s = p.parentSnapshot;
+      parentsByUri[p.inReplyTo] = {
+        authorActorUri: s.authorActorUri ?? p.inReplyTo,
+        displayName: s.displayName,
+        handle: s.handle,
+        fqHandle: s.fqHandle,
+        avatarUrl: s.avatarUrl,
+        content: s.content ?? "",
+        publishedMs: s.publishedMs,
+        url: s.url,
+      };
+    }
+  }
+
   return {
     onThisDay: serializedOnThisDay,
     posts: serializedPosts,

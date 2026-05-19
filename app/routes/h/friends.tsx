@@ -623,6 +623,17 @@ const FriendPostCard: React.FC<{
       fd.set("parentUri", post.noteUri);
       fd.set("parentCid", post.cid);
       fd.set("content", replyHtml);
+      // Snapshot the parent so the home feed can render a quote-style
+      // snippet without having to refetch the Bluesky post later (we
+      // don't store Bluesky timeline posts in federation_inbox_posts).
+      fd.set("parentAuthorUri", post.authorActorUri);
+      if (author?.displayName) fd.set("parentDisplayName", author.displayName);
+      if (author?.handle) fd.set("parentHandle", author.handle);
+      if (author?.fqHandle) fd.set("parentFqHandle", author.fqHandle);
+      if (author?.avatarUrl) fd.set("parentAvatarUrl", author.avatarUrl);
+      if (post.url) fd.set("parentUrl", post.url);
+      fd.set("parentContent", post.content);
+      fd.set("parentPublishedMs", String(post.published));
       replyFetcher.submit(fd, { method: "post", action: "/api/bluesky/reply" });
     } else {
       fd.set("parentNoteUri", post.noteUri);
