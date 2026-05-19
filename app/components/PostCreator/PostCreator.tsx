@@ -183,4 +183,27 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
       <div className={`upload${isActive?" upload--active":""}`}>
         <TextEditor 
           attachmentAction={() => fileInputRef.current?.click()}
-          clearContent
+          clearContent={clearPostContent}
+          contentStateSetter={setPostText}
+          htmlString={lexicalFromDraft||""}
+          placeholderText={`Go ahead...`}
+          setIsFocused={setIsFocused}
+          styleClass="upload__editable"
+          tbProps={tbProps}
+        />
+        <FileUpload
+          fileInputRef={fileInputRef}
+          imagesUploading={imagesUploading}
+          pendingUploads={pendingUploads}
+          setPendingUploads={setPendingUploads}
+          youTubePreviews={youTubePreviews}
+          setYouTubePreviews={setYouTubePreviews}
+        />
+        <PostOptions
+          setPostPrivacy={setPostPrivacy}
+          submitPost={submitPost}
+        />
+      </div>
+    </>
+  )
+}

@@ -245,3 +245,16 @@ export default function Index() {
           <div ref={scrollerBottom}>&nbsp;</div>
           <div
             className={`site-notifications ${
+              siteNotification.visible ? "site-notifications--active" : ""
+            }`}
+          >
+            <div className="loader" />
+            {siteNotification.msg}
+          </div>
+        </>
+      ) : (
+        ""
+      )}
+    </>
+  );
+}
