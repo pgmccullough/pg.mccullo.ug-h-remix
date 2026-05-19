@@ -20,6 +20,7 @@ import type { FollowingRecord } from "~/utils/federation-following.server";
 import { federation } from "~/utils/federation.server";
 import { lookupObject } from "@fedify/fedify";
 import { getMyReactionsFor } from "~/utils/federation-interactions.server";
+import { clientPromise } from "~/lib/mongodb";
 
 const PRIMARY_USERNAME = "patrick";
 
@@ -88,6 +89,88 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Lookup which posts we've liked/boosted so the UI can show toggled state.
   const myReactions = await getMyReactionsFor(posts.map((p) => p.noteUri));
 
+  // Pull replies threaded under any of the visible posts.
+  //   - Our own replies live in myPosts where inReplyTo matches
+  //   - Others' replies live in federation_inbox_posts where inReplyTo matches
+  const visibleNoteUris = posts.map((p) => p.noteUri);
+  const repliesByParent: Record<
+    string,
+    Array<{
+      kind: "mine" | "remote";
+      content: string;
+      authorActorUri: string;
+      timestampMs: number;
+      noteUri: string;
+      url?: string;
+    }>
+  > = {};
+  if (visibleNoteUris.length) {
+    const mongoClient = await clientPromise;
+    const db = mongoClient.db("user_posts");
+    const myActorUri = `https://pg.mccullo.ug/users/${PRIMARY_USERNAME}`;
+
+    const [mineRaw, inboxRaw] = await Promise.all([
+      db
+        .collection("myPosts")
+        .find({ inReplyTo: { $in: visibleNoteUris } })
+        .sort({ created: -1 })
+        .toArray(),
+      db
+        .collection("federation_inbox_posts")
+        .find({
+          inReplyTo: { $in: visibleNoteUris },
+          deleted: { $ne: true },
+        })
+        .sort({ published: -1 })
+        .toArray(),
+    ]);
+
+    for (const p of mineRaw as any[]) {
+      const key = p.inReplyTo as string;
+      (repliesByParent[key] ??= []).push({
+        kind: "mine",
+        content: p.content ?? "",
+        authorActorUri: myActorUri,
+        timestampMs:
+          typeof p.created === "number" ? p.created * 1000 : Date.now(),
+        noteUri: `${myActorUri}/posts/${p._id.toString()}`,
+        url: `https://pg.mccullo.ug/h/post/${p._id.toString()}`,
+      });
+    }
+    for (const p of inboxRaw as any[]) {
+      const key = p.inReplyTo as string;
+      (repliesByParent[key] ??= []).push({
+        kind: "remote",
+        content: p.content ?? "",
+        authorActorUri: p.authorActorUri,
+        timestampMs: p.published ?? Date.now(),
+        noteUri: p.noteUri,
+        url: p.url,
+      });
+    }
+
+    // Sort each thread oldest → newest (conversation reads top to bottom).
+    for (const k of Object.keys(repliesByParent)) {
+      repliesByParent[k].sort((a, b) => a.timestampMs - b.timestampMs);
+    }
+
+    // Also pull author profile data for any remote-reply authors we don't
+    // already have cached.
+    const remoteAuthorUris = Array.from(
+      new Set(
+        Object.values(repliesByParent)
+          .flat()
+          .filter((r) => r.kind === "remote")
+          .map((r) => r.authorActorUri)
+      )
+    );
+    const missingAuthorUris = remoteAuthorUris.filter((u) => !actors[u]);
+    if (missingAuthorUris.length) {
+      const moreActors = await getRemoteActors(missingAuthorUris);
+      for (const [k, v] of Object.entries(moreActors)) actors[k] = v;
+    }
+  }
+
   // Also need each post's author inbox URL (for reaction delivery). Pull
   // it from the followers/following caches we already have, falling back
   // to undefined (the react API will dereference if missing).
@@ -102,11 +185,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     nextCursorMs,
     myReactions,
     inboxByActor,
+    repliesByParent,
     following: followingItems.map((f) => ({
       ...f,
       profile: followingActors[f.actorUri] ?? null,
     })),
   };
+};
+
+type ThreadedReply = {
+  kind: "mine" | "remote";
+  content: string;
+  authorActorUri: string;
+  timestampMs: number;
+  noteUri: string;
+  url?: string;
 };
 
 type LoaderData = {
@@ -115,6 +208,7 @@ type LoaderData = {
   nextCursorMs: number | null;
   myReactions: Record<string, { like?: boolean; boost?: boolean }>;
   inboxByActor: Record<string, string | undefined>;
+  repliesByParent: Record<string, ThreadedReply[]>;
   following: Array<
     FollowingRecord & { profile: RemoteActorCache | null }
   >;
@@ -124,7 +218,7 @@ type LoaderData = {
 // the site so timestamps match the home feed exactly.
 
 export default function Friends() {
-  const { posts, actors, nextCursorMs, following, myReactions, inboxByActor } =
+  const { posts, actors, nextCursorMs, following, myReactions, inboxByActor, repliesByParent } =
     useLoaderData<LoaderData>();
   const followForm = useFetcher<{ ok?: boolean; status?: string; error?: string }>();
   const unfollowForm = useFetcher();
@@ -222,6 +316,41 @@ export default function Friends() {
           border-top: 0;
           border-radius: 0;
         }
+
+        /* Threaded replies under a friend post — visual rhyme with the
+           home-feed Comments component. */
+        .friend-replies {
+          margin-top: 12px;
+          border-top: 1px solid #eee;
+          padding-top: 8px;
+        }
+        .friend-reply {
+          display: flex;
+          gap: 10px;
+          padding: 8px 0;
+          border-bottom: 1px solid #f3f3f3;
+        }
+        .friend-reply:last-child { border-bottom: 0; }
+        .friend-reply__avatar {
+          width: 32px; height: 32px; border-radius: 50%;
+          object-fit: cover;
+          background: #ddd;
+        }
+        .friend-reply__avatar--placeholder { background: #4A6CBA; }
+        .friend-reply__body { flex: 1; min-width: 0; }
+        .friend-reply__head {
+          display: flex; align-items: baseline; gap: 8px;
+          font-size: 13px;
+        }
+        .friend-reply__name { font-weight: 600; color: #506982; }
+        .friend-reply__handle { color: #888; font-size: 12px; }
+        .friend-reply__when {
+          margin-left: auto; color: #888; font-size: 11px;
+        }
+        .friend-reply__content {
+          font-size: 14px; line-height: 1.4; margin-top: 2px;
+        }
+        .friend-reply__content p { margin: 0.3rem 0; }
 
         /* Heart-only React popup — same chrome as EmojiReact, single emoji. */
         .heart-react__pop {
@@ -324,6 +453,8 @@ export default function Friends() {
               author={actors[p.authorActorUri]}
               authorInbox={inboxByActor[p.authorActorUri]}
               myReactions={myReactions[p.noteUri]}
+              replies={repliesByParent[p.noteUri] ?? []}
+              actorsLookup={actors}
             />
           ))
         )}
@@ -353,7 +484,9 @@ const FriendPostCard: React.FC<{
   author?: RemoteActorCache;
   authorInbox?: string;
   myReactions?: { like?: boolean; boost?: boolean };
-}> = ({ post, author, authorInbox, myReactions }) => {
+  replies?: ThreadedReply[];
+  actorsLookup?: Record<string, RemoteActorCache>;
+}> = ({ post, author, authorInbox, myReactions, replies, actorsLookup }) => {
   const reactFetcher = useFetcher<{ ok?: boolean }>();
   const replyFetcher = useFetcher<{ ok?: boolean; error?: string }>();
   const [popOpen, setPopOpen] = useState(false);
@@ -479,6 +612,52 @@ const FriendPostCard: React.FC<{
                 </div>
               )}
             </div>
+            {/* Threaded replies — your own (from myPosts) + others
+                received via federation_inbox_posts. */}
+            {replies && replies.length > 0 && (
+              <div className="friend-replies">
+                {replies.map((r) => {
+                  const ra = actorsLookup?.[r.authorActorUri];
+                  const isMine = r.kind === "mine";
+                  const displayName = isMine
+                    ? "You"
+                    : ra?.displayName || ra?.fqHandle || r.authorActorUri;
+                  return (
+                    <div key={r.noteUri} className="friend-reply">
+                      <div className="friend-reply__poster">
+                        {!isMine && ra?.avatarUrl ? (
+                          <img
+                            className="friend-reply__avatar"
+                            src={ra.avatarUrl}
+                            alt=""
+                          />
+                        ) : (
+                          <div className="friend-reply__avatar friend-reply__avatar--placeholder" />
+                        )}
+                      </div>
+                      <div className="friend-reply__body">
+                        <div className="friend-reply__head">
+                          <span className="friend-reply__name">{displayName}</span>
+                          {!isMine && ra?.fqHandle && ra.fqHandle !== displayName && (
+                            <span className="friend-reply__handle">
+                              {ra.fqHandle}
+                            </span>
+                          )}
+                          <span className="friend-reply__when">
+                            {stampToTime(r.timestampMs / 1000)}
+                          </span>
+                        </div>
+                        <div
+                          className="friend-reply__content fake-p"
+                          dangerouslySetInnerHTML={{ __html: r.content }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Reply via the same Lexical editor the home-feed Comments use. */}
             <div style={{ marginTop: 12 }}>
               <TextEditor
