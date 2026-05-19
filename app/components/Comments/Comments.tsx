@@ -99,7 +99,11 @@ export const Comments: React.FC<
         :<>
           <style>{`
             .comment-signin {
-              margin-top: 12px;
+              /* Pull left to align with the React button. The wrapping
+                 .postcard__content__meta has padding, and the Comments
+                 stream renders flush with that padding, so a small
+                 negative margin lines this up with the React button. */
+              margin: 12px 0 4px -4px;
             }
             .comment-signin__btn,
             .comment-signin__btn:visited {
