@@ -24,6 +24,8 @@ export default defineConfig({
       // Fedify and its sub-packages — keeps the ActivityPub stack bundled
       // into the SSR output so Vercel's Node runtime resolves it cleanly.
       "@fedify/fedify",
+      // Bluesky's @atproto packages — bundled for the same reason.
+      "@atproto/api",
     ],
   },
 });

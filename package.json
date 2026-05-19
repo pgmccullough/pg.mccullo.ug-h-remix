@@ -13,6 +13,7 @@
     "create_branch": "func() { git checkout -b $1 && git push -u origin $1; }; func"
   },
   "dependencies": {
+    "@atproto/api": "^0.13.18",
     "@aws-sdk/client-s3": "^3.658.0",
     "@aws-sdk/lib-storage": "^3.658.0",
     "@aws-sdk/s3-request-presigner": "^3.658.0",

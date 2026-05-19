@@ -21,8 +21,27 @@ import { federation } from "~/utils/federation.server";
 import { lookupObject } from "@fedify/fedify";
 import { getMyReactionsFor } from "~/utils/federation-interactions.server";
 import { clientPromise } from "~/lib/mongodb";
+import { fetchBlueskyTimeline, blueskyEnabled } from "~/utils/bluesky.server";
 
 const PRIMARY_USERNAME = "patrick";
+
+// Both Mastodon-inbox posts and Bluesky timeline posts get normalized
+// into this shape so the friends-feed UI renders them uniformly.
+type UnifiedPost = {
+  source: "mastodon" | "bluesky";
+  noteUri: string;
+  authorActorUri: string;
+  content: string;
+  url?: string;
+  published: number;
+  attachments?: Array<{
+    type: "Image" | "Video" | "Audio" | "Document";
+    url: string;
+    mediaType?: string;
+  }>;
+  inReplyTo?: string;
+  announcedBy?: string;
+};
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Admin-only for now. (Could open to any signed-in user later.)
@@ -35,13 +54,74 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const beforePublishedRaw = url.searchParams.get("before");
   const beforePublished = beforePublishedRaw ? Number(beforePublishedRaw) : undefined;
 
-  const { items: posts, nextCursorMs } = await listInboxPosts({
+  const { items: inboxPosts, nextCursorMs } = await listInboxPosts({
     limit: 25,
     beforePublished: Number.isFinite(beforePublished) ? beforePublished : undefined,
   });
 
-  const authorUris = Array.from(new Set(posts.map((p) => p.authorActorUri)));
-  const actors = await getRemoteActors(authorUris);
+  // Pull Bluesky timeline alongside if credentials are configured.
+  // (Bluesky fetch only when on the first page; pagination not wired yet.)
+  let blueskyPosts: Awaited<ReturnType<typeof fetchBlueskyTimeline>> = [];
+  if (blueskyEnabled() && beforePublished === undefined) {
+    try {
+      blueskyPosts = await fetchBlueskyTimeline({ limit: 25 });
+    } catch (err) {
+      console.error("[friends] Bluesky fetch failed:", err);
+    }
+  }
+
+  // Normalize both sources into one shape the UI can render uniformly.
+  const unifiedFromMastodon: UnifiedPost[] = inboxPosts.map((p) => ({
+    source: "mastodon",
+    noteUri: p.noteUri,
+    authorActorUri: p.authorActorUri,
+    content: p.content,
+    url: p.url,
+    published: p.published,
+    attachments: p.attachments,
+    inReplyTo: p.inReplyTo,
+    announcedBy: p.announcedBy,
+  }));
+
+  const unifiedFromBluesky: UnifiedPost[] = blueskyPosts.map((p) => ({
+    source: "bluesky",
+    noteUri: p.uri,
+    // Treat the at:// "did:.../app.bsky..." chain as the "actor uri".
+    // We also pass extra-typed fields separately via the actors lookup
+    // below so the existing renderer can pull a name/avatar.
+    authorActorUri: `bsky:${p.authorDid}`,
+    content: `<p>${escapeHtml(p.text).replace(/\n/g, "<br/>")}</p>`,
+    url: p.webUrl,
+    published: p.publishedMs,
+    attachments: p.images.length
+      ? p.images.map((img) => ({
+          type: "Image" as const,
+          url: img.url,
+        }))
+      : undefined,
+  }));
+
+  // Merge by timestamp, newest first.
+  const posts = [...unifiedFromMastodon, ...unifiedFromBluesky].sort(
+    (a, b) => b.published - a.published
+  );
+
+  // Build author cache. Mastodon authors come from getRemoteActors;
+  // Bluesky authors we synthesize from the timeline data itself.
+  const authorUris = Array.from(new Set(unifiedFromMastodon.map((p) => p.authorActorUri)));
+  const actors: Record<string, any> = await getRemoteActors(authorUris);
+  for (const p of blueskyPosts) {
+    const key = `bsky:${p.authorDid}`;
+    actors[key] = {
+      actorUri: key,
+      handle: p.authorHandle,
+      fqHandle: `@${p.authorHandle}`,
+      displayName: p.authorDisplayName,
+      avatarUrl: p.authorAvatarUrl,
+      profileUrl: `https://bsky.app/profile/${p.authorHandle}`,
+      updatedAt: Date.now(),
+    };
+  }
 
   // List who we're following (pending + accepted, so the UI can reflect pending state).
   const { items: followingItems } = await listFollowing(PRIMARY_USERNAME, {
@@ -203,7 +283,7 @@ type ThreadedReply = {
 };
 
 type LoaderData = {
-  posts: InboxPost[];
+  posts: UnifiedPost[];
   actors: Record<string, RemoteActorCache>;
   nextCursorMs: number | null;
   myReactions: Record<string, { like?: boolean; boost?: boolean }>;
@@ -216,6 +296,15 @@ type LoaderData = {
 
 // formatWhen removed — friend posts now use stampToTime from the rest of
 // the site so timestamps match the home feed exactly.
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 export default function Friends() {
   const { posts, actors, nextCursorMs, following, myReactions, inboxByActor, repliesByParent } =
@@ -480,7 +569,7 @@ export default function Friends() {
 // ---------------------------------------------------------------------------
 
 const FriendPostCard: React.FC<{
-  post: InboxPost;
+  post: UnifiedPost;
   author?: RemoteActorCache;
   authorInbox?: string;
   myReactions?: { like?: boolean; boost?: boolean };
@@ -542,6 +631,13 @@ const FriendPostCard: React.FC<{
         {author?.fqHandle && author.fqHandle !== name && (
           <span className="friend-author__handle">{author.fqHandle}</span>
         )}
+        <span
+          className="friend-author__source"
+          title={post.source === "bluesky" ? "From Bluesky" : "From Mastodon"}
+          style={{ marginLeft: 6 }}
+        >
+          {post.source === "bluesky" ? "🦋" : "🐘"}
+        </span>
         {post.url ? (
           <a
             className="friend-author__via"
