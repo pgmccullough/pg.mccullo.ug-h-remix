@@ -58,37 +58,37 @@ export const SiteActivity: React.FC<{}> = () => {
     (a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0)
   );
 
+  // Header is a fixed strip pinned to the bottom of the viewport.
+  // Body, when expanded, is a separate fixed strip just above it.
+  // Two distinct elements — no flex parent, no chance of an invisible
+  // empty box pushing things around.
+  const HEADER_PX = 40;
+
   return (
     <>
       <style>{`
-        .siteActivity {
+        .siteActivity__header {
           position: fixed;
           bottom: 0;
           left: 0;
           width: 360px;
           max-width: 90vw;
+          height: ${HEADER_PX}px;
+          padding: 0 14px;
           z-index: 80;
-          background: #fff;
+          background: #eee;
           border: 1px solid #979997;
           border-bottom: 0;
           border-radius: 4px 4px 0 0;
           box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-          /* Header sits at the bottom; body grows upward above it. */
-          display: flex;
-          flex-direction: column-reverse;
-          overflow: hidden;
-        }
-        .siteActivity__header {
-          background: #eee;
-          padding: 10px 14px;
           font-weight: 600;
           color: #506982;
           display: flex;
           justify-content: space-between;
           align-items: center;
           cursor: pointer;
-          border-top: 1px solid #ddd;
           user-select: none;
+          box-sizing: border-box;
         }
         .siteActivity__header:hover { background: #e6e6e6; }
         .siteActivity__caret {
@@ -101,8 +101,19 @@ export const SiteActivity: React.FC<{}> = () => {
            points down, suggesting "click to collapse". */
         .siteActivity__caret--down { transform: rotate(180deg); }
         .siteActivity__body {
+          position: fixed;
+          bottom: ${HEADER_PX}px;
+          left: 0;
+          width: 360px;
+          max-width: 90vw;
           max-height: 50vh;
           overflow-y: auto;
+          z-index: 80;
+          background: #fff;
+          border: 1px solid #979997;
+          border-bottom: 0;
+          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+          box-sizing: border-box;
         }
         .siteActivity__row {
           padding: 8px 14px;
@@ -118,44 +129,43 @@ export const SiteActivity: React.FC<{}> = () => {
           color: #4A6CBA;
         }
       `}</style>
-      <section className="siteActivity">
-        {/* Body first in JSX; column-reverse puts header visually below. */}
-        {expanded && (
-          <div className="siteActivity__body">
-            {sorted.length === 0 ? (
-              <div className="siteActivity__row" style={{ color: "#888" }}>
-                No visits recorded yet.
-              </div>
-            ) : (
-              sorted.map((v) => (
-                <div key={String(v._id)} className="siteActivity__row">
-                  <div className="siteActivity__line1">
-                    <strong>{identity(v)}</strong>{" "}
-                    {flag(v) && <span>{flag(v)} </span>}
-                    {place(v)}
-                  </div>
-                  <div className="siteActivity__line2">
-                    <span className="siteActivity__path">{lastPath(v)}</span>
-                    {" · "}
-                    {whenLabel(v.lastSeen)}
-                  </div>
+
+      {expanded && (
+        <div className="siteActivity__body">
+          {sorted.length === 0 ? (
+            <div className="siteActivity__row" style={{ color: "#888" }}>
+              No visits recorded yet.
+            </div>
+          ) : (
+            sorted.map((v) => (
+              <div key={String(v._id)} className="siteActivity__row">
+                <div className="siteActivity__line1">
+                  <strong>{identity(v)}</strong>{" "}
+                  {flag(v) && <span>{flag(v)} </span>}
+                  {place(v)}
                 </div>
-              ))
-            )}
-          </div>
-        )}
-        <header
-          className="siteActivity__header"
-          onClick={() => setExpanded(!expanded)}
+                <div className="siteActivity__line2">
+                  <span className="siteActivity__path">{lastPath(v)}</span>
+                  {" · "}
+                  {whenLabel(v.lastSeen)}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      <div
+        className="siteActivity__header"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <span>Recent visitors ({sorted.length})</span>
+        <span
+          className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
         >
-          <span>Recent visitors ({sorted.length})</span>
-          <span
-            className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
-          >
-            ^
-          </span>
-        </header>
-      </section>
+          ^
+        </span>
+      </div>
     </>
   );
 };
