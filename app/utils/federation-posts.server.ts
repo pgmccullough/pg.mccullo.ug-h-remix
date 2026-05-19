@@ -14,6 +14,7 @@ import {
   PUBLIC_COLLECTION,
 } from "@fedify/fedify";
 import type { Context } from "@fedify/fedify";
+import { Temporal } from "@js-temporal/polyfill";
 
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 
@@ -159,12 +160,15 @@ export function postToNote(post: PostDoc, ctx: Context<void>): Note {
   const followersUri = ctx.getFollowersUri(PRIMARY_USERNAME);
   const noteUri = new URL(`${actorUri.href}/posts/${id}`);
 
-  // post.created is unix seconds; AP wants Temporal.Instant (or Date).
+  // post.created is unix seconds; Fedify wants Temporal.Instant.
   // Guard against missing/garbage created timestamps in old posts.
-  let published: Date | undefined;
+  let published: Temporal.Instant | undefined;
   if (typeof post.created === "number" && Number.isFinite(post.created)) {
-    const d = new Date(post.created * 1000);
-    if (!Number.isNaN(d.getTime())) published = d;
+    try {
+      published = Temporal.Instant.fromEpochMilliseconds(post.created * 1000);
+    } catch {
+      published = undefined;
+    }
   }
 
   const attachments = collectAttachments(post);
