@@ -21,6 +21,9 @@ export default defineConfig({
       "bcryptjs",
       "postmark",
       "pusher",
+      // Fedify and its sub-packages — keeps the ActivityPub stack bundled
+      // into the SSR output so Vercel's Node runtime resolves it cleanly.
+      "@fedify/fedify",
     ],
   },
 });

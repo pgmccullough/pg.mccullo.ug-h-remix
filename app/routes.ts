@@ -25,6 +25,18 @@ export default [
   // Root redirect: "/" -> "/h"
   index("routes/index.tsx"),
 
+  // ActivityPub federation endpoints (Phase A1).
+  // These all delegate to Fedify, which handles the protocol details.
+  route(".well-known/webfinger", "routes/webfinger.ts"),
+  route(".well-known/nodeinfo", "routes/nodeinfo-discovery.ts"),
+  route("nodeinfo/2.1", "routes/nodeinfo.ts"),
+  // /users/* — single splat that catches the actor (/users/:identifier) and
+  // all sub-paths Fedify owns (inbox, outbox, followers, following). The
+  // handler hands the request to Fedify, which dispatches based on URL.
+  route("users/*", "routes/users.$.ts"),
+  // Shared inbox at /inbox
+  route("inbox", "routes/inbox.ts"),
+
   // The /h layout and its children
   route("h", "routes/h.tsx", [
     index("routes/h/index.tsx"),
