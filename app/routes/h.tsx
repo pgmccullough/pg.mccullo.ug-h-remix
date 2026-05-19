@@ -239,12 +239,4 @@ export default function Index() {
             </>
           )}
           {user?.role === "administrator" ? (
-            <Outlet context={newPost} />
-          ) : (
-            <Outlet />
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
+        

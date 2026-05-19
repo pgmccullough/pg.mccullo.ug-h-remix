@@ -113,6 +113,8 @@ export default [
     route("federation/unfollow", "routes/api/federation/unfollow/index.ts"),
     route("federation/react", "routes/api/federation/react/index.ts"),
     route("federation/reply", "routes/api/federation/reply/index.ts"),
+    route("bluesky/react", "routes/api/bluesky/react/index.ts"),
+    route("bluesky/reply", "routes/api/bluesky/reply/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)
     route("auth/google", "routes/api/auth/google/index.tsx"),

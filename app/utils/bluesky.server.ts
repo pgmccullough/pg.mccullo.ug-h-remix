@@ -171,6 +171,90 @@ export async function deleteBlueskyPost(atUri: string): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
+// Likes
+// ---------------------------------------------------------------------------
+
+/**
+ * Like a Bluesky post given its at:// URI and CID. Returns the at:// URI
+ * of the like record we just created — you'll need that later to undo it
+ * (via deleteBlueskyLike). Returns null on failure / disabled.
+ */
+export async function likeBlueskyPost(args: {
+  uri: string;
+  cid: string;
+}): Promise<{ uri: string; cid: string } | null> {
+  return withRetry(async (agent) => {
+    const res = await agent.like(args.uri, args.cid);
+    return { uri: res.uri, cid: res.cid };
+  });
+}
+
+export async function deleteBlueskyLike(likeUri: string): Promise<boolean> {
+  const result = await withRetry(async (agent) => {
+    await agent.deleteLike(likeUri);
+    return true;
+  });
+  return result === true;
+}
+
+// ---------------------------------------------------------------------------
+// Replies
+// ---------------------------------------------------------------------------
+
+/**
+ * Reply to a Bluesky post. For top-level posts, root == parent; for
+ * deeper-in-thread replies the caller should ideally pass the true root.
+ * We accept both; if rootUri/rootCid are omitted we use parent for both.
+ */
+export async function replyOnBluesky(args: {
+  text: string;
+  parentUri: string;
+  parentCid: string;
+  rootUri?: string;
+  rootCid?: string;
+}): Promise<{ uri: string; cid: string } | null> {
+  return withRetry(async (agent) => {
+    let RichText: any;
+    try {
+      const mod = await import("@atproto/api");
+      RichText = (mod as any).RichText ?? (mod as any).default?.RichText;
+    } catch (err) {
+      console.error("[bluesky] failed to load RichText:", err);
+      return null;
+    }
+
+    const plain = stripHtml(args.text).trim();
+    if (!plain) return null;
+
+    // Bluesky's 300-char limit applies to replies too.
+    const text = plain.length > 300 ? plain.slice(0, 299) + "…" : plain;
+
+    const rt = RichText ? new RichText({ text }) : null;
+    if (rt?.detectFacets) {
+      try { await rt.detectFacets(agent); } catch { /* ignore */ }
+    }
+
+    const reply = {
+      root: {
+        uri: args.rootUri ?? args.parentUri,
+        cid: args.rootCid ?? args.parentCid,
+      },
+      parent: {
+        uri: args.parentUri,
+        cid: args.parentCid,
+      },
+    };
+
+    const result = await agent.post({
+      text: rt ? rt.text : text,
+      facets: rt?.facets,
+      reply,
+    });
+    return { uri: result.uri, cid: result.cid };
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Inbound: timeline
 // ---------------------------------------------------------------------------
 
