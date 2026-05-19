@@ -1,6 +1,8 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect, useFetcher, useLoaderData } from "react-router";
 import { useEffect, useState } from "react";
+import { TextEditor } from "~/components/TextEditor/TextEditor";
+import { stampToTime } from "~/functions/functions";
 
 import { getUser } from "~/utils/session.server";
 import {
@@ -118,17 +120,8 @@ type LoaderData = {
   >;
 };
 
-function formatWhen(ms: number): string {
-  const diff = Date.now() - ms;
-  const min = 60_000;
-  const hr = 60 * min;
-  const day = 24 * hr;
-  if (diff < min) return "just now";
-  if (diff < hr) return `${Math.round(diff / min)}m ago`;
-  if (diff < day) return `${Math.round(diff / hr)}h ago`;
-  if (diff < 30 * day) return `${Math.round(diff / day)}d ago`;
-  return new Date(ms).toLocaleDateString();
-}
+// formatWhen removed — friend posts now use stampToTime from the rest of
+// the site so timestamps match the home feed exactly.
 
 export default function Friends() {
   const { posts, actors, nextCursorMs, following, myReactions, inboxByActor } =
@@ -136,8 +129,6 @@ export default function Friends() {
   const followForm = useFetcher<{ ok?: boolean; status?: string; error?: string }>();
   const unfollowForm = useFetcher();
   const [handleInput, setHandleInput] = useState("");
-  // Which post (by noteUri) currently has its reply composer open.
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   return (
     <>
@@ -204,107 +195,51 @@ export default function Friends() {
           font-size: 13px;
           margin-bottom: 12px;
         }
-        .friend-post {
-          background: #fff;
-          border: 1px solid #979997;
-          border-radius: 4px;
-          margin-bottom: 14px;
-          overflow: hidden;
-        }
-        .friend-post__head {
+        /* Author header above the postcard body — mirrors the home feed's
+           on-this-day strip visually but identifies the friend who posted. */
+        .friend-author {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 10px 14px;
-          border-bottom: 1px solid #e6e6e6;
-          background: #eee;
-        }
-        .friend-post__head img {
-          width: 32px; height: 32px; border-radius: 50%;
-        }
-        .friend-post__name {
-          font-weight: 600;
-          color: #506982;
-        }
-        .friend-post__when {
-          color: #888;
-          font-size: 12px;
-          margin-left: auto;
-        }
-        .friend-post__body {
-          padding: 12px 14px;
-          line-height: 1.5;
-        }
-        .friend-post__body img,
-        .friend-post__body video {
-          max-width: 100%;
-          border-radius: 4px;
-          margin-top: 8px;
-        }
-        .friend-post__footer {
-          padding: 8px 14px;
-          font-size: 12px;
-          color: #666;
-        }
-        .friend-post__actions {
-          display: flex;
-          gap: 6px;
+          gap: 8px;
           padding: 6px 10px;
-          border-top: 1px solid #eee;
-          background: #fafafa;
-        }
-        .friend-post__action,
-        .friend-post__action:visited {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: transparent;
-          border: 1px solid transparent;
-          padding: 4px 10px;
-          border-radius: 999px;
-          cursor: pointer;
-          font: 600 12px 'PGM Sans', sans-serif;
-          color: #888;
-          line-height: 1.2;
-          height: auto;
-          margin: 0;
-          transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-        }
-        .friend-post__action:hover {
-          background: #fff;
-          border-color: #ddd;
-          color: #506982;
-        }
-        .friend-post__action--active--like {
-          background: #fde4e4;
-          color: #b03030;
-          border-color: #f3c0c0;
-        }
-        .friend-post__action--active--boost {
-          background: #dff0e3;
-          color: #297a3e;
-          border-color: #b8dfc1;
-        }
-        .reply-composer {
-          padding: 8px 14px 14px;
-          border-top: 1px solid #eee;
-          background: #fafafa;
-        }
-        .reply-composer textarea {
-          width: 100%;
-          min-height: 70px;
-          padding: 8px 10px;
-          font: 14px 'PGM Sans', sans-serif;
+          background: #eee;
           border: 1px solid #979997;
-          border-radius: 4px;
-          resize: vertical;
-          box-sizing: border-box;
+          border-bottom: 0;
+          border-radius: 4px 4px 0 0;
+          font-size: 13px;
+          color: #555;
         }
-        .reply-composer__row {
-          display: flex;
-          justify-content: flex-end;
-          gap: 6px;
-          margin-top: 6px;
+        .friend-author img {
+          width: 28px; height: 28px; border-radius: 50%;
+        }
+        .friend-author__name { font-weight: 600; color: #506982; }
+        .friend-author__handle { color: #888; font-size: 12px; }
+        .friend-author__via {
+          margin-left: auto; font-size: 11px; color: #888;
+        }
+        .friend-author + .postcard { margin-top: 0; }
+        .friend-author + .postcard .postcard__time {
+          border-top: 0;
+          border-radius: 0;
+        }
+
+        /* Heart-only React popup — same chrome as EmojiReact, single emoji. */
+        .heart-react__pop {
+          display: none;
+          position: absolute;
+          background: #fff;
+          border: 1px solid #ccc;
+          border-radius: 999px;
+          padding: 6px 10px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+          z-index: 10;
+          margin-top: 4px;
+        }
+        .heart-react__pop--open { display: inline-flex; gap: 4px; }
+        .heart-react__pop button {
+          background: transparent; border: 0; cursor: pointer;
+          font-size: 22px; height: auto; padding: 0 4px;
+          line-height: 1;
         }
       `}</style>
 
@@ -382,71 +317,15 @@ export default function Friends() {
             Nothing here yet. Follow someone above, then wait for them to post.
           </div>
         ) : (
-          posts.map((p) => {
-            const author = actors[p.authorActorUri];
-            const name =
-              author?.displayName || author?.fqHandle || p.authorActorUri;
-            return (
-              <article className="friend-post" key={p.noteUri}>
-                <header className="friend-post__head">
-                  {author?.avatarUrl ? <img src={author.avatarUrl} alt="" /> : null}
-                  <span className="friend-post__name">{name}</span>
-                  {author?.fqHandle && author.fqHandle !== name && (
-                    <span style={{ color: "#888", fontSize: 12 }}>
-                      {author.fqHandle}
-                    </span>
-                  )}
-                  <span className="friend-post__when">
-                    {formatWhen(p.published)}
-                  </span>
-                </header>
-                <div
-                  className="friend-post__body"
-                  dangerouslySetInnerHTML={{ __html: p.content }}
-                />
-                {p.attachments?.length ? (
-                  <div className="friend-post__body" style={{ paddingTop: 0 }}>
-                    {p.attachments.map((a) =>
-                      a.type === "Image" ? (
-                        <img key={a.url} src={a.url} alt="" />
-                      ) : a.type === "Video" ? (
-                        <video key={a.url} src={a.url} controls />
-                      ) : a.type === "Audio" ? (
-                        <audio key={a.url} src={a.url} controls />
-                      ) : (
-                        <a key={a.url} href={a.url} target="_blank" rel="noreferrer">
-                          {a.url}
-                        </a>
-                      )
-                    )}
-                  </div>
-                ) : null}
-                <PostActions
-                  post={p}
-                  myReactions={myReactions[p.noteUri]}
-                  authorInbox={inboxByActor[p.authorActorUri]}
-                  onReplyToggle={() =>
-                    setReplyingTo((cur) => (cur === p.noteUri ? null : p.noteUri))
-                  }
-                  isReplying={replyingTo === p.noteUri}
-                />
-                {replyingTo === p.noteUri && (
-                  <ReplyComposer
-                    post={p}
-                    authorInbox={inboxByActor[p.authorActorUri]}
-                    onDone={() => setReplyingTo(null)}
-                  />
-                )}
-                {p.url && (
-                  <footer className="friend-post__footer">
-                    <a href={p.url} target="_blank" rel="noreferrer">
-                      View original
-                    </a>
-                  </footer>
-                )}
-              </article>
-            );
-          })
+          posts.map((p) => (
+            <FriendPostCard
+              key={p.noteUri}
+              post={p}
+              author={actors[p.authorActorUri]}
+              authorInbox={inboxByActor[p.authorActorUri]}
+              myReactions={myReactions[p.noteUri]}
+            />
+          ))
         )}
 
         {nextCursorMs != null && (
@@ -465,136 +344,161 @@ export default function Friends() {
 }
 
 // ---------------------------------------------------------------------------
-// Sub-components for actions + reply composer
+// FriendPostCard — renders a remote post in the same chrome as the home-feed
+// PostCard, with a heart-only React popup and the Lexical comment editor.
 // ---------------------------------------------------------------------------
 
-const PostActions: React.FC<{
+const FriendPostCard: React.FC<{
   post: InboxPost;
-  myReactions?: { like?: boolean; boost?: boolean };
+  author?: RemoteActorCache;
   authorInbox?: string;
-  isReplying: boolean;
-  onReplyToggle: () => void;
-}> = ({ post, myReactions, authorInbox, isReplying, onReplyToggle }) => {
-  const fetcher = useFetcher<{ ok?: boolean; status?: string; error?: string }>();
-  // Optimistic state — derive from local fetcher submissions in-flight
-  // so the button toggles instantly even before the round-trip resolves.
-  const liked = fetcher.formData?.get("kind") === "like"
-    ? fetcher.formData.get("undo") !== "1"
-    : myReactions?.like;
-  const boosted = fetcher.formData?.get("kind") === "boost"
-    ? fetcher.formData.get("undo") !== "1"
-    : myReactions?.boost;
+  myReactions?: { like?: boolean; boost?: boolean };
+}> = ({ post, author, authorInbox, myReactions }) => {
+  const reactFetcher = useFetcher<{ ok?: boolean }>();
+  const replyFetcher = useFetcher<{ ok?: boolean; error?: string }>();
+  const [popOpen, setPopOpen] = useState(false);
+  const [replyHtml, setReplyHtml] = useState("");
+  const [clearContent, setClearContent] = useState(false);
 
-  const submit = (kind: "like" | "boost", undo: boolean) => {
+  // Optimistic like state: when a submit is in-flight, reflect its intent.
+  const liked = reactFetcher.formData
+    ? reactFetcher.formData.get("undo") !== "1"
+    : !!myReactions?.like;
+
+  const toggleHeart = () => {
     const fd = new FormData();
     fd.set("noteUri", post.noteUri);
     fd.set("authorUri", post.authorActorUri);
     if (authorInbox) fd.set("inboxUri", authorInbox);
-    fd.set("kind", kind);
-    if (undo) fd.set("undo", "1");
-    fetcher.submit(fd, { method: "post", action: "/api/federation/react" });
+    fd.set("kind", "like");
+    if (liked) fd.set("undo", "1");
+    reactFetcher.submit(fd, { method: "post", action: "/api/federation/react" });
+    setPopOpen(false);
   };
 
-  return (
-    <div className="friend-post__actions">
-      <button
-        type="button"
-        className={`friend-post__action${liked ? " friend-post__action--active--like" : ""}`}
-        onClick={() => submit("like", !!liked)}
-        title={liked ? "Unlike" : "Like"}
-      >
-        {liked ? "♥" : "♡"} Like
-      </button>
-      <button
-        type="button"
-        className={`friend-post__action${boosted ? " friend-post__action--active--boost" : ""}`}
-        onClick={() => submit("boost", !!boosted)}
-        title={boosted ? "Undo boost" : "Boost"}
-      >
-        🔁 {boosted ? "Boosted" : "Boost"}
-      </button>
-      <button
-        type="button"
-        className="friend-post__action"
-        onClick={onReplyToggle}
-        title="Reply"
-      >
-        💬 {isReplying ? "Cancel" : "Reply"}
-      </button>
-    </div>
-  );
-};
-
-const ReplyComposer: React.FC<{
-  post: InboxPost;
-  authorInbox?: string;
-  onDone: () => void;
-}> = ({ post, authorInbox, onDone }) => {
-  const fetcher = useFetcher<{ ok?: boolean; error?: string }>();
-  const [text, setText] = useState("");
-
-  useEffect(() => {
-    if (fetcher.data?.ok) {
-      setText("");
-      onDone();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetcher.data]);
-
-  const submit = () => {
-    if (!text.trim()) return;
+  const submitReply = () => {
+    const trimmed = replyHtml.replace(/<[^>]+>/g, "").trim();
+    if (!trimmed) return;
     const fd = new FormData();
     fd.set("parentNoteUri", post.noteUri);
     fd.set("parentAuthorUri", post.authorActorUri);
     if (authorInbox) fd.set("parentInboxUri", authorInbox);
-    // Wrap plain text in a <p> so the sanitizer + Mastodon render it
-    // sensibly.
-    fd.set("content", `<p>${escapeHtml(text)}</p>`);
-    fetcher.submit(fd, { method: "post", action: "/api/federation/reply" });
+    fd.set("content", replyHtml);
+    replyFetcher.submit(fd, { method: "post", action: "/api/federation/reply" });
   };
 
+  useEffect(() => {
+    if (replyFetcher.data?.ok) {
+      setReplyHtml("");
+      setClearContent(true);
+    }
+  }, [replyFetcher.data]);
+
+  useEffect(() => {
+    if (clearContent) setClearContent(false);
+  }, [replyHtml, clearContent]);
+
+  const name = author?.displayName || author?.fqHandle || post.authorActorUri;
+
   return (
-    <div className="reply-composer">
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Write a reply..."
-        autoFocus
-        onKeyDown={(e) => {
-          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") submit();
-        }}
-      />
-      {fetcher.data?.error && (
-        <div style={{ color: "#be0d0d", fontSize: 12, marginTop: 4 }}>
-          {fetcher.data.error}
-        </div>
-      )}
-      <div className="reply-composer__row">
-        <button
-          type="button"
-          className="friends__btn friends__btn--ghost"
-          onClick={onDone}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="friends__btn"
-          onClick={submit}
-          disabled={!text.trim() || fetcher.state !== "idle"}
-        >
-          {fetcher.state !== "idle" ? "Sending…" : "Reply"}
-        </button>
+    <>
+      {/* Author strip — sits above the postcard, identifies who posted. */}
+      <div className="friend-author">
+        {author?.avatarUrl ? <img src={author.avatarUrl} alt="" /> : null}
+        <span className="friend-author__name">{name}</span>
+        {author?.fqHandle && author.fqHandle !== name && (
+          <span className="friend-author__handle">{author.fqHandle}</span>
+        )}
+        {post.url ? (
+          <a
+            className="friend-author__via"
+            href={post.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            view original
+          </a>
+        ) : null}
       </div>
-    </div>
+      <article className="postcard">
+        <div className="postcard__time">
+          <div className="postcard__time__link">
+            <time dateTime={String(post.published / 1000)}>
+              {stampToTime(post.published / 1000)}
+            </time>
+          </div>
+        </div>
+        <div className="postcard__content">
+          {post.attachments?.length ? (
+            <div className="postcard__content__media">
+              <figure className="postcard__content__media__slider">
+                {post.attachments.map((a) =>
+                  a.type === "Image" ? (
+                    <img key={a.url} src={a.url} alt="" style={{ maxWidth: "100%" }} />
+                  ) : a.type === "Video" ? (
+                    <video key={a.url} src={a.url} controls style={{ maxWidth: "100%" }} />
+                  ) : a.type === "Audio" ? (
+                    <audio key={a.url} src={a.url} controls />
+                  ) : (
+                    <a key={a.url} href={a.url} target="_blank" rel="noreferrer">
+                      {a.url}
+                    </a>
+                  )
+                )}
+              </figure>
+            </div>
+          ) : null}
+          <div className="postcard__content__text">
+            <div className="fake-p" dangerouslySetInnerHTML={{ __html: post.content }} />
+          </div>
+          <div className="postcard__content__meta">
+            {/* Heart-only react button, visually matches EmojiReact. */}
+            <div className="emoji-parent" style={{ display: "inline-block", position: "relative" }}>
+              <button
+                className="react-button"
+                onClick={() => setPopOpen((v) => !v)}
+                style={{ display: "inline-flex", alignItems: "center" }}
+              >
+                {liked ? "❤️" : "😀"} REACT
+              </button>
+              <div className={`heart-react__pop${popOpen ? " heart-react__pop--open" : ""}`}>
+                <button
+                  type="button"
+                  onClick={toggleHeart}
+                  title={liked ? "Remove heart" : "Send heart"}
+                >
+                  ❤️
+                </button>
+              </div>
+              {liked && (
+                <div className="emoji-votes" style={{ display: "inline-flex", marginLeft: 8 }}>
+                  <div className="emoji-vote emoji-vote--mine">
+                    <div className="emoji-vote-emoji">❤️</div>
+                    <div className="emoji-vote-count">1</div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Reply via the same Lexical editor the home-feed Comments use. */}
+            <div style={{ marginTop: 12 }}>
+              <TextEditor
+                contentStateSetter={setReplyHtml}
+                clearContent={clearContent}
+                placeholderText="Reply..."
+                styleClass="comment__input"
+              />
+              {replyFetcher.data?.error && (
+                <div style={{ color: "#be0d0d", fontSize: 12, margin: "4px 0" }}>
+                  {replyFetcher.data.error}
+                </div>
+              )}
+              <button onClick={submitReply} disabled={replyFetcher.state !== "idle"}>
+                {replyFetcher.state !== "idle" ? "SENDING…" : "SUBMIT"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </>
   );
 };
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
