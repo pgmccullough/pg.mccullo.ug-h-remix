@@ -1,12 +1,7 @@
-import type { ActionFunctionArgs, UploadHandler } from "react-router";
-import {
-  unstable_composeUploadHandlers as composeUploadHandlers,
-  unstable_createMemoryUploadHandler as createMemoryUploadHandler,
-  unstable_parseMultipartFormData as parseMultipartFormData,
-} from "@react-router/node";
+import type { ActionFunctionArgs } from "react-router";
 import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
 
-import { s3UploadHandler } from "~/utils/s3.server";
+import { uploadFileToS3 } from "~/utils/s3.server";
 
 const { S3_BUCKET, S3_REGION, S3_KEY, S3_SECRET } = process.env;
 
@@ -19,25 +14,27 @@ const s3Client = new S3Client({
 });
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const uploadHandler: UploadHandler = composeUploadHandlers(
-    s3UploadHandler,
-    createMemoryUploadHandler()
-  );
-  const formData = await parseMultipartFormData(request, uploadHandler);
-  const imgSrc = formData.get("img");
+  // RR7 removed the Remix v1 unstable_* upload-handler API. Use the
+  // standard Web FormData API; the request body is parsed for us and the
+  // file comes back as a File instance.
+  const formData = await request.formData();
+  const file = formData.get("img");
 
-  if (!imgSrc) {
+  if (!(file instanceof File)) {
     return Response.json({
       errorMsg: "Something went wrong while uploading",
     });
   }
 
+  const { Location } = await uploadFileToS3(file);
+
   // For email attachments, look up the file's content length so the composer
   // can match content back to attachment metadata.
-  if (imgSrc.toString().includes("/images/emailAttachments/")) {
-    const key = imgSrc
-      .toString()
-      .replace("https://s3.amazonaws.com/pg.mccullo.ug/", "");
+  if (Location.includes("/images/emailAttachments/")) {
+    const key = Location.replace(
+      `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/`,
+      ""
+    );
     let contentLength: number | undefined;
     try {
       const head = await s3Client.send(
@@ -49,11 +46,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
     return Response.json({
       imgSrc: {
-        file: imgSrc,
+        file: Location,
         ContentLength: contentLength,
       },
     });
   }
 
-  return Response.json({ imgSrc });
+  return Response.json({ imgSrc: Location });
 };

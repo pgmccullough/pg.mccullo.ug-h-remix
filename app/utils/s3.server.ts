@@ -1,18 +1,13 @@
-import { PassThrough } from "node:stream";
-
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import type { UploadHandler } from "react-router";
-import { writeAsyncIterableToWritable } from "@react-router/node";
 
 const sharp = require("sharp");
 
-const {
-  S3_BUCKET,
-  S3_REGION,
-  S3_KEY,
-  S3_SECRET,
-} = process.env;
+const { S3_BUCKET, S3_REGION, S3_KEY, S3_SECRET } = process.env;
 
 if (!(S3_KEY && S3_SECRET && S3_REGION && S3_BUCKET)) {
   throw new Error(`S3 is missing required configuration.`);
@@ -28,67 +23,69 @@ const s3Client = new S3Client({
   },
 });
 
-/**
- * Streaming upload to S3. Returns a writable PassThrough and a promise that
- * resolves to the uploaded object's metadata (including a `Location` URL).
- */
-const uploadStream = ({ Key }: { Key: string }) => {
-  const pass = new PassThrough();
-  const upload = new Upload({
-    client: s3Client,
-    params: { Bucket: S3_BUCKET!, Key, Body: pass },
-  });
-  return {
-    writeStream: pass,
-    promise: upload.done(),
-  };
-};
+const publicLocation = (key: string) =>
+  `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${key}`;
 
-export async function uploadStreamToS3(data: AsyncIterable<Uint8Array>, filename: string) {
-  const stream = uploadStream({ Key: filename });
-  await writeAsyncIterableToWritable(data, stream.writeStream);
-  const file = await stream.promise;
-  // The Upload.done() result has Location/Key/Bucket/ETag.
-  return file as { Location?: string; Key?: string; Bucket?: string; ETag?: string };
-}
-
-// Helper: read an entire S3 object body into a Buffer. v3 streams are
-// AsyncIterable<Uint8Array>; we collect chunks.
-const streamToBuffer = async (stream: AsyncIterable<Uint8Array>): Promise<Buffer> => {
+const streamToBuffer = async (
+  stream: AsyncIterable<Uint8Array>
+): Promise<Buffer> => {
   const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    chunks.push(Buffer.from(chunk));
-  }
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
   return Buffer.concat(chunks);
 };
 
-export const s3UploadHandler: UploadHandler = async ({ name, filename, data }) => {
-  if (name !== "img") {
-    return undefined;
+/**
+ * Upload a single File to S3, keyed by its filename. The Header client
+ * encodes the S3 key in `file.name` using underscores in place of slashes
+ * (because browsers won't accept slashes in File names); we reverse that
+ * here before upload.
+ *
+ * For user/cover and user/profile images we also generate a sharp-resized
+ * variant and overwrite the original in-place (matching the legacy behavior).
+ */
+export async function uploadFileToS3(
+  file: File
+): Promise<{ Key: string; Location: string }> {
+  const key = file.name.replaceAll("_", "/");
+  const body = new Uint8Array(await file.arrayBuffer());
+
+  // For tiny/medium files just PutObject; for large ones (>5MB) use the
+  // multipart Upload helper so we don't have to hold the whole thing in
+  // memory unnecessarily.
+  if (body.byteLength > 5 * 1024 * 1024) {
+    const upload = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: S3_BUCKET!,
+        Key: key,
+        Body: body,
+        ContentType: file.type || undefined,
+      },
+    });
+    await upload.done();
+  } else {
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET!,
+        Key: key,
+        Body: body,
+        ContentType: file.type || undefined,
+      })
+    );
   }
 
-  const uploadedFileLocation = await uploadStreamToS3(
-    data as AsyncIterable<Uint8Array>,
-    filename?.replaceAll("_", "/")!
-  );
-
-  // For user cover / profile images, also generate a resized variant in the
-  // background and overwrite the original with the sharpened/resized version.
-  // (This preserves the behavior of the old code.)
-  if (
-    filename?.split("_")[1] === "user" &&
-    (filename?.split("_")[2] === "cover" || filename?.split("_")[2] === "profile")
-  ) {
-    const key = uploadedFileLocation.Key!;
+  // Cover/profile post-processing (same logic the old s3UploadHandler ran).
+  const parts = file.name.split("_");
+  if (parts[1] === "user" && (parts[2] === "cover" || parts[2] === "profile")) {
     try {
       const obj = await s3Client.send(
         new GetObjectCommand({ Bucket: S3_BUCKET!, Key: key })
       );
       if (obj.Body) {
-        const body = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
-        const sharped = await sharp(body)
+        const buf = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
+        const sharped = await sharp(buf)
           .resize(
-            filename?.split("_")[2] === "cover"
+            parts[2] === "cover"
               ? 1600
               : { width: 110, height: 110, fit: sharp.fit.cover }
           )
@@ -96,8 +93,9 @@ export const s3UploadHandler: UploadHandler = async ({ name, filename, data }) =
         await s3Client.send(
           new PutObjectCommand({
             Bucket: S3_BUCKET!,
-            Key: filename!.replaceAll("_", "/"),
+            Key: key,
             Body: sharped,
+            ContentType: file.type || undefined,
           })
         );
       }
@@ -106,5 +104,5 @@ export const s3UploadHandler: UploadHandler = async ({ name, filename, data }) =
     }
   }
 
-  return uploadedFileLocation.Location;
-};
+  return { Key: key, Location: publicLocation(key) };
+}
