@@ -1,6 +1,6 @@
 import type { ChangeEvent, KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useState } from "react";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "react-router";
 
 export const Notes: React.FC<{}> = () => {
   const { notes } = useLoaderData();

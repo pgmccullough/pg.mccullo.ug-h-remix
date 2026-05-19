@@ -1,10 +1,10 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "react-router";
 import { deleteEmail } from "~/utils/pusher.server";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await getUser(request);
   const rawArray = (await request.formData()).get("deleteEmails")?.toString();
   const delEmParsedArray:string[] = JSON.parse(rawArray!);

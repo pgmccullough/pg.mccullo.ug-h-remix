@@ -1,9 +1,33 @@
-# pg.mccullo.ug/h/ (Remixed)
+# pg.mccullo.ug/h/
 
-Hey, this is my attempt at refactoring my old SPA site into a fullstack Remix App. It still has a couple of spots relying on the REST API, but I'm working to gradually transition those into resource routes.
+A personal site / private social feed. For visitors: a Facebook-style chronological feed of "postcards" with infinite scroll, image/video/audio/link-preview cards, emoji reactions, comments, an "On This Day" rail spanning 25 years of imported posts, and a Stories row at the top. For me as admin: in-page tools for posting, editing, calendar, notes, wishlist, and an email client (currently dormant).
 
-For site visitors, the site is pretty straightforward: little social-media-esque "postcards" that display content in descending chronological order, with infinite scrolling loading more and more... I transferred my old Facebook and Instagram posts into the MongoDB servicing the site, so it goes back quite a way, and one of the few things that kept me from deleting my FB account were the "on this day" posts, so I integrated that functionality as well.
+## Stack
 
-Otherwise, for me as the administrator, this site provides a custom email client (thanks Postmark App!), and an ability to easily add and edit content via the forward-facing GUI, which is fun.
+React Router v7 (framework mode, SSR) on Vercel, with React 19, TypeScript, Vite. MongoDB for data, S3 for media, Pusher for real-time channels, Postmark for inbound/outbound email. Lexical for the in-page rich-text editor.
 
-Constant work in progress, always grateful for feedback. Feel free to copy/steal as much of this as you like. I'm sure whomever I stole it from won't mind.
+## Local development
+
+```bash
+cp example.env .env       # fill in the values
+npm install
+npm run dev               # http://localhost:3000
+```
+
+Other scripts:
+```bash
+npm run typecheck         # tsc --noEmit (run after `react-router typegen`)
+npm run build             # react-router build
+npm run start             # serve the build with @react-router/serve
+npm run sass              # SCSS watcher
+```
+
+## Deployment
+
+Pushes to `main` auto-deploy to Vercel via the GitHub integration. Push to any other branch to get a preview deployment. The `@vercel/react-router` preset (configured in `react-router.config.ts`) handles the build output format Vercel expects — no `vercel.json` needed.
+
+## Notes on history
+
+This repo was originally a Remix v1 app (initially intended for AWS Architect, then run on a plain Node/Express server). It was migrated to React Router v7 framework mode in May 2026 — see `MIGRATION_NOTES.md` for the details.
+
+Constant work in progress. Feel free to copy/steal as much of this as you like.

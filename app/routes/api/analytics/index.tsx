@@ -1,8 +1,8 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "react-router";
 
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const visitorJSON = (await request.formData()).get("visitor")?.toString();
   const visitor = JSON.parse(visitorJSON!);
   const client = await clientPromise;

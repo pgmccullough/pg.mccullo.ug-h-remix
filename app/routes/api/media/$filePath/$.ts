@@ -1,95 +1,136 @@
-import type { LoaderArgs, LoaderFunction } from '@remix-run/node';
-import { createReadableStreamFromReadable } from '@remix-run/node';
+import type { LoaderFunctionArgs } from "react-router";
+import { createReadableStreamFromReadable } from "@react-router/node";
+import { Readable } from "node:stream";
+import {
+  S3Client,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getUser } from "~/utils/session.server";
-import AWS from "aws-sdk";
-const sharp = require('sharp');
 
-export const loader: LoaderFunction = async ({ params, request }: LoaderArgs) => {
+const sharp = require("sharp");
 
+const { S3_BUCKET, S3_REGION, S3_KEY, S3_SECRET } = process.env;
+
+// Single client per server instance.
+const s3Client = new S3Client({
+  region: S3_REGION,
+  credentials: {
+    accessKeyId: S3_KEY!,
+    secretAccessKey: S3_SECRET!,
+  },
+});
+
+// Collect an AWS SDK v3 streaming Body into a Buffer.
+const streamToBuffer = async (stream: AsyncIterable<Uint8Array>): Promise<Buffer> => {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks);
+};
+
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await getUser(request);
 
-  const {
-    S3_BUCKET,
-    S3_KEY,
-    S3_SECRET,
-  } = process.env;
+  // RR7 splat param is exposed as params["*"] (same as Remix v1).
+  const { filePath } = params;
+  const rest = params["*"];
+  const fullPath = rest ? `${filePath}/${rest}` : filePath;
 
-  const s3 = new AWS.S3({
-    accessKeyId: S3_KEY,
-    secretAccessKey: S3_SECRET
-  });
-
-  const {filePath,['*']:rest} = params;
-  const fullPath = rest?`${filePath}/${rest}`:filePath;
-  let desiredPath: string[] | string = fullPath?.split(".")!;
-  desiredPath = `${desiredPath[0]}_600w.${desiredPath[1]}`;
-
-
-  if(fullPath?.split("/").includes("emailAttachments")&&!(user?.role==="administrator")) {
-    throw new Response("Unauthorized", {
-      status: 401
-    });
+  if (!fullPath) {
+    throw new Response("Bad Request", { status: 400 });
   }
 
-  const imageResizer = () => {
+  // Build the resized key by inserting _600w before the extension.
+  const lastDot = fullPath.lastIndexOf(".");
+  const desiredPath =
+    lastDot === -1
+      ? `${fullPath}_600w`
+      : `${fullPath.slice(0, lastDot)}_600w${fullPath.slice(lastDot)}`;
+
+  // Email attachments require admin auth.
+  if (
+    fullPath.split("/").includes("emailAttachments") &&
+    !(user?.role === "administrator")
+  ) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+
+  // Background lazy-resize: if the user didn't ask for one of the user/cover
+  // or user/profile assets (which are pre-sized at upload time), and the
+  // _600w variant doesn't exist yet, generate it for next time.
+  const imageResizer = async () => {
     try {
-      const contentExt = fullPath?.split(".").at(-1);
-      const contentID = fullPath?.replace(`.${contentExt}`,'');
-      s3.getObject({ Bucket: S3_BUCKET!, Key: `${contentID}.${contentExt}` }, (_err, data) => {
-        data
-        ?sharp(data?.Body)
-        .resize(600)
-        .toBuffer()
-        .then((sharped: any) => {
-          const resizeAndUploadToS3 = async () => {
-            await s3.upload({
-              Bucket: S3_BUCKET!,
-              Key: `${contentID}_600w.${contentExt}`,
-              Body: sharped
-            }).promise();
-          }
-          resizeAndUploadToS3();
+      const contentExt = fullPath.split(".").at(-1);
+      const contentID = fullPath.replace(`.${contentExt}`, "");
+      const obj = await s3Client.send(
+        new GetObjectCommand({ Bucket: S3_BUCKET!, Key: `${contentID}.${contentExt}` })
+      );
+      if (!obj.Body) {
+        console.error("no data returned from S3");
+        return;
+      }
+      const buf = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
+      const sharped = await sharp(buf).resize(600).toBuffer();
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: S3_BUCKET!,
+          Key: `${contentID}_600w.${contentExt}`,
+          Body: sharped,
         })
-        .catch((_err: any)  => {
-          console.error("Something went wrong with the resize.",);
-        })
-        :console.error("no data returned from S3");
-      });
-    } catch(_err) {
-      console.error("No file returned.");
+      );
+    } catch (_err) {
+      console.error("Something went wrong with the resize.");
     }
-  }
+  };
 
-  const s3paramsOriginal = {
-    Bucket: S3_BUCKET!,
-    Key: fullPath!
-  }
-
-  const s3paramsResize = {
-    Bucket: S3_BUCKET!,
-    Key: desiredPath!
-  }
-
-  let originalImage;
+  // Probe original + resize.
   let resizeImage;
   try {
-    originalImage = await s3.headObject(s3paramsOriginal).promise();
+    // headObject on the original — throws if missing.
+    await s3Client.send(
+      new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: fullPath })
+    );
     try {
-      resizeImage = await s3.headObject(s3paramsResize).promise();
-    } catch(err) {
-      if(!(fullPath?.split("/")[1]==="user"
-      && (fullPath?.split("/")[2]==="cover"
-        || fullPath?.split("/")[2]==="profile"
-        )
-      )) {
-        imageResizer()
+      resizeImage = await s3Client.send(
+        new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: desiredPath })
+      );
+    } catch {
+      const isUserAsset =
+        fullPath.split("/")[1] === "user" &&
+        (fullPath.split("/")[2] === "cover" ||
+          fullPath.split("/")[2] === "profile");
+      if (!isUserAsset) {
+        // Fire-and-forget the background resize for next request.
+        void imageResizer();
       }
     }
-  } catch(err) {}
-  
-  
-  const baseOutput = s3.getObject(resizeImage?s3paramsResize:s3paramsOriginal)
-  .createReadStream();
+  } catch {
+    /* original missing — fall through and let getObject throw */
+  }
 
-  return new Response(createReadableStreamFromReadable(baseOutput))
-}
+  const keyToServe = resizeImage ? desiredPath : fullPath;
+  const obj = await s3Client.send(
+    new GetObjectCommand({ Bucket: S3_BUCKET!, Key: keyToServe })
+  );
+
+  if (!obj.Body) {
+    throw new Response("Not Found", { status: 404 });
+  }
+
+  // v3 Body is a Node.js Readable in Lambda/Node contexts. createReadable
+  // StreamFromReadable expects a Node Readable.
+  const nodeStream =
+    obj.Body instanceof Readable
+      ? obj.Body
+      : Readable.from(obj.Body as AsyncIterable<Uint8Array>);
+
+  const headers = new Headers();
+  if (obj.ContentType) headers.set("Content-Type", obj.ContentType);
+  if (obj.ContentLength) headers.set("Content-Length", String(obj.ContentLength));
+  if (obj.ETag) headers.set("ETag", obj.ETag);
+  // Cache resized variants and user assets aggressively.
+  headers.set("Cache-Control", "public, max-age=31536000, immutable");
+
+  return new Response(createReadableStreamFromReadable(nodeStream), { headers });
+};

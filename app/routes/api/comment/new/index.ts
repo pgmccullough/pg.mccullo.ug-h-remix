@@ -1,11 +1,11 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "react-router";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { v4 as uuidv4 } from 'uuid';
 import type { CommentI } from "~/components/Comments/Comments";
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await getUser(request);
   let newComment: CommentI = {id: uuidv4(), parentId: "", body: "", userId: "", timestamp: Date.now()};
   let prevComments;

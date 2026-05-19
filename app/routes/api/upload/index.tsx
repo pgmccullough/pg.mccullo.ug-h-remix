@@ -1,15 +1,24 @@
-import type { ActionArgs, UploadHandler } from "@remix-run/node";
+import type { ActionFunctionArgs, UploadHandler } from "react-router";
 import {
-  json,
   unstable_composeUploadHandlers as composeUploadHandlers,
   unstable_createMemoryUploadHandler as createMemoryUploadHandler,
   unstable_parseMultipartFormData as parseMultipartFormData,
-} from "@remix-run/node";
-import AWS from "aws-sdk";
+} from "@react-router/node";
+import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
 
 import { s3UploadHandler } from "~/utils/s3.server";
 
-export const action = async ({ request }: ActionArgs) => {
+const { S3_BUCKET, S3_REGION, S3_KEY, S3_SECRET } = process.env;
+
+const s3Client = new S3Client({
+  region: S3_REGION,
+  credentials: {
+    accessKeyId: S3_KEY!,
+    secretAccessKey: S3_SECRET!,
+  },
+});
+
+export const action = async ({ request }: ActionFunctionArgs) => {
   const uploadHandler: UploadHandler = composeUploadHandlers(
     s3UploadHandler,
     createMemoryUploadHandler()
@@ -17,39 +26,34 @@ export const action = async ({ request }: ActionArgs) => {
   const formData = await parseMultipartFormData(request, uploadHandler);
   const imgSrc = formData.get("img");
 
-
-  const {
-    S3_BUCKET,
-    S3_KEY,
-    S3_SECRET,
-  } = process.env;
-
-  const s3 = new AWS.S3({
-    accessKeyId: S3_KEY,
-    secretAccessKey: S3_SECRET
-  });
-
-  const s3params = {
-    Bucket: S3_BUCKET!,
-    Key: imgSrc?.toString().replace("https://s3.amazonaws.com/pg.mccullo.ug/","")!
-  }
-
-  let baseOutput = await s3.getObject(s3params).promise()
-
   if (!imgSrc) {
-    return json({
+    return Response.json({
       errorMsg: "Something went wrong while uploading",
     });
   }
-  if(imgSrc.toString().includes('/images/emailAttachments/')) {
-    return json({
+
+  // For email attachments, look up the file's content length so the composer
+  // can match content back to attachment metadata.
+  if (imgSrc.toString().includes("/images/emailAttachments/")) {
+    const key = imgSrc
+      .toString()
+      .replace("https://s3.amazonaws.com/pg.mccullo.ug/", "");
+    let contentLength: number | undefined;
+    try {
+      const head = await s3Client.send(
+        new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: key })
+      );
+      contentLength = head.ContentLength;
+    } catch (_err) {
+      contentLength = undefined;
+    }
+    return Response.json({
       imgSrc: {
         file: imgSrc,
-        ContentLength: baseOutput.ContentLength
+        ContentLength: contentLength,
       },
-    });  
+    });
   }
-  return json({
-    imgSrc,
-  });
+
+  return Response.json({ imgSrc });
 };

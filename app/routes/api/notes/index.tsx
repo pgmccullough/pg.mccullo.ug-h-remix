@@ -1,10 +1,10 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "react-router";
 import { ObjectId } from "~/lib/mongodb";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await getUser(request);
   let note = null;
   if(user?.role==="administrator") {

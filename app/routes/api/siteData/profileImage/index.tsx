@@ -1,10 +1,10 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "react-router";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
 import { newProfileImg } from "~/utils/pusher.server";
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   let profileImgRes = null;
   const user = await getUser(request);
   if(user?.role==="administrator") {

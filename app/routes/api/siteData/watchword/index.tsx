@@ -1,10 +1,10 @@
-import type { ActionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "react-router";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
 import { newWatchWord } from "~/utils/pusher.server";
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
   const user = await getUser(request);
   let watchwordRes = null;
   const watchwordData:any = {}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "react-router";
 import { TextEditor } from "../TextEditor/TextEditor";
 import { Comment } from "./Comment";
  

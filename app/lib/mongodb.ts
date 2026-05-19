@@ -1,30 +1,23 @@
-import { MongoClient, ObjectId } from 'mongodb'
+import { MongoClient, ObjectId } from "mongodb";
 
 declare global {
-  var __db: MongoClient | undefined;
+  // eslint-disable-next-line no-var
+  var __mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-if (!process.env.MONGODB_URL) {
-  throw new Error('Invalid environment variable: "MONGODB_URL"')
+const uri = process.env.MONGODB_URL;
+
+if (!uri) {
+  throw new Error('Invalid environment variable: "MONGODB_URL"');
 }
 
-const uri = process.env.MONGODB_URL
-
-let client
-let clientPromise: Promise<MongoClient>
-
-if (!process.env.MONGODB_URL) {
-  throw new Error('Please add your Mongo URI to .env.local')
-}
-
-if (process.env.NODE_ENV === "production") {
-  client = new MongoClient(uri);
-  clientPromise = client.connect();
-} else {
-  if(!global.__db) {
-    global.__db = new MongoClient(uri);
-  }
-  clientPromise = global.__db.connect();
-}
+// Cache the connection promise on globalThis so warm serverless function
+// invocations (and Vite dev HMR) re-use the same MongoClient instance.
+//
+// MongoClient handles connection pooling internally; calling .connect() on
+// the same client is a no-op after the first call, so this is safe.
+const clientPromise: Promise<MongoClient> =
+  globalThis.__mongoClientPromise ??
+  (globalThis.__mongoClientPromise = new MongoClient(uri).connect());
 
 export { clientPromise, ObjectId };

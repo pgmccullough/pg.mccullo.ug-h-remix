@@ -1,4 +1,4 @@
-import { Link, useFetcher, useLoaderData } from "@remix-run/react";
+import { Link, useFetcher, useLoaderData } from "react-router";
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSwipe } from '~/utils/hooks/useSwipe';
 import { stampToTime } from '../../functions/functions';

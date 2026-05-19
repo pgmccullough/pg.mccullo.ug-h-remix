@@ -1,5 +1,5 @@
-import { LoaderFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { LoaderFunction } from "react-router";
+import { useLoaderData } from "react-router";
 import { useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";

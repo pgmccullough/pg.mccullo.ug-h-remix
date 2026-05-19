@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import {
     createCookieSessionStorage,
     redirect,
-} from "@remix-run/node";
+} from "react-router";
 
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 

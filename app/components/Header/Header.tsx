@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useFetcher, useLoaderData } from "@remix-run/react";
+import { Link } from 'react-router';
+import { useFetcher, useLoaderData } from "react-router";
 import { useEffect, useRef, useState } from 'react';
 import { Post, SiteData, User } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
