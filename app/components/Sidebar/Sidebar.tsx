@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { User, SiteData } from '../../common/types';
 import { Calendar, Email, Notes, RentalProperties, SiteActivity, TaskTracker, Webcam, WishList } from '~/adminApps';
 import { TextEditor } from '../TextEditor/TextEditor';
+import { SignInModal } from '../SignInModal/SignInModal';
 
 export const Sidebar: React.FC<{
   manualSiteData?: SiteData,
@@ -22,6 +23,7 @@ export const Sidebar: React.FC<{
   const [ editMode, setEditMode ] = useState<boolean>(false);
   const [ editPrompt, toggleEditPrompt ] = useState<boolean>(false);
   const [ bioContent, setBioContent ] = useState<string|undefined>(siteData?.site_description);
+  const [ showSignInModal, setShowSignInModal ] = useState<boolean>(false);
 
   const bioFetch = useFetcher();
 
@@ -119,9 +121,11 @@ export const Sidebar: React.FC<{
           text-decoration: none;
           font-size: 0.9rem;
           font-weight: 600;
+          font-family: inherit;
           letter-spacing: 0.02em;
           transition: background-color 0.15s ease, transform 0.05s ease;
           border: 1px solid #1a1a1a;
+          cursor: pointer;
         }
         .sidebar-session__btn:hover,
         .sidebar-session__btn:focus-visible {
@@ -153,11 +157,19 @@ export const Sidebar: React.FC<{
                 Sign out
               </Link>
             </>
-          : <Link to="/h/login" className="sidebar-session__btn">
+          : <button
+              type="button"
+              onClick={() => setShowSignInModal(true)}
+              className="sidebar-session__btn"
+            >
               Sign in / Sign up
-            </Link>
+            </button>
         }
       </article>
+
+      {showSignInModal && (
+        <SignInModal onClose={() => setShowSignInModal(false)} />
+      )}
 
       {!manualSiteData&&user?.role==="administrator"
         ?<>

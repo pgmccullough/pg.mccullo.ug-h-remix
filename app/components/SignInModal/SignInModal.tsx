@@ -3,11 +3,28 @@ import { useFetcher, Link } from "react-router";
 import { GitHubLogo } from "~/assets/svgs/GitHubLogo";
 import { GoogleLogo } from "~/assets/svgs/GoogleLogo";
 
-export const SignInModal: React.FC = () => {
+/**
+ * SignInModal can be used two ways:
+ *
+ *   1) As a full route at /h/login — close interactions navigate back to /h.
+ *   2) As an in-page overlay opened by a button — caller passes `onClose`
+ *      and the close interactions call that callback instead of navigating.
+ */
+export const SignInModal: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const loginForm = useFetcher();
   const registerForm = useFetcher();
   const [loginError, setLoginError] = useState<string|null>(null);
   const [isRegister, setIsRegister] = useState<boolean>(false);
+
+  // Close-on-Escape for the overlay variant.
+  useEffect(() => {
+    if (!onClose) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   useEffect(() => {
     if(registerForm.data?.registered) {
@@ -22,14 +39,38 @@ export const SignInModal: React.FC = () => {
     }
   },[ loginForm ])
 
+  // Close interactions: callback for the overlay variant, navigation for
+  // the standalone /h/login route variant.
+  const backdrop = onClose
+    ? <button
+        type="button"
+        aria-label="Close"
+        className="register__background"
+        onClick={onClose}
+        style={{ border: 0, padding: 0 }}
+      />
+    : <Link className="register__background" to="/h" aria-label="Close" />;
+
+  const closeButton = onClose
+    ? <button
+        type="button"
+        aria-label="Close"
+        className="register__card__button"
+        onClick={onClose}
+        style={{ border: 0 }}
+      >
+        <p className="register__card__button__x">+</p>
+      </button>
+    : <Link className="register__card__button" to="/h" aria-label="Close">
+        <p className="register__card__button__x">+</p>
+      </Link>;
+
   return (
     <>
       <div className="register">
-        <Link className="register__background" to="/h" />
+        {backdrop}
         <div className="register__card">
-          <Link className="register__card__button" to="/h">
-            <p className="register__card__button__x">+</p>
-          </Link>
+          {closeButton}
           <div className="register__card__head">
             {isRegister?"Create your account":"Log in"}
           </div>
