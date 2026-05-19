@@ -111,9 +111,6 @@ export const Sidebar: React.FC<{
         .sidebar-session {
           text-align: center;
           padding: 14px 12px;
-          background: #eee;
-          border: 1px solid #979997;
-          border-radius: 4px;
         }
         .sidebar-session__line {
           font-size: 13px;
