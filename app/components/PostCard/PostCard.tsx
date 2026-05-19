@@ -196,6 +196,13 @@ export const PostCard: React.FC<{
                         value={postFeedback.likesOn?"true":"false"}
                       /> Likes
                     </div>
+                    {/* Hidden: the post's edited HTML content. Without
+                        this, SAVE only updates privacy/feedback. */}
+                    <input
+                      type="hidden"
+                      name="content"
+                      value={editPostText}
+                    />
                     <button>SAVE</button>
                   </fetcher.Form>
                   <>

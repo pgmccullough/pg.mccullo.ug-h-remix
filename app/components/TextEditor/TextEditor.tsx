@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, SetStateAction } from "react";
 import {
   $getNodeByKey,
+  $getNearestNodeFromDOMNode,
   $getRoot,
   $getSelection,
   $isRangeSelection,
@@ -51,8 +52,24 @@ export const TextEditor: React.FC<{
 }) => {
 
   const [ linkBox, setLinkBox ] = useState<{
-    editor: any, editRemove: boolean, isOpen: boolean, linkNode: any, posX: number, posY: number, url: string, text: string
-  }>({editor: null, editRemove: false, isOpen: false, linkNode: null, posX: 0, posY: 0, url: "", text: ""})
+    editor: any,
+    editRemove: boolean,
+    isOpen: boolean,
+    linkNodeKey: string | null,
+    posX: number,
+    posY: number,
+    url: string,
+    text: string,
+  }>({
+    editor: null,
+    editRemove: false,
+    isOpen: false,
+    linkNodeKey: null,
+    posX: 0,
+    posY: 0,
+    url: "",
+    text: "",
+  })
 
   const Placeholder = ({placeholderText}:{placeholderText?:string}) => {
     return (
@@ -62,62 +79,68 @@ export const TextEditor: React.FC<{
     )
   }
 
+  // Identify the clicked link via Lexical's DOM↔node mapping rather than
+  // by walking DOM parents. Crucially, read `getAttribute('href')` for the
+  // *raw* href — the `.href` property resolves empty hrefs to the current
+  // page URL, which was the source of the "URL reverts to .../h/" bug.
   const linkClicked = (event: any, editor: LexicalEditor) => {
     event.preventDefault();
+    const linkEl: HTMLAnchorElement | null = event.target?.closest?.("a");
+    if (!linkEl) return;
     const { layerY, layerX } = event;
-    const { href, innerText } = event.target.parentNode;
-    setLinkBox({ ...linkBox, editor, linkNode: event.target, editRemove: true, posX: layerX, posY: layerY, url: href, text: innerText });
-  }
+    const href = linkEl.getAttribute("href") ?? "";
+    const innerText = linkEl.innerText;
 
-  // Note: this used to read `node.__children` directly. Lexical no longer
-  // exposes that internal field — we use the public `getChildren()` API and
-  // operate on the resulting array instead.
-  const traverseNodes = (node: LexicalNode, updatedLinkNode: LexicalNode) => {
-    // Element-node check: only ElementNode subclasses have children.
-    const maybeWithChildren = node as LexicalNode & {
-      getChildren?: () => LexicalNode[];
-    };
-    if (typeof maybeWithChildren.getChildren !== "function") return;
-
-    const children = maybeWithChildren.getChildren();
-    if ($isLinkNode(node)) {
-      const linkRef = linkBox.linkNode?.[Object.keys(linkBox.linkNode)[0]];
-      if (linkRef && children.includes(linkRef as LexicalNode)) {
-        node.replace(updatedLinkNode);
-        return;
+    let linkNodeKey: string | null = null;
+    editor.read(() => {
+      const node = $getNearestNodeFromDOMNode(linkEl);
+      let candidate: LexicalNode | null = node;
+      while (candidate && !$isLinkNode(candidate)) {
+        candidate = candidate.getParent();
       }
-    }
-    children.forEach((child: LexicalNode) => {
-      traverseNodes(child, updatedLinkNode);
+      if (candidate) linkNodeKey = candidate.getKey();
+    });
+
+    setLinkBox({
+      ...linkBox,
+      editor,
+      linkNodeKey,
+      editRemove: true,
+      posX: layerX,
+      posY: layerY,
+      url: href,
+      text: innerText,
     });
   }
 
   const removeLink = () => {
     linkBox.editor.update(() => {
-      const strippedLink = $createTextNode(linkBox.linkNode.innerHTML);
-      let children = $getRoot().getChildren();
-      children.length&&children.forEach((node:LexicalNode) => {
-        traverseNodes(node, strippedLink)
-      })
-      setLinkBox({ ...linkBox, editRemove: false });
-    })
+      if (!linkBox.linkNodeKey) return;
+      const node = $getNodeByKey(linkBox.linkNodeKey);
+      if (node && $isLinkNode(node)) {
+        // Replace the link with a plain text node containing its text.
+        node.replace($createTextNode(node.getTextContent()));
+      }
+    });
+    setLinkBox({ ...linkBox, editRemove: false });
   }
 
   const updateLink = () => {
     linkBox.editor.update(() => {
-      const updatedLinkNode = $createLinkNode(linkBox.url, {
-        rel: linkBox.linkNode.parentElement.getAttribute('rel'),
-        target: linkBox.linkNode.parentElement.getAttribute('target')
-      })
-      const parser = new DOMParser();
-      const linkText = parser.parseFromString(linkBox.text||linkBox.url, 'text/html');
-      const nodes = $generateNodesFromDOM(linkBox.editor, linkText);
-      nodes.forEach((n)=> updatedLinkNode.append(n))
-      let children = $getRoot().getChildren();
-      children.length&&children.forEach((node:LexicalNode) => {
-        traverseNodes(node, updatedLinkNode)
-      })
-    })
+      if (!linkBox.linkNodeKey) return;
+      const node = $getNodeByKey(linkBox.linkNodeKey);
+      if (!node || !$isLinkNode(node)) return;
+
+      // Update the URL in place.
+      (node as any).setURL?.(linkBox.url);
+
+      // Update visible text by swapping children out for a fresh text node.
+      const desiredText = linkBox.text || linkBox.url;
+      if (desiredText && desiredText !== node.getTextContent()) {
+        node.getChildren().forEach((c: LexicalNode) => c.remove());
+        node.append($createTextNode(desiredText));
+      }
+    });
     setLinkBox({ ...linkBox, isOpen: false });
   }
 
