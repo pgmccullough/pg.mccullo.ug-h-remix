@@ -21,6 +21,8 @@ import {
   Person,
   Image,
   Endpoints,
+  CryptographicKey,
+  Multikey,
   exportJwk,
   importJwk,
   generateCryptoKeyPair,
@@ -134,6 +136,7 @@ async function loadOrCreateKeyPairs(handle: string): Promise<CryptoKeyPair[]> {
 
 federation
   .setActorDispatcher(`/users/{identifier}`, async (ctx, identifier) => {
+    console.log(`[federation] actor dispatcher CALLED for identifier=${identifier}`);
     if (identifier !== PRIMARY_USERNAME) return null;
 
     let user: any = null;
@@ -153,6 +156,35 @@ federation
       console.error(`[federation] actor dispatcher: no user found for "PGMcCullough"`);
       return null;
     }
+
+    // Eagerly load the keypairs so we can attach them to the Person object
+    // directly. Belt-and-suspenders with setKeyPairsDispatcher — the latter
+    // hasn't been reliably injecting publicKey in this Fedify version.
+    const keyPairs = await loadOrCreateKeyPairs(identifier);
+    console.log(`[federation] loaded ${keyPairs.length} keypair(s) for ${identifier}`);
+    const rsaPair = keyPairs.find(
+      (kp) => (kp.publicKey.algorithm as any)?.name === "RSASSA-PKCS1-v1_5"
+    );
+    const edPair = keyPairs.find(
+      (kp) => (kp.publicKey.algorithm as any)?.name === "Ed25519"
+    );
+    const actorUri = ctx.getActorUri(identifier);
+    const publicKey = rsaPair
+      ? new CryptographicKey({
+          id: new URL(`${actorUri.href}#main-key`),
+          owner: actorUri,
+          publicKey: rsaPair.publicKey,
+        })
+      : undefined;
+    const assertionMethod = edPair
+      ? [
+          new Multikey({
+            id: new URL(`${actorUri.href}#ed25519-key`),
+            controller: actorUri,
+            publicKey: edPair.publicKey,
+          }),
+        ]
+      : undefined;
 
     const name =
       [user.first_name, user.last_name].filter(Boolean).join(" ") || "Patrick";
@@ -182,12 +214,19 @@ federation
         ? new Image({ url: new URL(absoluteUrl(user.cover_image.image)) })
         : undefined,
       published: user.created ? new Date(user.created) : undefined,
+      // Explicitly attach keys so they appear in the actor doc regardless
+      // of whether setKeyPairsDispatcher auto-injection is working.
+      publicKey,
+      assertionMethods: assertionMethod,
     });
   })
   .setKeyPairsDispatcher(async (_ctx, identifier) => {
+    console.log(`[federation] key dispatcher CALLED for identifier=${identifier}`);
     if (identifier !== PRIMARY_USERNAME) return [];
     try {
-      return await loadOrCreateKeyPairs(identifier);
+      const pairs = await loadOrCreateKeyPairs(identifier);
+      console.log(`[federation] key dispatcher returning ${pairs.length} pair(s)`);
+      return pairs;
     } catch (err) {
       console.error(`[federation] key dispatcher failed for ${identifier}:`, err);
       return [];
