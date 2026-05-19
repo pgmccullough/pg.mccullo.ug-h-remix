@@ -79,6 +79,7 @@ export const SiteActivity: React.FC<{}> = () => {
           left: 0;
           width: 360px;
           max-width: 90vw;
+          max-height: 50vh;
           z-index: 80;
           background: #fff;
           border: 1px solid #979997;
@@ -88,21 +89,18 @@ export const SiteActivity: React.FC<{}> = () => {
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          /* Closed by default: slide the whole drawer downward by its own
+             height minus the 40px header, so only the header peeks above
+             the viewport bottom. */
+          transform: translateY(calc(100% - 40px));
+          transition: transform 0.3s ease;
         }
-        .siteActivity__body {
-          /* Animated open/close. max-height of 0 collapses to nothing;
-             50vh when open. Both end-states are concrete values so the
-             transition has something to interpolate between. */
-          max-height: 0;
-          overflow-y: auto;
-          transition: max-height 0.28s ease;
-          border-top: 1px solid #ddd;
-        }
-        .siteActivity__body--open {
-          max-height: 50vh;
+        .siteActivity--open {
+          transform: translateY(0);
         }
         .siteActivity__header {
-          padding: 10px 14px;
+          flex: 0 0 40px;
+          padding: 0 14px;
           background: #eee;
           font-weight: 600;
           color: #506982;
@@ -111,6 +109,12 @@ export const SiteActivity: React.FC<{}> = () => {
           align-items: center;
           cursor: pointer;
           user-select: none;
+          box-sizing: border-box;
+        }
+        .siteActivity__body {
+          flex: 1 1 auto;
+          overflow-y: auto;
+          border-top: 1px solid #ddd;
         }
         .siteActivity__header:hover { background: #e6e6e6; }
         .siteActivity__caret {
@@ -138,10 +142,12 @@ export const SiteActivity: React.FC<{}> = () => {
         }
       `}</style>
 
-      <div className="siteActivity">
-        {/* Header on TOP, body BELOW it. Container is anchored to the
-            viewport bottom, so as the body's max-height grows from 0 the
-            container grows upward and the header rides up with it. */}
+      <div className={`siteActivity${expanded ? " siteActivity--open" : ""}`}>
+        {/* Header on TOP, body BELOW it. The container is fixed at
+            bottom:0 and is translated downward by (own height - header)
+            when closed, so only the header pokes above the viewport
+            bottom. Toggling the --open class swaps to translateY(0),
+            and the transition animates the slide. */}
         <div
           className="siteActivity__header"
           onClick={() => setExpanded(!expanded)}
@@ -153,10 +159,7 @@ export const SiteActivity: React.FC<{}> = () => {
             ^
           </span>
         </div>
-        <div
-          className={`siteActivity__body${expanded ? " siteActivity__body--open" : ""}`}
-          aria-hidden={!expanded}
-        >
+        <div className="siteActivity__body" aria-hidden={!expanded}>
           {sorted.length === 0 ? (
             <div className="siteActivity__row" style={{ color: "#888" }}>
               No visits recorded yet.
