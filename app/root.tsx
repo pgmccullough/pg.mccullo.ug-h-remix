@@ -39,8 +39,14 @@ export const meta: MetaFunction = () => [
   { name: "viewport", content: "width=device-width,initial-scale=1" },
 ];
 
+// GA tracking ID is a public value (the "measurement ID" shows up in any
+// outbound network request from analytics-enabled pages anyway), so we
+// bake it in at build time from VITE_GA_TRACKING_ID rather than round-
+// tripping through loader data. Falsy in dev / when unset → no GA loads.
+const GA_TRACKING_ID: string = import.meta.env.VITE_GA_TRACKING_ID ?? "";
+
 export const loader = async (_args: LoaderFunctionArgs) => {
-  return { gaTrackingId: "G-48Y17ZTWTK" };
+  return { gaTrackingId: GA_TRACKING_ID };
 };
 
 export default function App() {
@@ -60,12 +66,17 @@ export default function App() {
         <Links />
       </head>
       <body>
-        {process.env.NODE_ENV === "development" || !gaTrackingId ? null : (
+        {!import.meta.env.PROD || !gaTrackingId ? null : (
           <>
             <script
               async
               src={`https://www.googletagmanager.com/gtag/js?id=${gaTrackingId}`}
             />
+            {/* gtag() is just a dataLayer pusher; defining it before the
+                external script loads is fine. We DON'T fire a `config`
+                pageview here — the useEffect below handles every nav
+                including the first one, so doing both would double-count
+                the initial hit. */}
             <script
               async
               id="gtag-init"
@@ -74,9 +85,7 @@ export default function App() {
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${gaTrackingId}', {
-                  page_path: window.location.pathname,
-                });
+                gtag('config', '${gaTrackingId}', { send_page_view: false });
               `,
               }}
             />

@@ -1,5 +1,6 @@
 import { SetStateAction, useEffect, useState } from "react"
 import { useFetcher } from "react-router"
+import * as gtag from "~/utils/gtags.client";
 
 export const SearchBar: React.FC<{
   alterPostArray: SetStateAction<any>,
@@ -18,6 +19,12 @@ export const SearchBar: React.FC<{
 
   const searchPosts = () => {
     if(searchQuery.length===0) return;
+    gtag.event({
+      action: "search_performed",
+      category: "engagement",
+      label: searchQuery,
+      value: "",
+    });
     mongoFetch.submit(
       { searchQuery },
       { method: "post", action: `/api/post/search?index` }

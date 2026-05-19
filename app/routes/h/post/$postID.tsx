@@ -1,10 +1,11 @@
 import { LoaderFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { serializeDoc } from "~/utils/serialize.server";
+import * as gtag from "~/utils/gtags.client";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { postID = "" } = params;
@@ -29,10 +30,21 @@ export const loader: LoaderFunction = async ({ params, request }) => {
 
 export default function SinglePost() {
   const { post } = useLoaderData();
- 
+
   const [ editState, setEditState ] = useState<{
     isOn: boolean, id: string|null
   }>({ isOn: false, id: null })
+
+  useEffect(() => {
+    if (post?._id) {
+      gtag.event({
+        action: "post_view",
+        category: "engagement",
+        label: String(post._id),
+        value: "",
+      });
+    }
+  }, [post?._id]);
 
   return (
     <>

@@ -206,7 +206,7 @@ export const Sidebar: React.FC<{
           <WishList />
           {/* <RentalProperties /> */}
           {/* <Webcam /> */}
-          {/* <SiteActivity /> */}
+          <SiteActivity />
         </>
         :""}
     </div>

@@ -3,6 +3,7 @@ import { useFetcher, useLoaderData } from "react-router";
 import { TextEditor } from "../TextEditor/TextEditor";
 import { Comment } from "./Comment";
 import { SignInModal } from "../SignInModal/SignInModal";
+import * as gtag from "~/utils/gtags.client";
  
 export interface CommentI {
   id: string,
@@ -32,6 +33,12 @@ export const Comments: React.FC<
       setInStateComments(postComment.data.newCommentObj);
       // Don't mutate fetcher.data — it's frozen in v7.
       setClearContent(true);
+      gtag.event({
+        action: "comment_posted",
+        category: "engagement",
+        label: postId,
+        value: "",
+      });
     }
   },[ postComment ]);
 

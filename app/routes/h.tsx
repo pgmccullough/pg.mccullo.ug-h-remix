@@ -10,7 +10,7 @@ import { getUser } from "~/utils/session.server";
 import { Header } from "~/components/Header/Header";
 import { Sidebar } from "~/components/Sidebar/Sidebar";
 import { PostCard } from "~/components/PostCard/PostCard";
-// import { Analytics } from "~/components/Analytics/Analytics";
+import { Analytics } from "~/components/Analytics/Analytics";
 import { clientPromise } from "~/lib/mongodb";
 import { serializeDocs } from "~/utils/serialize.server";
 import * as postmark from "postmark";
@@ -157,7 +157,7 @@ export default function Index() {
   const [newPost, setNewPost] = useState<Post | undefined>();
   return (
     <>
-      {/* <Analytics IPSTACK_APIKEY={IPSTACK_APIKEY} /> */}
+      <Analytics />
       {user?.role === "administrator" ? (
         <Header setNewPost={setNewPost} storyPost={storyPost} />
       ) : (

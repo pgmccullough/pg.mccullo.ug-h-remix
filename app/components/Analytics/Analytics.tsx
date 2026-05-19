@@ -1,43 +1,36 @@
-import { useEffect, useState } from "react"
-import { useFetcher, useLoaderData, useMatches } from 'react-router';
-import { IPData, User, Visitor } from "~/common/types";
+import { useEffect, useRef } from "react";
+import { useFetcher, useLoaderData, useMatches } from "react-router";
 
-export const Analytics: React.FC<{IPSTACK_APIKEY: {IPSTACK_APIKEY: string}}> = ({IPSTACK_APIKEY}) => {
+/**
+ * Lightweight visitor tracking pinger. Fires once per pathname change.
+ * The client only sends what it knows (the path, its localStorage
+ * guestUUID, whether there's a signed-in user). The server resolves IP
+ * + geo from request headers — that keeps the IPStack API key off the
+ * client and avoids a redundant network round trip.
+ */
+export const Analytics: React.FC = () => {
   const matches = useMatches();
-  let { user } = useLoaderData();
+  const { user } = useLoaderData<{ user: { id: string; user_name: string } | null }>();
   const updateVisitor = useFetcher();
-  const initVisit = {
-    customName: "",
-    history: [],
-    ip: [],
-    ipData: [],
-    guestUUID: [],
-    user: []
-  }
-  const [ visitor, setVisitor ] = useState<Visitor>(initVisit)
+  const lastReportedPath = useRef<string | null>(null);
 
-  useEffect(()=> {
-    let buildVisitor:Visitor = {...visitor};
-    const curPath = matches.at(-1)?.pathname||"/";
-    if(visitor.history.at(-1)?.path!==curPath) {
-      buildVisitor = initVisit;
-      buildVisitor.history.push({action: null, path: curPath, timestamp: Date.now()});
-      buildVisitor.guestUUID.push(localStorage?.guestUUID);
-      buildVisitor.user.push(user||null);
-      (async () => {
-        const apiResponse = await fetch("https://api.ipify.org/?format=json");
-        const ipObj: { ip: string } = await apiResponse.json();
-        buildVisitor.ip.push(ipObj.ip);
-        const userData = await fetch(`https://api.ipstack.com/${ipObj.ip}?access_key=${IPSTACK_APIKEY}`);
-        buildVisitor.ipData.push(await userData.json());
-        setVisitor(buildVisitor);
-        updateVisitor.submit(
-          { visitor: JSON.stringify(buildVisitor) },
-          { method: "post", action: `/api/analytics?index` }
-        );
-      })()
-    }
-  },[matches])
+  useEffect(() => {
+    const curPath = matches.at(-1)?.pathname ?? "/";
+    if (lastReportedPath.current === curPath) return;
+    lastReportedPath.current = curPath;
 
-  return <></>
-}
+    updateVisitor.submit(
+      {
+        path: curPath,
+        guestUUID: (typeof localStorage !== "undefined" && localStorage.guestUUID) || "",
+        userId: user?.id?.toString() ?? "",
+        userName: user?.user_name ?? "",
+        referrer: typeof document !== "undefined" ? document.referrer : "",
+      },
+      { method: "post", action: "/api/analytics?index" }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches]);
+
+  return null;
+};
