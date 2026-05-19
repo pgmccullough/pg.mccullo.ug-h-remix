@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from "react-router";
+import type { ActionFunctionArgs } from "react-router";
 import { ObjectId } from "~/lib/mongodb";
 import { clientPromise } from "~/lib/mongodb";
 
@@ -27,7 +27,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
-    return json(
+    return Response.json(
       { storedProperties },
       {
         headers: {
