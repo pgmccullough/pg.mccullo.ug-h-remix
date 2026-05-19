@@ -6,7 +6,10 @@ import { stampToTime } from '~/functions/functions';
 import { PostCreator } from '../PostCreator/PostCreator';
 import { StoryPost } from '../StoryPost/StoryPost';
 import { v4 as uuidv4 } from 'uuid';
-import { gps as getGPS } from 'exifr';
+// exifr v7 changed its export shape; the named { gps } import no longer
+// resolves over ESM. Use the default export and call exifr.gps() instead.
+import exifr from 'exifr';
+const getGPS = (input: any) => exifr.gps(input);
 import Pusher from "pusher-js";
 
 export const Header: React.FC<{
