@@ -101,10 +101,9 @@ export const Comments: React.FC<
             .comment-signin {
               margin: 12px 0 4px 0;
             }
-            /* NOTE: deliberately not resetting margin on the button —
-               we want it to keep the global `margin: 0 8px` from
-               _global.scss so it lines up horizontally with the React
-               button (which inherits the same margin). */
+            /* NOTE: deliberately not resetting margin on the button so
+               it keeps the global 0 8px margin from _global.scss and
+               lines up horizontally with the React button. */
             .comment-signin__btn,
             .comment-signin__btn:visited {
               height: auto;
