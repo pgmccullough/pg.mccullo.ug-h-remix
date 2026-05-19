@@ -87,7 +87,8 @@ const MEDIA_BASE = `https://${DOMAIN}/api/media/`;
 function mediaItemToDocument(
   item: any
 ): Document | APImage | null {
-  // Items can be strings (URLs) or objects with url + meta. Be defensive.
+  // Items can be strings (URLs) or objects with url + meta. Be defensive —
+  // post history spans years of schema drift.
   const url =
     typeof item === "string"
       ? item
@@ -95,9 +96,16 @@ function mediaItemToDocument(
   if (typeof url !== "string" || !url.length) return null;
 
   // Normalize to absolute URL.
-  let absolute = url;
+  let absolute = url.trim();
   if (absolute.startsWith("/")) absolute = `https://${DOMAIN}${absolute}`;
   else if (!/^https?:\/\//.test(absolute)) absolute = `${MEDIA_BASE}${absolute}`;
+
+  // Guard against the URL constructor throwing on garbage data.
+  try {
+    new URL(absolute);
+  } catch {
+    return null;
+  }
 
   // Crude media-type detection from extension.
   const ext = absolute.split(".").pop()?.toLowerCase() ?? "";
@@ -151,12 +159,20 @@ export function postToNote(post: PostDoc, ctx: Context<void>): Note {
   const followersUri = ctx.getFollowersUri(PRIMARY_USERNAME);
   const noteUri = new URL(`${actorUri.href}/posts/${id}`);
 
-  // post.created is unix seconds; AP wants ms.
-  const published =
-    typeof post.created === "number"
-      ? new Date(post.created * 1000)
-      : undefined;
+  // post.created is unix seconds; AP wants Temporal.Instant (or Date).
+  // Guard against missing/garbage created timestamps in old posts.
+  let published: Date | undefined;
+  if (typeof post.created === "number" && Number.isFinite(post.created)) {
+    const d = new Date(post.created * 1000);
+    if (!Number.isNaN(d.getTime())) published = d;
+  }
 
+  const attachments = collectAttachments(post);
+
+  // Note in Fedify accepts both `attribution` (the actor object or URL)
+  // and `attributions` (array). `attachment` / `attachments` similarly.
+  // We use the canonical singular/plural that Fedify expects in the ctor:
+  // see https://fedify.dev for the model.
   return new Note({
     id: noteUri,
     url: new URL(`https://${DOMAIN}/h/post/${id}`),
@@ -167,7 +183,7 @@ export function postToNote(post: PostDoc, ctx: Context<void>): Note {
     // post.content is HTML written via Lexical. We trust ourselves since
     // we're the only poster. Mastodon renders this as HTML.
     content: post.content ?? "",
-    attachments: collectAttachments(post),
+    attachments: attachments.length ? attachments : undefined,
   });
 }
 

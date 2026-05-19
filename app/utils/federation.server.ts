@@ -487,15 +487,33 @@ federation
           ? beforeCreated
           : undefined,
       });
+      // Serialize each post defensively — bad data on any one post
+      // shouldn't sink the whole outbox response.
+      const serialized = [];
+      for (const post of items) {
+        try {
+          serialized.push(postToCreate(post, ctx));
+        } catch (err) {
+          console.error(
+            `[federation] failed to serialize post ${post._id}:`,
+            err
+          );
+        }
+      }
       return {
-        items: items.map((post) => postToCreate(post, ctx)),
+        items: serialized,
         nextCursor: nextCursor != null ? String(nextCursor) : null,
       };
     }
   )
   .setCounter(async (_ctx, identifier) => {
     if (identifier !== PRIMARY_USERNAME) return null;
-    return await countPublicPosts();
+    try {
+      return await countPublicPosts();
+    } catch (err) {
+      console.error(`[federation] outbox counter failed:`, err);
+      return null;
+    }
   });
 
 // ---------------------------------------------------------------------------
