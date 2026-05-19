@@ -23,12 +23,21 @@ import {
   Endpoints,
   CryptographicKey,
   Multikey,
+  Follow,
+  Undo,
+  Accept,
   exportJwk,
   importJwk,
   generateCryptoKeyPair,
 } from "@fedify/fedify";
 
 import { clientPromise } from "~/lib/mongodb";
+import {
+  recordFollower,
+  removeFollower,
+  countFollowers,
+  listFollowers,
+} from "~/utils/federation-followers.server";
 
 // Hardcoded for now — single-user instance. Phase E (managed hosting) will
 // look this up per request from the host header / Mongo.
@@ -242,30 +251,125 @@ function absoluteUrl(maybePath: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Stubs for inbox / outbox / followers / following.
-// Phase A1 only needs them to *exist* so the actor document is valid.
-// Phase A2 will fill in inbox handling; A3 the outbox + delivery.
+// Inbox handlers — A2: accept Follow / Undo Follow
 // ---------------------------------------------------------------------------
-
-federation.setInboxListeners(`/users/{identifier}/inbox`, `/inbox`);
+//
+// Fedify verifies HTTP signatures on incoming activities before invoking
+// these handlers, so by the time we see a Follow we trust it's actually
+// from the actor it claims to be from.
 
 federation
-  .setOutboxDispatcher(
-    `/users/{identifier}/outbox`,
-    async (_ctx, _identifier, _cursor) => ({ items: [] })
-  );
+  .setInboxListeners(`/users/{identifier}/inbox`, `/inbox`)
+  .on(Follow, async (ctx, follow) => {
+    console.log(`[federation] Follow received from ${follow.actorId?.href}`);
+
+    // Defensive — the spec lets a Follow target any "object", we only accept
+    // those targeting our actor.
+    if (!follow.objectId || !follow.actorId) {
+      console.warn(`[federation] Follow missing actor or object`);
+      return;
+    }
+    // Validate that the target is one of our actors.
+    const parsed = ctx.parseUri(follow.objectId);
+    if (parsed?.type !== "actor" || parsed.identifier !== PRIMARY_USERNAME) {
+      console.warn(
+        `[federation] Follow targets ${follow.objectId.href}, not us — ignoring`
+      );
+      return;
+    }
+
+    // Look up the follower's actor doc to get their inbox URL.
+    const follower = await follow.getActor(ctx);
+    if (follower == null) {
+      console.warn(`[federation] could not dereference follower actor`);
+      return;
+    }
+    const inboxUri = follower.inboxId?.href;
+    if (!inboxUri) {
+      console.warn(`[federation] follower has no inbox`);
+      return;
+    }
+
+    await recordFollower({
+      handle: PRIMARY_USERNAME,
+      actorUri: follow.actorId.href,
+      inboxUri,
+      sharedInboxUri: follower.endpoints?.sharedInbox?.href,
+      followedAt: Date.now(),
+    });
+
+    // Send the Accept back. Fedify signs it with our key automatically.
+    await ctx.sendActivity(
+      { identifier: PRIMARY_USERNAME },
+      follower,
+      new Accept({ actor: follow.objectId, object: follow })
+    );
+
+    console.log(
+      `[federation] accepted Follow from ${follow.actorId.href}, total followers: ${await countFollowers(
+        PRIMARY_USERNAME
+      )}`
+    );
+  })
+  .on(Undo, async (ctx, undo) => {
+    // Only Undo's that wrap a Follow targeting us are interesting.
+    const inner = await undo.getObject(ctx);
+    if (!(inner instanceof Follow)) return;
+    if (!inner.objectId || !undo.actorId) return;
+
+    const parsed = ctx.parseUri(inner.objectId);
+    if (parsed?.type !== "actor" || parsed.identifier !== PRIMARY_USERNAME) {
+      return;
+    }
+    await removeFollower(PRIMARY_USERNAME, undo.actorId.href);
+    console.log(`[federation] removed follower ${undo.actorId.href}`);
+  });
+
+// ---------------------------------------------------------------------------
+// Outbox stub (Phase A3 will replace with real post listing)
+// ---------------------------------------------------------------------------
+
+federation.setOutboxDispatcher(
+  `/users/{identifier}/outbox`,
+  async (_ctx, _identifier, _cursor) => ({ items: [] })
+);
+
+// ---------------------------------------------------------------------------
+// Followers dispatcher — A2: live from Mongo
+// ---------------------------------------------------------------------------
 
 federation
   .setFollowersDispatcher(
     `/users/{identifier}/followers`,
-    async (_ctx, _identifier, _cursor) => ({ items: [] })
-  );
+    async (_ctx, identifier, cursor) => {
+      if (identifier !== PRIMARY_USERNAME) return null;
+      const cursorMs = cursor ? Number(cursor) : undefined;
+      const { items, nextCursorMs } = await listFollowers(identifier, {
+        limit: 50,
+        cursorMs: Number.isFinite(cursorMs) ? cursorMs : undefined,
+      });
+      return {
+        items: items.map((f) => ({
+          id: new URL(f.actorUri),
+          inboxId: new URL(f.inboxUri),
+          endpoints: f.sharedInboxUri
+            ? { sharedInbox: new URL(f.sharedInboxUri) }
+            : null,
+        })),
+        nextCursor: nextCursorMs != null ? String(nextCursorMs) : null,
+      };
+    }
+  )
+  .setCounter(async (_ctx, identifier) => {
+    if (identifier !== PRIMARY_USERNAME) return null;
+    return await countFollowers(identifier);
+  });
 
-federation
-  .setFollowingDispatcher(
-    `/users/{identifier}/following`,
-    async (_ctx, _identifier, _cursor) => ({ items: [] })
-  );
+// We don't expose a /following list yet (Phase B will add outbound follows).
+federation.setFollowingDispatcher(
+  `/users/{identifier}/following`,
+  async (_ctx, _identifier, _cursor) => ({ items: [] })
+);
 
 // ---------------------------------------------------------------------------
 // NodeInfo — tells crawlers what software we run.
