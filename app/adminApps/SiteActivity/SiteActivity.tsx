@@ -15,10 +15,16 @@ interface VisitorDoc {
 
 function place(visitor: VisitorDoc): string {
   const d = visitor.lastIpData ?? visitor.ipData?.[visitor.ipData.length - 1];
-  if (!d) return "?";
-  const parts = [d.city, d.region_code, d.country_code]
-    .filter((x) => typeof x === "string" && x.length);
-  return parts.length ? parts.join(", ") : (d.country_name || "?");
+  if (d) {
+    const parts = [d.city, d.region_code, d.country_code]
+      .filter((x) => typeof x === "string" && x.length);
+    if (parts.length) return parts.join(", ");
+    if (d.country_name) return d.country_name;
+  }
+  // Last-resort fallback for entries with no geo data — show the IP itself
+  // so admin has SOMETHING to go on. Better than the unhelpful "?".
+  const ip = visitor.ip?.[visitor.ip.length - 1];
+  return ip || "unknown";
 }
 
 function flag(visitor: VisitorDoc): string {

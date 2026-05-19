@@ -38,17 +38,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { msg: "no-ip" };
     }
 
-    // Geo lookup via IPStack (server-side now).
-    let ipData: any = null;
-    const apiKey = process.env.IPSTACK_APIKEY;
-    if (apiKey) {
-      try {
-        const res = await fetch(
-          `https://api.ipstack.com/${encodeURIComponent(ip)}?access_key=${apiKey}`
-        );
-        if (res.ok) ipData = await res.json();
-      } catch (err) {
-        console.error("[analytics] IPStack lookup failed:", err);
+    // Geo lookup. Strategy:
+    //   1. Vercel already includes geo data in request headers when the
+    //      function runs on their network — it's instant, free, no quota.
+    //   2. Fall back to IPStack only if Vercel didn't tell us anything
+    //      (e.g., local dev or non-Vercel deploy) AND we have an API key.
+    let ipData: any = geoFromVercelHeaders(request);
+    if (!ipData) {
+      const apiKey = process.env.IPSTACK_APIKEY;
+      if (apiKey) {
+        try {
+          const res = await fetch(
+            `https://api.ipstack.com/${encodeURIComponent(ip)}?access_key=${apiKey}`
+          );
+          if (res.ok) ipData = await res.json();
+        } catch (err) {
+          console.error("[analytics] IPStack lookup failed:", err);
+        }
       }
     }
 
@@ -115,4 +121,84 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     console.error("[analytics] action failed:", err);
     return { msg: "error" };
   }
+};
+
+// ---------------------------------------------------------------------------
+// Vercel geo headers → IPStack-shaped object (so SiteActivity rendering
+// is the same regardless of which source the data came from).
+// ---------------------------------------------------------------------------
+
+function geoFromVercelHeaders(request: Request): any | null {
+  const country = request.headers.get("x-vercel-ip-country") ?? "";
+  if (!country) return null;
+  // Vercel URL-encodes city / region (spaces become %20, etc.).
+  const decode = (v: string | null) => {
+    if (!v) return undefined;
+    try { return decodeURIComponent(v); } catch { return v; }
+  };
+  const city = decode(request.headers.get("x-vercel-ip-city"));
+  const region = decode(request.headers.get("x-vercel-ip-country-region"));
+  const lat = Number(request.headers.get("x-vercel-ip-latitude") ?? "");
+  const lon = Number(request.headers.get("x-vercel-ip-longitude") ?? "");
+  return {
+    country_code: country,
+    country_name: COUNTRY_NAMES[country] ?? country,
+    region_code: region,
+    region_name: region,
+    city,
+    latitude: Number.isFinite(lat) ? lat : undefined,
+    longitude: Number.isFinite(lon) ? lon : undefined,
+    location: {
+      country_flag_emoji: flagFromCC(country),
+    },
+  };
+}
+
+// Convert a 2-letter country code to its flag emoji via the Unicode
+// Regional Indicator Symbols. "US" → 🇺🇸, "GB" → 🇬🇧, etc.
+function flagFromCC(cc: string): string {
+  if (!cc || cc.length !== 2) return "";
+  const base = 0x1f1e6; // Regional Indicator Symbol A
+  const codePoints = cc
+    .toUpperCase()
+    .split("")
+    .map((c) => base + (c.charCodeAt(0) - 65));
+  if (codePoints.some((n) => n < base || n > base + 25)) return "";
+  return String.fromCodePoint(...codePoints);
+}
+
+// Tiny lookup for the most common visitor countries — saves us from
+// shipping a 250-entry table. Fallback is to just show the country code.
+const COUNTRY_NAMES: Record<string, string> = {
+  US: "United States",
+  GB: "United Kingdom",
+  CA: "Canada",
+  AU: "Australia",
+  DE: "Germany",
+  FR: "France",
+  IE: "Ireland",
+  NL: "Netherlands",
+  ES: "Spain",
+  IT: "Italy",
+  SE: "Sweden",
+  NO: "Norway",
+  FI: "Finland",
+  DK: "Denmark",
+  BE: "Belgium",
+  CH: "Switzerland",
+  AT: "Austria",
+  PL: "Poland",
+  CZ: "Czechia",
+  PT: "Portugal",
+  GR: "Greece",
+  JP: "Japan",
+  KR: "South Korea",
+  CN: "China",
+  IN: "India",
+  BR: "Brazil",
+  MX: "Mexico",
+  AR: "Argentina",
+  NZ: "New Zealand",
+  ZA: "South Africa",
+  UG: "Uganda",
 };
