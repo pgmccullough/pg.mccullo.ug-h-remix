@@ -8,7 +8,18 @@ export default defineConfig({
     port: 3000,
   },
   ssr: {
-    // Keep these server-only deps external so Vite doesn't try to bundle them
-    noExternal: [],
+    // These packages ship CommonJS-only (or have an `exports` field that
+    // doesn't expose the named exports we use). When Vite leaves them as
+    // bare external imports in the SSR bundle, Node's ESM loader trips
+    // on the named-import syntax. Telling Vite to bundle them ourselves
+    // lets Vite handle the CJS<->ESM interop properly.
+    noExternal: [
+      "browser-image-resizer",
+      "exifr",
+      "pusher",
+      "pusher-js",
+      "bcryptjs",
+      "postmark",
+    ],
   },
 });
