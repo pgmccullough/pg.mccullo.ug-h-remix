@@ -1,6 +1,11 @@
 import type { ActionFunctionArgs } from "react-router";
 import { getUser } from "~/utils/session.server";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
+import {
+  federatePostToFollowers,
+  federatePostUpdate,
+  federatePostDelete,
+} from "~/utils/federation-posts.server";
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
   const { postId } = params;
@@ -22,8 +27,6 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   const sharesOnStr = postData.get("sharesOn")?.toString();
   const sharesOn = !sharesOnStr || sharesOnStr === "false" ? false : true;
   const newContentRaw = postData.get("content");
-  // Only treat content as "submitted" if the form actually included the
-  // field — distinguish "no field" from "empty string".
   const newContent =
     newContentRaw !== null ? newContentRaw.toString() : null;
 
@@ -31,11 +34,17 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   const db = client.db("user_posts");
 
   let privacyUpdated;
+  let federationAction: "update" | "delete" | "create" | "none" = "none";
   try {
     const existing = await db
       .collection("myPosts")
       .findOne({ _id: new ObjectId(postId) });
     if (!existing) return { privacyUpdated: false };
+
+    const wasPublic = existing.privacy === "Public";
+    const isPublic = postPrivacyData === "Public";
+    const contentChanged =
+      newContent !== null && newContent !== existing.content;
 
     const prevFeedback = existing.feedback ?? {};
     const nextFeedback = { ...prevFeedback, commentsOn, likesOn, sharesOn };
@@ -52,9 +61,39 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     privacyUpdated = await db
       .collection("myPosts")
       .updateOne({ _id: new ObjectId(postId) }, { $set: updates });
+
+    // Decide what to tell followers.
+    if (wasPublic && isPublic && contentChanged) {
+      federationAction = "update";
+    } else if (wasPublic && !isPublic) {
+      federationAction = "delete";
+    } else if (!wasPublic && isPublic) {
+      federationAction = "create";
+    }
   } catch (err) {
     console.error("[post/update] failed:", err);
     privacyUpdated = false;
   }
+
+  // Fire-and-forget federation. Errors are logged but don't fail the
+  // user-facing save.
+  if (federationAction !== "none") {
+    const origin = new URL(request.url).origin;
+    try {
+      if (federationAction === "update") {
+        await federatePostUpdate({ client, origin, postId });
+      } else if (federationAction === "delete") {
+        await federatePostDelete({ client, origin, postId });
+      } else if (federationAction === "create") {
+        await federatePostToFollowers({ client, origin, postId });
+      }
+    } catch (err) {
+      console.error(
+        `[post/update] federation (${federationAction}) failed:`,
+        err
+      );
+    }
+  }
+
   return { privacyUpdated };
 };

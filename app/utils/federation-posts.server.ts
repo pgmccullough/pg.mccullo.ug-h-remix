@@ -9,6 +9,8 @@
 import {
   Note,
   Create,
+  Update,
+  Delete,
   Image as APImage,
   Document,
   PUBLIC_COLLECTION,
@@ -307,4 +309,117 @@ export async function federatePostToFollowers(args: {
     `[federation] post ${args.postId}: ${succeeded} ok, ${failed} failed`
   );
   return { attempted: followers.length, succeeded, failed };
+}
+
+// ---------------------------------------------------------------------------
+// Update + Delete delivery
+// ---------------------------------------------------------------------------
+
+async function listFollowerRecipients(client: MongoClient): Promise<
+  Array<{
+    id: URL;
+    inboxId: URL;
+    endpoints: { sharedInbox: URL } | null;
+  }>
+> {
+  const db = client.db("user_posts");
+  const followers = await db
+    .collection("federation_followers")
+    .find({ handle: PRIMARY_USERNAME })
+    .toArray();
+  return followers.map((f) => ({
+    id: new URL(f.actorUri),
+    inboxId: new URL(f.inboxUri),
+    endpoints: f.sharedInboxUri
+      ? { sharedInbox: new URL(f.sharedInboxUri) }
+      : null,
+  }));
+}
+
+async function fanout(
+  ctx: Context<void>,
+  recipients: Array<{ id: URL; inboxId: URL; endpoints: any }>,
+  activity: any,
+  label: string
+): Promise<{ succeeded: number; failed: number }> {
+  if (recipients.length === 0) {
+    console.log(`[federation] no followers for ${label}`);
+    return { succeeded: 0, failed: 0 };
+  }
+  const results = await Promise.allSettled(
+    recipients.map((r) =>
+      ctx.sendActivity({ identifier: PRIMARY_USERNAME }, r, activity)
+    )
+  );
+  let succeeded = 0;
+  let failed = 0;
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") succeeded++;
+    else {
+      failed++;
+      console.error(
+        `[federation] ${label} → ${recipients[i].id.href} failed:`,
+        r.reason
+      );
+    }
+  });
+  console.log(`[federation] ${label}: ${succeeded} ok, ${failed} failed`);
+  return { succeeded, failed };
+}
+
+/**
+ * Notify followers that a Public post has been edited. The Update wraps
+ * the entire updated Note; receivers replace their cached copy. No-op if
+ * the post isn't currently Public.
+ */
+export async function federatePostUpdate(args: {
+  client: MongoClient;
+  origin: string;
+  postId: string;
+}) {
+  const { federation } = await import("~/utils/federation.server");
+  const post = await findPublicPostById(args.postId);
+  if (!post) {
+    console.log(
+      `[federation] update: post ${args.postId} not Public, skipping`
+    );
+    return;
+  }
+  const ctx = federation.createContext(new URL(args.origin), undefined);
+  const actorUri = ctx.getActorUri(PRIMARY_USERNAME);
+  const note = postToNote(post, ctx);
+  const update = new Update({
+    id: new URL(`${actorUri.href}/posts/${args.postId}#update-${Date.now()}`),
+    actor: actorUri,
+    object: note,
+    to: PUBLIC_COLLECTION,
+    cc: ctx.getFollowersUri(PRIMARY_USERNAME),
+  });
+  const recipients = await listFollowerRecipients(args.client);
+  await fanout(ctx, recipients, update, `update post ${args.postId}`);
+}
+
+/**
+ * Tell followers a post has been removed. Standard ActivityPub pattern is
+ * a Delete activity whose `object` is the Note's URI. The receivers turn
+ * it into a Tombstone locally.
+ */
+export async function federatePostDelete(args: {
+  client: MongoClient;
+  origin: string;
+  postId: string;
+}) {
+  const { federation } = await import("~/utils/federation.server");
+  const ctx = federation.createContext(new URL(args.origin), undefined);
+  const actorUri = ctx.getActorUri(PRIMARY_USERNAME);
+  const noteUri = new URL(`${actorUri.href}/posts/${args.postId}`);
+  const del = new Delete({
+    id: new URL(`${actorUri.href}/posts/${args.postId}#delete-${Date.now()}`),
+    actor: actorUri,
+    object: noteUri,
+    to: PUBLIC_COLLECTION,
+    cc: ctx.getFollowersUri(PRIMARY_USERNAME),
+  });
+  const recipients = await listFollowerRecipients(args.client);
+  await fanout(ctx, recipients, del, `delete post ${args.postId}`);
 }
