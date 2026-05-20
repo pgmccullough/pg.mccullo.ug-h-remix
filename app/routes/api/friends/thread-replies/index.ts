@@ -74,42 +74,54 @@ function authorFromActor(actorUri: string, actor: any): ReplyAuthor {
   };
 }
 
-async function fetchMastodonReplies(noteUri: string): Promise<ReplyOut[]> {
-  // Get the Note so we can find its replies collection. Some servers
-  // (Mastodon) expose `${noteUri}/replies` directly; we use it as a
-  // shortcut if `note.replies` doesn't yield a URL.
-  const note = await fetchAP(noteUri);
+interface MastodonReplyResult {
+  replies: ReplyOut[];
+  /** AP CollectionPage `next` URL — pass back as `nextUrl` to keep paging. */
+  nextUrl: string | null;
+}
 
-  let collectionUrl: string | null = null;
-  let inlinePage: any = null;
-  if (note?.replies) {
-    if (typeof note.replies === "string") collectionUrl = note.replies;
-    else if (typeof note.replies.id === "string") collectionUrl = note.replies.id;
-    else if (note.replies.first) {
-      if (typeof note.replies.first === "string") collectionUrl = note.replies.first;
-      else inlinePage = note.replies.first;
+async function fetchMastodonReplies(
+  noteUri: string,
+  cursor?: string
+): Promise<MastodonReplyResult> {
+  // Fast path: if the caller already has a `next` URL from a previous
+  // page, fetch it directly and skip the Note→Collection lookup.
+  let page: any = null;
+  if (cursor) {
+    page = await fetchAP(cursor);
+  } else {
+    const note = await fetchAP(noteUri);
+
+    let collectionUrl: string | null = null;
+    if (note?.replies) {
+      if (typeof note.replies === "string") collectionUrl = note.replies;
+      else if (typeof note.replies.id === "string") collectionUrl = note.replies.id;
+      else if (note.replies.first) {
+        if (typeof note.replies.first === "string") collectionUrl = note.replies.first;
+        else page = note.replies.first;
+      }
     }
-  }
-  if (!collectionUrl && !inlinePage) {
-    collectionUrl = `${noteUri.replace(/\/$/, "")}/replies`;
-  }
-
-  // Resolve to a CollectionPage with items.
-  let page = inlinePage;
-  if (!page && collectionUrl) {
-    const collection = await fetchAP(collectionUrl);
-    if (collection) {
-      if (collection.first) {
-        page = typeof collection.first === "string"
-          ? await fetchAP(collection.first)
-          : collection.first;
-      } else {
-        page = collection;
+    if (!collectionUrl && !page) {
+      // Mastodon convention; falls back gracefully on other servers.
+      collectionUrl = `${noteUri.replace(/\/$/, "")}/replies`;
+    }
+    if (!page && collectionUrl) {
+      const collection = await fetchAP(collectionUrl);
+      if (collection) {
+        if (collection.first) {
+          page = typeof collection.first === "string"
+            ? await fetchAP(collection.first)
+            : collection.first;
+        } else {
+          page = collection;
+        }
       }
     }
   }
+
   const items: any[] = page?.items ?? page?.orderedItems ?? [];
-  if (!items.length) return [];
+  const nextUrl = typeof page?.next === "string" ? page.next : null;
+  if (!items.length) return { replies: [], nextUrl };
   const capped = items.slice(0, MAX_REPLIES);
 
   // Resolve each item (may already be inlined as an object).
@@ -164,7 +176,7 @@ async function fetchMastodonReplies(noteUri: string): Promise<ReplyOut[]> {
       author,
     });
   }
-  return out;
+  return { replies: out, nextUrl };
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -176,6 +188,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
   const source = form.get("source")?.toString();
   const noteUri = form.get("noteUri")?.toString();
+  const nextUrl = form.get("nextUrl")?.toString() || undefined;
 
   if (!noteUri || !source) {
     return Response.json(
@@ -187,14 +200,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (source !== "mastodon") {
     // Bluesky is fetched server-side already; if other sources are
     // added later they'd plug in here.
-    return Response.json({ replies: [] });
+    return Response.json({ replies: [], nextUrl: null });
   }
 
   try {
-    const replies = await fetchMastodonReplies(noteUri);
-    return Response.json({ replies });
+    const result = await fetchMastodonReplies(noteUri, nextUrl);
+    return Response.json(result);
   } catch (err) {
     console.error("[friends thread-replies] failed:", err);
-    return Response.json({ replies: [] });
+    return Response.json({ replies: [], nextUrl: null });
   }
 };

@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect, useFetcher, useLoaderData } from "react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { TextEditor } from "~/components/TextEditor/TextEditor";
 import { stampToTime } from "~/functions/functions";
 
@@ -852,44 +852,81 @@ const FriendPostCard: React.FC<{
   // Async-loaded reply thread for Mastodon posts. The Bluesky thread
   // is already populated server-side; for Mastodon we walk the AP
   // replies Collection on demand to avoid blocking the page load.
+  // nextPageUrl tracks the server-side cursor: undefined = haven't
+  // fetched yet, string = there's another page, null = end of thread.
   const [asyncReplies, setAsyncReplies] = useState<ThreadedReply[]>([]);
+  const [nextPageUrl, setNextPageUrl] = useState<string | null | undefined>(
+    post.source === "mastodon" ? undefined : null
+  );
+  const [loadingMore, setLoadingMore] = useState(false);
+  // Render-side pagination — show 10 comments at a time and let the
+  // user click "Show N more" to reveal another batch. Each click that
+  // exhausts our cache will also trigger the next server page fetch
+  // if there is one.
+  const [visibleCount, setVisibleCount] = useState(10);
+
+  const fetchReplyPage = useCallback(
+    async (cursor?: string) => {
+      if (post.source !== "mastodon") return;
+      const fd = new FormData();
+      fd.set("source", post.source);
+      fd.set("noteUri", post.noteUri);
+      if (cursor) fd.set("nextUrl", cursor);
+      try {
+        const res = await fetch("/api/friends/thread-replies", {
+          method: "POST",
+          body: fd,
+        });
+        const data = await res.json() as {
+          replies?: Array<{
+            noteUri: string; content: string; timestampMs: number;
+            url?: string; author?: {
+              displayName?: string; handle?: string;
+              fqHandle?: string; avatarUrl?: string;
+            };
+          }>;
+          nextUrl?: string | null;
+        };
+        if (!Array.isArray(data?.replies)) return;
+        setAsyncReplies((prev) => {
+          // Dedupe against both prior pages and loader-provided replies.
+          const seen = new Set([
+            ...prev.map((r) => r.noteUri),
+            ...(replies ?? []).map((r) => r.noteUri),
+          ]);
+          const fresh: ThreadedReply[] = data.replies!
+            .filter((r) => r.noteUri && !seen.has(r.noteUri))
+            .map((r) => ({
+              kind: "remote" as const,
+              content: r.content,
+              authorActorUri: r.noteUri, // unused for render; inlineAuthor wins
+              timestampMs: r.timestampMs,
+              noteUri: r.noteUri,
+              url: r.url,
+              inlineAuthor: r.author,
+            }));
+          return [...prev, ...fresh];
+        });
+        setNextPageUrl(typeof data.nextUrl === "string" ? data.nextUrl : null);
+      } catch (err) {
+        console.error("[friends] thread fetch failed:", err);
+        // Treat fetch errors as "no more pages" so the button stops.
+        setNextPageUrl(null);
+      }
+    },
+    [post.noteUri, post.source, replies]
+  );
+
+  // Initial fetch on mount for Mastodon posts.
   useEffect(() => {
     if (post.source !== "mastodon") return;
     let cancelled = false;
-    const fd = new FormData();
-    fd.set("source", post.source);
-    fd.set("noteUri", post.noteUri);
-    fetch("/api/friends/thread-replies", { method: "POST", body: fd })
-      .then((r) => r.json())
-      .then((data: { replies?: Array<{
-        noteUri: string; content: string; timestampMs: number;
-        url?: string; author?: {
-          displayName?: string; handle?: string;
-          fqHandle?: string; avatarUrl?: string;
-        };
-      }> }) => {
-        if (cancelled || !Array.isArray(data?.replies)) return;
-        const existingUris = new Set((replies ?? []).map((r) => r.noteUri));
-        const fresh: ThreadedReply[] = data.replies
-          // Avoid showing the same reply twice when one came in via
-          // the inbox AND via the AP walk.
-          .filter((r) => r.noteUri && !existingUris.has(r.noteUri))
-          .map((r) => ({
-            kind: "remote" as const,
-            content: r.content,
-            authorActorUri: r.noteUri, // unused for render; we use inlineAuthor
-            timestampMs: r.timestampMs,
-            noteUri: r.noteUri,
-            url: r.url,
-            inlineAuthor: r.author,
-          }));
-        setAsyncReplies(fresh);
-      })
-      .catch((err) => {
-        if (!cancelled) console.error("[friends] async replies fetch failed:", err);
-      });
+    (async () => {
+      await fetchReplyPage();
+      if (cancelled) return;
+    })();
     return () => { cancelled = true; };
-  }, [post.noteUri, post.source, replies]);
+  }, [post.noteUri, post.source, fetchReplyPage]);
 
   // Merge loader-provided replies (mine + inboxed + Bluesky thread)
   // with anything we fetched on the client. Re-sort each render so
@@ -897,6 +934,29 @@ const FriendPostCard: React.FC<{
   const allReplies = [...(replies ?? []), ...asyncReplies].sort(
     (a, b) => a.timestampMs - b.timestampMs
   );
+  const visibleReplies = allReplies.slice(0, visibleCount);
+  const remainingClient = allReplies.length - visibleCount;
+  const canFetchMoreServer = !!nextPageUrl;
+
+  const handleShowMore = async () => {
+    if (loadingMore) return;
+    if (remainingClient > 0) {
+      // We have cached replies to reveal first.
+      setVisibleCount((n) => n + 10);
+      return;
+    }
+    // Cache exhausted — pull the next server page, then bump visible.
+    if (canFetchMoreServer) {
+      setLoadingMore(true);
+      await fetchReplyPage(nextPageUrl ?? undefined);
+      setVisibleCount((n) => n + 10);
+      setLoadingMore(false);
+    }
+  };
+
+  const showMoreCount = remainingClient > 0
+    ? Math.min(10, remainingClient)
+    : (canFetchMoreServer ? 10 : 0);
 
   // Optimistic like state: when a submit is in-flight, reflect its intent.
   const liked = reactFetcher.formData
@@ -1118,8 +1178,9 @@ const FriendPostCard: React.FC<{
             {/* Threaded replies rendered with the SAME class names the
                 home-page <Comment> uses (.comment / .comment__poster /
                 .comment__user-image / .comment__content / etc.) so
-                styling, spacing, and avatar treatment match exactly. */}
-            {allReplies.map((r) => {
+                styling, spacing, and avatar treatment match exactly.
+                Paged 10 at a time via the "Show N more" link below. */}
+            {visibleReplies.map((r) => {
               const ra = actorsLookup?.[r.authorActorUri];
               const isMine = r.kind === "mine";
               // Prefer inlineAuthor (from client-side async fetch),
@@ -1160,6 +1221,33 @@ const FriendPostCard: React.FC<{
                 </div>
               );
             })}
+
+            {/* "Show N more" — reveals the next 10 cached comments; if
+                we've shown everything we have but the server has more
+                pages (Mastodon AP), fetches the next page first. */}
+            {showMoreCount > 0 ? (
+              <div style={{ margin: "6px 0 10px" }}>
+                <button
+                  type="button"
+                  className="friend-show-more"
+                  onClick={handleShowMore}
+                  disabled={loadingMore}
+                  style={{
+                    background: "transparent",
+                    border: 0,
+                    padding: 0,
+                    cursor: loadingMore ? "default" : "pointer",
+                    color: "#4A6CBA",
+                    font: "600 12px 'PGM Sans', sans-serif",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {loadingMore
+                    ? "Loading…"
+                    : `Show ${showMoreCount} more comment${showMoreCount === 1 ? "" : "s"}`}
+                </button>
+              </div>
+            ) : null}
 
             {/* Reply via the same Lexical editor the home-feed Comments use. */}
             <div style={{ marginTop: 12 }}>
