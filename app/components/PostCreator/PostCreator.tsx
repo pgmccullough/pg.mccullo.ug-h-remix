@@ -139,6 +139,15 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   },[fileUploadForm])
 
   const submitPost = () => {
+    // Block submit while any direct-to-S3 upload is still in flight.
+    // Without this guard, in-flight videos get silently excluded from
+    // the post (collectDirectUploads filters on alreadyUploaded).
+    const stillUploading = pendingUploads.some((f: any) => f.uploading);
+    if (stillUploading) {
+      console.warn("[PostCreator] submit blocked: upload still in progress");
+      return;
+    }
+
     const clonePostObject = {...postObject};
     if(youTubePreviews.filter((video:YouTubeVideo) => video.show).length) {
       const media = {...postObject.media, links: youTubePreviews.filter((video:YouTubeVideo) => video.show)}

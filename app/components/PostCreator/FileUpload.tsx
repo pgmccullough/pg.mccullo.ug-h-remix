@@ -6,6 +6,102 @@ import type { YouTubeVideo } from "~/common/types";
 // bundle and crash. Loaded via dynamic import() inside the resize callback,
 // which only runs after the user picks a file in the browser.
 
+/**
+ * Capture a frame from a video File using a <video> + canvas. Returns
+ * a JPEG data URL the UploadPreview can render as a thumbnail, or null
+ * if anything goes wrong. Best-effort — failure just means the preview
+ * falls back to its filename / icon placeholder.
+ */
+function extractVideoThumbnail(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    // Don't actually attach to the DOM — we just need the decoder.
+    let done = false;
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      try { URL.revokeObjectURL(url); } catch {}
+    };
+    const fail = () => {
+      cleanup();
+      resolve(null);
+    };
+    const grab = () => {
+      try {
+        const w = video.videoWidth || 640;
+        const h = video.videoHeight || 360;
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return fail();
+        ctx.drawImage(video, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        cleanup();
+        resolve(dataUrl);
+      } catch {
+        fail();
+      }
+    };
+    video.onloadeddata = () => {
+      // Seek a fraction in so we don't grab a black first frame.
+      const target = Math.min(0.5, (video.duration || 1) * 0.1);
+      if (Number.isFinite(target) && target > 0) {
+        try {
+          video.currentTime = target;
+        } catch {
+          grab();
+        }
+      } else {
+        grab();
+      }
+    };
+    video.onseeked = grab;
+    video.onerror = fail;
+    // Safety net — give up after 5s.
+    setTimeout(fail, 5000);
+    video.src = url;
+  });
+}
+
+/**
+ * PUT a File to S3 via a presigned URL, reporting upload progress.
+ * Resolves on a 2xx response, rejects otherwise. Returns nothing —
+ * the caller already knows the basename it presigned.
+ */
+function putWithProgress(args: {
+  url: string;
+  body: Blob;
+  contentType: string;
+  onProgress: (pct: number) => void;
+}): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) {
+        args.onProgress(Math.round((ev.loaded / ev.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        args.onProgress(100);
+        resolve();
+      } else {
+        reject(new Error(`PUT ${xhr.status}: ${xhr.responseText}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error("PUT network error"));
+    xhr.ontimeout = () => reject(new Error("PUT timeout"));
+    xhr.open("PUT", args.url);
+    xhr.setRequestHeader("Content-Type", args.contentType);
+    xhr.send(args.body);
+  });
+}
+
 export const FileUpload: React.FC<{
   fileInputRef: any,
   imagesUploading: number,
@@ -23,24 +119,25 @@ export const FileUpload: React.FC<{
     return await readAndCompressImage(file, config);
   },[])
 
-  const removeFile = (name: string) => {
-    const filteredUploads = [...pendingUploads].filter((file:{data: any, meta: any}) => file.meta.name !== name);
-    setPendingUploads(filteredUploads);
+  const removeFile = (key: string) => {
+    setPendingUploads((prev: any[]) =>
+      prev.filter((file: any) =>
+        // Try uploadId first (direct-to-S3), fall back to filename (image branch).
+        file.uploadId ? file.uploadId !== key : file.meta?.name !== key
+      )
+    );
   }
 
   /**
    * Handle a freshly-picked file. Branch on MIME type:
    *
    *   image/*  -> resize client-side, base64 it, queue for the
-   *               existing /api/upload/base64 path
-   *   video/*  -> presign a PUT URL, upload the bytes directly to
-   *               S3 (Vercel never sees them — required for >4.5 MB),
-   *               then queue a pending entry that already has its
-   *               final basename + kind so PostCreator doesn't re-
-   *               upload it.
-   *   other    -> treated like video for the purposes of bypassing
-   *               the 4.5 MB function body cap, just stored under the
-   *               kind that matches the MIME family (audio/* -> audio,
+   *               existing /api/upload/base64 path. (No progress UI
+   *               here — the resize + base64 round-trip is fast.)
+   *   video/*  -> presign a PUT URL, upload the bytes directly to S3
+   *               with progress reporting + a client-extracted thumb.
+   *   other    -> same direct-to-S3 path, just stored under whichever
+   *               kind matches the MIME family (audio/* -> audio,
    *               everything else -> files).
    */
   const attachmentHandler = async (e:React.ChangeEvent<HTMLInputElement>) => {
@@ -57,9 +154,9 @@ export const FileUpload: React.FC<{
         const reader = new FileReader();
         reader.readAsDataURL(resized);
         reader.onload = (ev) => {
-          setPendingUploads((prev:{data: any, meta: any}[]) => {
+          setPendingUploads((prev: any[]) => {
             const deDuplicated = prev
-              .filter((f:{data: any, meta: any}) => f.data !== ev.target!.result);
+              .filter((f: any) => f.data !== ev.target!.result);
             return [
               ...deDuplicated,
               { data: ev.target!.result, meta: resized, kind: "images" },
@@ -67,12 +164,47 @@ export const FileUpload: React.FC<{
           });
         };
       } else {
-        // Direct-to-S3 path. Get a presigned URL, then PUT the file
-        // straight to S3 from the browser — bypassing the Vercel
-        // serverless body cap entirely.
+        // Direct-to-S3 path, async with live progress.
         const kind =
           mime.startsWith("video/") ? "videos" :
           mime.startsWith("audio/") ? "audio" : "files";
+        const uploadId =
+          `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+        // Push an immediate placeholder so the user gets visual
+        // feedback the moment they pick the file. Marked as
+        // `uploading` with progress 0; we update both as the
+        // upload proceeds.
+        setPendingUploads((prev: any[]) => [
+          ...prev,
+          {
+            data: null,
+            meta: { name: value.name, type: mime, size: value.size },
+            kind,
+            uploadId,
+            uploading: true,
+            progress: 0,
+            alreadyUploaded: false,
+          },
+        ]);
+
+        // Kick off thumbnail extraction in parallel for videos. We
+        // don't await it before starting the upload — the upload is
+        // the long pole, no reason to delay it.
+        if (mime.startsWith("video/")) {
+          extractVideoThumbnail(value).then((thumb) => {
+            if (!thumb) return;
+            setPendingUploads((prev: any[]) =>
+              prev.map((p: any) =>
+                p.uploadId === uploadId ? { ...p, thumbDataUrl: thumb } : p
+              )
+            );
+          });
+        }
+
+        // Presign and upload. Wrap the whole thing in try/catch so
+        // a failure removes the placeholder rather than leaving a
+        // stuck-uploading entry.
         try {
           const presignFd = new FormData();
           presignFd.set("filename", value.name);
@@ -82,61 +214,70 @@ export const FileUpload: React.FC<{
             method: "POST",
             body: presignFd,
           });
-          if(!presignRes.ok) {
-            console.error("[upload] presign failed:", await presignRes.text());
-            continue;
+          if (!presignRes.ok) {
+            throw new Error(`presign failed: ${presignRes.status}`);
           }
           const presign = await presignRes.json() as {
             ok: boolean; uploadUrl: string; basename: string; kind: string;
           };
-          if(!presign.ok) {
-            console.error("[upload] presign response not ok:", presign);
-            continue;
-          }
-          const putRes = await fetch(presign.uploadUrl, {
-            method: "PUT",
-            headers: { "Content-Type": mime },
+          if (!presign.ok) throw new Error("presign response not ok");
+
+          await putWithProgress({
+            url: presign.uploadUrl,
             body: value,
-          });
-          if(!putRes.ok) {
-            console.error("[upload] direct PUT failed:", putRes.status, await putRes.text());
-            continue;
-          }
-          // Already uploaded — queue a pending entry with no data blob,
-          // just the final basename. PostCreator will recognize the
-          // alreadyUploaded flag and skip re-uploading.
-          setPendingUploads((prev:{data: any, meta: any}[]) => [
-            ...prev,
-            {
-              data: null,
-              meta: { name: value.name, type: mime, size: value.size },
-              kind: presign.kind,
-              alreadyUploaded: true,
-              basename: presign.basename,
+            contentType: mime,
+            onProgress: (pct) => {
+              setPendingUploads((prev: any[]) =>
+                prev.map((p: any) =>
+                  p.uploadId === uploadId ? { ...p, progress: pct } : p
+                )
+              );
             },
-          ]);
-        } catch(err) {
+          });
+
+          // Mark the upload as complete: drop the uploading flag,
+          // set alreadyUploaded so PostCreator includes the basename
+          // when the post is submitted.
+          setPendingUploads((prev: any[]) =>
+            prev.map((p: any) =>
+              p.uploadId === uploadId
+                ? {
+                    ...p,
+                    uploading: false,
+                    progress: 100,
+                    alreadyUploaded: true,
+                    basename: presign.basename,
+                  }
+                : p
+            )
+          );
+        } catch (err) {
           console.error("[upload] direct-to-S3 failed:", err);
+          // Yank the failed placeholder out of the queue so the
+          // user can retry.
+          setPendingUploads((prev: any[]) =>
+            prev.filter((p: any) => p.uploadId !== uploadId)
+          );
         }
       }
     }
     // Clear the input so picking the same file again re-fires onChange.
     if(e.target) e.target.value = "";
   }
-  
+
   return (
     <>
-      <input 
+      <input
         ref={fileInputRef}
-        type="file" 
+        type="file"
         className="upload__addfile"
         onChange={attachmentHandler}
-        multiple 
+        multiple
       />
       {pendingUploads.map((file: any) =>
-        <UploadPreview 
-          key={file.meta.name}
-          file={file} 
+        <UploadPreview
+          key={file.uploadId ?? file.meta.name}
+          file={file}
           imagesUploading={imagesUploading}
           removeFile={removeFile}
         />
@@ -144,7 +285,7 @@ export const FileUpload: React.FC<{
       {youTubePreviews
         .filter((file: YouTubeVideo) => file.meta?.title&&file.show)
         .map((file: YouTubeVideo) =>
-          <LinkPreview 
+          <LinkPreview
             key={file.meta?.title}
             title={file.meta!.title}
             thumbnail={file.meta!.thumbnail}
