@@ -473,6 +473,11 @@ export interface BlueskyFeedPost {
   images: Array<{ url: string; alt: string }>;
   /** OG-style link card Bluesky already extracted for us. */
   external?: BlueskyExternalEmbed;
+  /** Aggregate counts Bluesky maintains on each post — free to surface. */
+  likeCount?: number;
+  replyCount?: number;
+  repostCount?: number;
+  quoteCount?: number;
 }
 
 export async function fetchBlueskyTimeline(opts: { limit?: number } = {}): Promise<
@@ -530,6 +535,10 @@ export async function fetchBlueskyTimeline(opts: { limit?: number } = {}): Promi
         webUrl,
         images,
         external,
+        likeCount: typeof p.likeCount === "number" ? p.likeCount : undefined,
+        replyCount: typeof p.replyCount === "number" ? p.replyCount : undefined,
+        repostCount: typeof p.repostCount === "number" ? p.repostCount : undefined,
+        quoteCount: typeof p.quoteCount === "number" ? p.quoteCount : undefined,
       });
     }
     return posts;

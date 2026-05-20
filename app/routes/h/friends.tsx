@@ -53,6 +53,14 @@ type UnifiedPost = {
     description: string;
     thumbUrl?: string;
   };
+  /** Aggregate engagement counts. Bluesky exposes these on every timeline
+   *  post; Mastodon doesn't ship counts on its AP delivery, so for now
+   *  these are Bluesky-only. */
+  counts?: {
+    likes?: number;
+    replies?: number;
+    reposts?: number;
+  };
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -113,6 +121,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }))
       : undefined,
     external: p.external,
+    counts: {
+      likes: p.likeCount,
+      replies: p.replyCount,
+      reposts: p.repostCount,
+    },
   }));
 
   // Merge by timestamp, newest first.
@@ -945,78 +958,98 @@ const FriendPostCard: React.FC<{
             ) : null}
           </div>
           <div className="postcard__content__meta">
-            {/* Heart-only react button, visually matches EmojiReact. */}
-            <div className="emoji-parent" style={{ display: "inline-block", position: "relative" }}>
-              <button
-                className="react-button"
-                onClick={() => setPopOpen((v) => !v)}
-                style={{ display: "inline-flex", alignItems: "center" }}
-              >
-                {liked ? "❤️" : "😀"} REACT
-              </button>
-              <div className={`heart-react__pop${popOpen ? " heart-react__pop--open" : ""}`}>
-                <button
-                  type="button"
-                  onClick={toggleHeart}
-                  title={liked ? "Remove heart" : "Send heart"}
-                >
-                  ❤️
-                </button>
-              </div>
-              {liked && (
-                <div className="emoji-votes" style={{ display: "inline-flex", marginLeft: 8 }}>
-                  <div className="emoji-vote emoji-vote--mine">
-                    <div className="emoji-vote-emoji">❤️</div>
-                    <div className="emoji-vote-count">1</div>
+            {/* Heart-only react button + inline likes pill — visually
+                matches the home feed's <EmojiReact>. The pill shows the
+                total like count when we know it (Bluesky timeline gives
+                us this for free; Mastodon doesn't ship counts on AP
+                delivery so we fall back to showing 1 when I've liked
+                it personally).
+
+                We adjust the displayed count by the delta between my
+                like state at page load (`baseLiked`) and now (`liked`)
+                so toggling reduces 12 → 11 immediately instead of
+                waiting for the next page render. */}
+            {(() => {
+              const platformLikes = post.counts?.likes;
+              const knowCount = typeof platformLikes === "number";
+              const baseLiked = !!myReactions?.like;
+              const delta = liked === baseLiked ? 0 : (liked ? 1 : -1);
+              const displayCount = knowCount
+                ? Math.max(0, platformLikes + delta)
+                : (liked ? 1 : 0);
+              const showPill = displayCount > 0;
+              return (
+                <div className="emoji-parent" style={{ display: "inline-block", position: "relative" }}>
+                  <div className="emoji-button-and-votes">
+                    <button
+                      className="react-button"
+                      onClick={() => setPopOpen((v) => !v)}
+                    >
+                      {liked ? "❤️" : "😀"} REACT
+                    </button>
+                    {showPill ? (
+                      <div className="emoji-votes">
+                        <div
+                          className={`emoji-vote${liked ? " emoji-vote--mine" : ""}`}
+                          onClick={toggleHeart}
+                          title={liked ? "Remove heart" : "Send heart"}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <div className="emoji-vote-emoji">❤️</div>
+                          <div className="emoji-vote-count">{displayCount}</div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className={`heart-react__pop${popOpen ? " heart-react__pop--open" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={toggleHeart}
+                      title={liked ? "Remove heart" : "Send heart"}
+                    >
+                      ❤️
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
-            {/* Threaded replies — your own (from myPosts) + others
-                received via federation_inbox_posts. */}
-            {replies && replies.length > 0 && (
-              <div className="friend-replies">
-                {replies.map((r) => {
-                  const ra = actorsLookup?.[r.authorActorUri];
-                  const isMine = r.kind === "mine";
-                  const displayName = isMine
-                    ? "You"
-                    : ra?.displayName || ra?.fqHandle || r.authorActorUri;
-                  return (
-                    <div key={r.noteUri} className="friend-reply">
-                      <div className="friend-reply__poster">
-                        {!isMine && ra?.avatarUrl ? (
-                          <img
-                            className="friend-reply__avatar"
-                            src={ra.avatarUrl}
-                            alt=""
-                          />
-                        ) : (
-                          <div className="friend-reply__avatar friend-reply__avatar--placeholder" />
-                        )}
-                      </div>
-                      <div className="friend-reply__body">
-                        <div className="friend-reply__head">
-                          <span className="friend-reply__name">{displayName}</span>
-                          {!isMine && ra?.fqHandle && ra.fqHandle !== displayName && (
-                            <span className="friend-reply__handle">
-                              {ra.fqHandle}
-                            </span>
-                          )}
-                          <span className="friend-reply__when">
-                            {stampToTime(r.timestampMs / 1000)}
-                          </span>
-                        </div>
-                        <div
-                          className="friend-reply__content fake-p"
-                          dangerouslySetInnerHTML={{ __html: r.content }}
+              );
+            })()}
+            {/* Threaded replies rendered with the SAME class names the
+                home-page <Comment> uses (.comment / .comment__poster /
+                .comment__user-image / .comment__content / etc.) so
+                styling, spacing, and avatar treatment match exactly. */}
+            {replies && replies.map((r) => {
+              const ra = actorsLookup?.[r.authorActorUri];
+              const isMine = r.kind === "mine";
+              const displayName = isMine
+                ? "You"
+                : ra?.displayName || ra?.fqHandle || r.authorActorUri;
+              const avatarUrl = isMine ? undefined : ra?.avatarUrl;
+              return (
+                <div key={r.noteUri} className="comment">
+                  <div className="comment__poster">
+                    <div className="comment__user-image">
+                      {avatarUrl ? (
+                        <img
+                          className="comment__user-image--img"
+                          src={avatarUrl}
+                          alt={displayName}
                         />
-                      </div>
+                      ) : null}
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                  <div className="comment__content">
+                    <div className="comment__user-name">{displayName}</div>
+                    <div className="comment__date">
+                      {stampToTime(r.timestampMs / 1000)}
+                    </div>
+                    <div
+                      className="comment__content-inner fake-p"
+                      dangerouslySetInnerHTML={{ __html: r.content }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
 
             {/* Reply via the same Lexical editor the home-feed Comments use. */}
             <div style={{ marginTop: 12 }}>
