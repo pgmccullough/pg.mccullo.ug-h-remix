@@ -50,6 +50,10 @@ export const PostCard: React.FC<{
     const [ bodyEditActive, setBodyEditActive ] = useState(false);
     const [ postFeedback, setPostFeedback ] = useState<{commentsOn: any, sharesOn: any, likesOn: any }>(feedback)
     const [ canShowDate, setCanShowDate ] = useState<boolean>(false);
+    // Carousel height tracking: when set, the slider is locked to the
+    // active slide's natural height so a short YouTube embed doesn't
+    // leave a tall portrait-video-sized gray box around it.
+    const [ sliderHeight, setSliderHeight ] = useState<number | null>(null);
     const [ swipe, setSwipe ] = useSwipe(
       () => gallerySlide("right"),
       () => gallerySlide("left")
@@ -117,6 +121,46 @@ export const PostCard: React.FC<{
       })
       setCanShowDate(true);
     },[])
+
+    // Measure the currently-active slide and use its height as the
+    // carousel container height. Triggered on:
+    //   - currentSlide changes (user navigated)
+    //   - itemLength changes (slides mounted)
+    //   - content inside any slide resizes (video metadata arrives,
+    //     iframe finishes laying out) — handled via ResizeObserver
+    useEffect(() => {
+      const measureActive = () => {
+        const slider = galSlide.current;
+        if (!slider) return;
+        const active = slider.children[mediaSlides.currentSlide] as
+          | HTMLElement
+          | undefined;
+        if (active && active.offsetHeight > 0) {
+          setSliderHeight(active.offsetHeight);
+        }
+      };
+      measureActive();
+      // Catch the case where the slide's content (video / iframe)
+      // hasn't sized yet at the moment the effect fires.
+      const t = setTimeout(measureActive, 250);
+
+      const slider = galSlide.current;
+      let observer: ResizeObserver | undefined;
+      if (slider && typeof ResizeObserver !== "undefined") {
+        observer = new ResizeObserver(() => {
+          // Re-measure the active slide whenever ANY slide changes
+          // size — the active one might be the one growing.
+          measureActive();
+        });
+        Array.from(slider.children).forEach((child) =>
+          observer!.observe(child as Element)
+        );
+      }
+      return () => {
+        clearTimeout(t);
+        observer?.disconnect();
+      };
+    }, [mediaSlides.currentSlide, mediaSlides.itemLength]);
 
     return (
       (<article 
@@ -332,7 +376,15 @@ export const PostCard: React.FC<{
                 </a>
               </>
             ) : null}
-            <div className="postcard__content__media" ref={galWid}>
+            <div
+              className="postcard__content__media"
+              ref={galWid}
+              style={
+                sliderHeight != null
+                  ? { height: sliderHeight, transition: "height 0.3s ease" }
+                  : undefined
+              }
+            >
               <figure 
                 className="postcard__content__media__slider"
                 onTouchStart={setSwipe} 
