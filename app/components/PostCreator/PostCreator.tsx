@@ -4,6 +4,27 @@ import { TextEditor } from "../TextEditor/TextEditor";
 import { BlankPost, Post, YouTubeVideo } from "~/common/types";
 import { FileUpload, PostOptions } from ".";
 
+/**
+ * Pull out already-uploaded entries (videos/audio/other that went
+ * direct-to-S3 via /api/upload/presign) and bucket them by media kind.
+ * Returns plain arrays of basenames suitable for storing on
+ * `post.media.<kind>`.
+ */
+const collectDirectUploads = (uploads: any[]) => {
+  const buckets: { images: string[]; videos: string[]; audio: string[]; files: string[] } = {
+    images: [], videos: [], audio: [], files: [],
+  };
+  for(const u of uploads) {
+    if(!u.alreadyUploaded || !u.basename) continue;
+    const k: keyof typeof buckets =
+      u.kind === "videos" ? "videos" :
+      u.kind === "audio"  ? "audio"  :
+      u.kind === "images" ? "images" : "files";
+    buckets[k].push(u.basename);
+  }
+  return buckets;
+}
+
 export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
 
   const [ clearPostContent, setClearPostContent ] = useState<boolean>(false);
@@ -80,7 +101,10 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
       // versions (key vs Key, location vs Location). Read whichever is
       // present, and skip the upload silently rather than crashing the
       // whole page if a match wasn't found.
-      const uploadsClient = [...pendingUploads]
+      const imagesBasenames = [...pendingUploads]
+        // Only the image branch goes through /api/upload/base64; everything
+        // else was already PUT directly to S3 and carries its own basename.
+        .filter((file:any) => file.kind === "images" && !file.alreadyUploaded)
         .map((file:{data: any, meta: any}) => {
           const match = uploadsServer.find(
             (upload:{name: string, upload: string, uploadRes: any}) =>
@@ -97,9 +121,16 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
         })
         .filter((x): x is string => typeof x === "string" && x.length > 0);
       fileUploadForm.data.uploaded = null;
-      const media = {...postObject.media, directory: "images/", images: uploadsClient}
-      // Not currently evaluating file types to organize into videos/images/autio/files
-      // Just assuming images
+      // Bring in files that went direct-to-S3 (videos / audio / other).
+      const direct = collectDirectUploads(pendingUploads);
+      const media = {
+        ...postObject.media,
+        directory: "",
+        images: [...(direct.images ?? []), ...imagesBasenames],
+        videos: direct.videos,
+        audio: direct.audio,
+        files: direct.files,
+      };
       submitPostForm.submit(
         { newPost: JSON.stringify({...postObject, content: postText, media }) },
         { method: "post", action: "/api/post/create?index" }
@@ -108,18 +139,25 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   },[fileUploadForm])
 
   const submitPost = () => {
-    const filesToUpload: {fileData: string, fileMeta: string}[] = [];
     const clonePostObject = {...postObject};
     if(youTubePreviews.filter((video:YouTubeVideo) => video.show).length) {
       const media = {...postObject.media, links: youTubePreviews.filter((video:YouTubeVideo) => video.show)}
       clonePostObject.media = media;
       setPostObject(postObject);
     }
-    if(pendingUploads.length) {
-      setImagesUploading(pendingUploads.length);
-      pendingUploads.forEach((file: {data: any, meta: any}) => {
-        filesToUpload.push({ fileData: file.data, fileMeta: JSON.stringify({name: file.meta.name, type: file.meta.type}) });
-      })
+
+    // Only the image-branch uploads still need the server round-trip
+    // to /api/upload/base64. Direct-to-S3 uploads (videos/audio/etc.)
+    // are already done and just need to ride along on the post.
+    const needsBase64 = pendingUploads
+      .filter((file: any) => file.kind === "images" && !file.alreadyUploaded);
+
+    if(needsBase64.length) {
+      setImagesUploading(needsBase64.length);
+      const filesToUpload = needsBase64.map((file: any) => ({
+        fileData: file.data,
+        fileMeta: JSON.stringify({name: file.meta.name, type: file.meta.type}),
+      }));
       /* eventually these need to be done individually, one file per request, so
       I can better track progress/errors */
       fileUploadForm.submit(
@@ -127,12 +165,35 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
         { method: "post", encType: "multipart/form-data", action: "/api/upload/base64?index" }
       );
     } else {
+      // No base64 work needed. If we have direct-to-S3 uploads though,
+      // we still need to attach them to the post media.
+      const direct = collectDirectUploads(pendingUploads);
+      const hasDirect =
+        direct.images.length || direct.videos.length ||
+        direct.audio.length || direct.files.length;
+      const media = hasDirect
+        ? {
+            ...clonePostObject.media,
+            directory: "",
+            images: direct.images,
+            videos: direct.videos,
+            audio: direct.audio,
+            files: direct.files,
+          }
+        : clonePostObject.media;
       submitPostForm.submit(
-        { newPost: JSON.stringify({...clonePostObject, content: postText }) },
+        {
+          newPost: JSON.stringify({
+            ...clonePostObject,
+            media,
+            content: postText,
+          }),
+        },
         { method: "post", action: "/api/post/create?index" }
       );
     }
   }
+
 
   const blurEditor = () => {
     const htmlTags = /<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>/g;

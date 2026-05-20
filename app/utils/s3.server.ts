@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 
 const { S3_BUCKET, S3_REGION, S3_KEY, S3_SECRET } = process.env;
@@ -104,4 +105,51 @@ export async function uploadFileToS3(
   }
 
   return { Key: key, Location: publicLocation(key) };
+}
+
+// ---------------------------------------------------------------------------
+// Presigned uploads — used for media that can't fit through a Vercel
+// serverless function body (cap ~4.5 MB). The browser PUTs the bytes
+// directly to S3; our function only signs the URL.
+//
+// Single-PUT supports up to 5 GB per object. Anything bigger would
+// need multipart-from-the-browser (createMultipartUpload + multiple
+// signed UploadPart URLs + completeMultipartUpload). For phone-shot
+// video, single PUT is plenty.
+// ---------------------------------------------------------------------------
+
+export interface PresignedPut {
+  key: string;
+  uploadUrl: string;
+  publicUrl: string;
+  expiresInSeconds: number;
+}
+
+/**
+ * Create a presigned PUT URL for direct-to-S3 upload from the browser.
+ * The caller is expected to set the same Content-Type when PUTing as it
+ * passed to this function — S3 signs against it.
+ */
+export async function createPresignedPutUrl(args: {
+  key: string;
+  contentType: string;
+  /** Optional: signal the S3 storage class, content disposition, etc. */
+  cacheControl?: string;
+  /** URL TTL in seconds. Default 5 minutes. */
+  expiresInSeconds?: number;
+}): Promise<PresignedPut> {
+  const expiresInSeconds = args.expiresInSeconds ?? 300;
+  const cmd = new PutObjectCommand({
+    Bucket: S3_BUCKET!,
+    Key: args.key,
+    ContentType: args.contentType,
+    CacheControl: args.cacheControl,
+  });
+  const uploadUrl = await getSignedUrl(s3Client, cmd, { expiresIn: expiresInSeconds });
+  return {
+    key: args.key,
+    uploadUrl,
+    publicUrl: publicLocation(args.key),
+    expiresInSeconds,
+  };
 }

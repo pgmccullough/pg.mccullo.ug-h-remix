@@ -102,6 +102,7 @@ export default [
 
     route("upload", "routes/api/upload/index.tsx"),
     route("upload/base64", "routes/api/upload/base64/index.tsx"),
+    route("upload/presign", "routes/api/upload/presign/index.ts"),
 
     route("user/fetch", "routes/api/user/fetch/index.tsx"),
     route("user/login", "routes/api/user/login/index.tsx"),

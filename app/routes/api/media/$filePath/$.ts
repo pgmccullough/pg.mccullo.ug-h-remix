@@ -29,6 +29,17 @@ const streamToBuffer = async (stream: AsyncIterable<Uint8Array>): Promise<Buffer
   return Buffer.concat(chunks);
 };
 
+// File extensions we'll attempt to sharp-resize. Anything else (videos,
+// audio, PDFs, etc.) should never go through sharp — it'd just throw.
+const IMAGE_EXTS = new Set([
+  "jpg", "jpeg", "png", "gif", "webp", "avif", "bmp", "tif", "tiff",
+]);
+
+function looksLikeImagePath(p: string): boolean {
+  const ext = p.split(".").pop()?.toLowerCase();
+  return !!ext && IMAGE_EXTS.has(ext);
+}
+
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await getUser(request);
 
@@ -84,25 +95,30 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
   };
 
-  // Probe original + resize.
+  // Probe original + resize. Only try sharp on actual image extensions
+  // — videos/audio/PDFs don't have an _600w variant and shouldn't waste
+  // a sharp call on every fetch.
   let resizeImage;
+  const isImage = looksLikeImagePath(fullPath);
   try {
     // headObject on the original — throws if missing.
     await s3Client.send(
       new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: fullPath })
     );
-    try {
-      resizeImage = await s3Client.send(
-        new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: desiredPath })
-      );
-    } catch {
-      const isUserAsset =
-        fullPath.split("/")[1] === "user" &&
-        (fullPath.split("/")[2] === "cover" ||
-          fullPath.split("/")[2] === "profile");
-      if (!isUserAsset) {
-        // Fire-and-forget the background resize for next request.
-        void imageResizer();
+    if (isImage) {
+      try {
+        resizeImage = await s3Client.send(
+          new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: desiredPath })
+        );
+      } catch {
+        const isUserAsset =
+          fullPath.split("/")[1] === "user" &&
+          (fullPath.split("/")[2] === "cover" ||
+            fullPath.split("/")[2] === "profile");
+        if (!isUserAsset) {
+          // Fire-and-forget the background resize for next request.
+          void imageResizer();
+        }
       }
     }
   } catch {
@@ -110,8 +126,19 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   }
 
   const keyToServe = resizeImage ? desiredPath : fullPath;
+
+  // Honor HTTP Range so the browser can scrub video / resume large
+  // downloads. Without this, <video> playback either re-downloads the
+  // whole file on every seek or just doesn't work past the first chunk.
+  // We forward the Range header straight to S3, which speaks Range
+  // natively, and return 206 + Content-Range when the response is partial.
+  const rangeHeader = request.headers.get("range") ?? undefined;
   const obj = await s3Client.send(
-    new GetObjectCommand({ Bucket: S3_BUCKET!, Key: keyToServe })
+    new GetObjectCommand({
+      Bucket: S3_BUCKET!,
+      Key: keyToServe,
+      Range: rangeHeader,
+    })
   );
 
   if (!obj.Body) {
@@ -129,8 +156,19 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   if (obj.ContentType) headers.set("Content-Type", obj.ContentType);
   if (obj.ContentLength) headers.set("Content-Length", String(obj.ContentLength));
   if (obj.ETag) headers.set("ETag", obj.ETag);
-  // Cache resized variants and user assets aggressively.
-  headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  // Always advertise Range support so the browser knows it can seek.
+  headers.set("Accept-Ranges", "bytes");
+  if (obj.ContentRange) headers.set("Content-Range", obj.ContentRange);
+  // Cache resized variants and user assets aggressively. Skip the
+  // immutable cache directive on partial responses — caches handle 206
+  // independently and we don't want to pollute the full-response cache.
+  if (!obj.ContentRange) {
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  }
 
-  return new Response(createReadableStreamFromReadable(nodeStream), { headers });
+  const status = obj.ContentRange ? 206 : 200;
+  return new Response(createReadableStreamFromReadable(nodeStream), {
+    status,
+    headers,
+  });
 };

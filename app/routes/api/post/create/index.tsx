@@ -8,13 +8,17 @@ const DOMAIN = "pg.mccullo.ug";
 const MEDIA_BASE = `https://${DOMAIN}/api/media/`;
 
 /**
- * Build absolute image URLs from a post's media object, matching the way
- * the <Image> component renders them on the site (`/api/media/images/<file>`).
+ * Build absolute URLs from a post's media bucket (images, videos, ...),
+ * matching the way each <Media> component renders them on the site
+ * (`/api/media/<kind>/<file>`).
  */
-function imageUrlsFromMedia(media: any): string[] {
-  const images = media?.images;
-  if (!Array.isArray(images)) return [];
-  return images
+function mediaUrlsFromBucket(
+  media: any,
+  kind: "images" | "videos"
+): string[] {
+  const arr = media?.[kind];
+  if (!Array.isArray(arr)) return [];
+  return arr
     .map((item: any) => {
       const url =
         typeof item === "string" ? item : item?.url || item?.file || item?.src;
@@ -22,7 +26,7 @@ function imageUrlsFromMedia(media: any): string[] {
       const trimmed = url.trim();
       if (/^https?:\/\//.test(trimmed)) return trimmed;
       if (trimmed.startsWith("/")) return `https://${DOMAIN}${trimmed}`;
-      return `${MEDIA_BASE}images/${trimmed}`;
+      return `${MEDIA_BASE}${kind}/${trimmed}`;
     })
     .filter((u): u is string => typeof u === "string" && u.length > 0);
 }
@@ -61,7 +65,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           const result = await postToBluesky({
             text: newPost.content ?? "",
             permalinkUrl: `${origin}/h/post/${postId}`,
-            imageUrls: imageUrlsFromMedia(newPost.media),
+            imageUrls: mediaUrlsFromBucket(newPost.media, "images"),
+            videoUrls: mediaUrlsFromBucket(newPost.media, "videos"),
           });
           if (result) {
             await db

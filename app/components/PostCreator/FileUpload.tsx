@@ -28,23 +28,100 @@ export const FileUpload: React.FC<{
     setPendingUploads(filteredUploads);
   }
 
+  /**
+   * Handle a freshly-picked file. Branch on MIME type:
+   *
+   *   image/*  -> resize client-side, base64 it, queue for the
+   *               existing /api/upload/base64 path
+   *   video/*  -> presign a PUT URL, upload the bytes directly to
+   *               S3 (Vercel never sees them — required for >4.5 MB),
+   *               then queue a pending entry that already has its
+   *               final basename + kind so PostCreator doesn't re-
+   *               upload it.
+   *   other    -> treated like video for the purposes of bypassing
+   *               the 4.5 MB function body cap, just stored under the
+   *               kind that matches the MIME family (audio/* -> audio,
+   *               everything else -> files).
+   */
   const attachmentHandler = async (e:React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    let files = e.target.files;
-    for(const file of Object.entries(files!)) {
-      const reader = new FileReader();
-      const [,value] = file;
-      let resizedImage = await imgResize(value,{maxWidth:1200});
-      resizedImage.name = value.name;
-      reader.readAsDataURL(resizedImage);
-      reader.onload = function(e) {
-        setPendingUploads((prev:{data: any, meta: any}[]) => {
-          const deDuplicated = prev.filter((file:{data: any, meta: any}) => file.data!==e.target!.result)
-          const newFile = {data: e.target!.result, meta: resizedImage};
-          return [...deDuplicated, newFile];
-        })
+    const files = e.target.files;
+    if(!files) return;
+    for(const value of Array.from(files)) {
+      const mime = value.type || "application/octet-stream";
+      if(mime.startsWith("image/")) {
+        // Existing path: client-resize + base64 queue. Pass through
+        // PostCreator's submit, which posts to /api/upload/base64.
+        const resized = await imgResize(value, {maxWidth: 1200});
+        (resized as any).name = value.name;
+        const reader = new FileReader();
+        reader.readAsDataURL(resized);
+        reader.onload = (ev) => {
+          setPendingUploads((prev:{data: any, meta: any}[]) => {
+            const deDuplicated = prev
+              .filter((f:{data: any, meta: any}) => f.data !== ev.target!.result);
+            return [
+              ...deDuplicated,
+              { data: ev.target!.result, meta: resized, kind: "images" },
+            ];
+          });
+        };
+      } else {
+        // Direct-to-S3 path. Get a presigned URL, then PUT the file
+        // straight to S3 from the browser — bypassing the Vercel
+        // serverless body cap entirely.
+        const kind =
+          mime.startsWith("video/") ? "videos" :
+          mime.startsWith("audio/") ? "audio" : "files";
+        try {
+          const presignFd = new FormData();
+          presignFd.set("filename", value.name);
+          presignFd.set("contentType", mime);
+          presignFd.set("kind", kind);
+          const presignRes = await fetch("/api/upload/presign", {
+            method: "POST",
+            body: presignFd,
+          });
+          if(!presignRes.ok) {
+            console.error("[upload] presign failed:", await presignRes.text());
+            continue;
+          }
+          const presign = await presignRes.json() as {
+            ok: boolean; uploadUrl: string; basename: string; kind: string;
+          };
+          if(!presign.ok) {
+            console.error("[upload] presign response not ok:", presign);
+            continue;
+          }
+          const putRes = await fetch(presign.uploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": mime },
+            body: value,
+          });
+          if(!putRes.ok) {
+            console.error("[upload] direct PUT failed:", putRes.status, await putRes.text());
+            continue;
+          }
+          // Already uploaded — queue a pending entry with no data blob,
+          // just the final basename. PostCreator will recognize the
+          // alreadyUploaded flag and skip re-uploading.
+          setPendingUploads((prev:{data: any, meta: any}[]) => [
+            ...prev,
+            {
+              data: null,
+              meta: { name: value.name, type: mime, size: value.size },
+              kind: presign.kind,
+              alreadyUploaded: true,
+              basename: presign.basename,
+            },
+          ]);
+        } catch(err) {
+          console.error("[upload] direct-to-S3 failed:", err);
+        }
       }
     }
+    // Clear the input so picking the same file again re-fires onChange.
+    if(e.target) e.target.value = "";
   }
   
   return (

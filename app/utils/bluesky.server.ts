@@ -89,6 +89,128 @@ async function withRetry<T>(fn: (agent: any) => Promise<T>): Promise<T | null> {
 const POST_CHAR_LIMIT = 300;
 const MAX_IMAGES = 4;
 
+// Bluesky enforces its own size + duration caps on the video service. We
+// also bound how long we'll wait for the encode job to finish before we
+// post without the video — a Vercel function only has so much budget.
+const VIDEO_UPLOAD_POLL_MS = 1000;
+const VIDEO_UPLOAD_TIMEOUT_MS = 10000;
+// Don't even try Bluesky video for files bigger than this — the bytes
+// have to ride through our Vercel function and we don't want to OOM.
+// Bump if you upgrade Vercel function memory.
+const VIDEO_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
+
+const VIDEO_SERVICE_HOST = "video.bsky.app";
+const VIDEO_SERVICE_DID = "did:web:video.bsky.app";
+
+/**
+ * Run Bluesky's video upload pipeline:
+ *   1. Mint a service-auth token addressed to the video service.
+ *   2. POST the bytes to `app.bsky.video.uploadVideo` (returns a job id).
+ *   3. Poll `app.bsky.video.getJobStatus` until JOB_STATE_COMPLETED, which
+ *      yields the BlobRef we can stick on `app.bsky.embed.video`.
+ *
+ * Returns the BlobRef on success, or `null` if any step fails or the job
+ * isn't done within the polling budget. Failure is non-fatal — caller
+ * should post without the video embed.
+ */
+async function uploadBlueskyVideo(args: {
+  bytes: Uint8Array;
+  filename: string;
+  contentType: string;
+}): Promise<any | null> {
+  return withRetry(async (agent) => {
+    const did = agent.session?.did;
+    if (!did) {
+      console.warn("[bluesky] video: no session DID");
+      return null;
+    }
+    if (args.bytes.byteLength > VIDEO_UPLOAD_MAX_BYTES) {
+      console.warn(
+        `[bluesky] video: ${args.bytes.byteLength} bytes exceeds ${VIDEO_UPLOAD_MAX_BYTES}; skipping`
+      );
+      return null;
+    }
+
+    // 1. Service-auth token addressed to the video service.
+    let token: string;
+    try {
+      const auth = await agent.com.atproto.server.getServiceAuth({
+        aud: VIDEO_SERVICE_DID,
+        exp: Math.floor(Date.now() / 1000) + 60 * 30,
+        lxm: "app.bsky.video.uploadVideo",
+      });
+      token = auth.data.token;
+    } catch (err) {
+      console.error("[bluesky] video: getServiceAuth failed:", err);
+      return null;
+    }
+
+    // 2. Upload bytes to the video service.
+    const params = new URLSearchParams({
+      did,
+      name: args.filename,
+    });
+    const uploadUrl = `https://${VIDEO_SERVICE_HOST}/xrpc/app.bsky.video.uploadVideo?${params.toString()}`;
+    let jobId: string;
+    try {
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": args.contentType,
+          "Content-Length": String(args.bytes.byteLength),
+        },
+        body: args.bytes,
+      });
+      if (!res.ok) {
+        console.error(
+          "[bluesky] video upload failed:",
+          res.status,
+          await res.text().catch(() => "")
+        );
+        return null;
+      }
+      const data: any = await res.json();
+      jobId = data?.jobId ?? data?.jobStatus?.jobId;
+      if (!jobId) {
+        console.error("[bluesky] video upload: no jobId in response", data);
+        return null;
+      }
+    } catch (err) {
+      console.error("[bluesky] video upload exception:", err);
+      return null;
+    }
+
+    // 3. Poll for job completion. Bound by VIDEO_UPLOAD_TIMEOUT_MS so we
+    //    don't blow the function's budget on encoding.
+    const start = Date.now();
+    while (Date.now() - start < VIDEO_UPLOAD_TIMEOUT_MS) {
+      await new Promise((r) => setTimeout(r, VIDEO_UPLOAD_POLL_MS));
+      try {
+        const { data } = await agent.app.bsky.video.getJobStatus({ jobId });
+        const state = data?.jobStatus?.state;
+        if (state === "JOB_STATE_COMPLETED") {
+          return data.jobStatus.blob ?? null;
+        }
+        if (state === "JOB_STATE_FAILED") {
+          console.error(
+            "[bluesky] video job failed:",
+            data.jobStatus.error,
+            data.jobStatus.message
+          );
+          return null;
+        }
+      } catch (err) {
+        console.error("[bluesky] video getJobStatus failed:", err);
+      }
+    }
+    console.warn(
+      `[bluesky] video job ${jobId} did not complete within ${VIDEO_UPLOAD_TIMEOUT_MS}ms — posting without embed`
+    );
+    return null;
+  });
+}
+
 export interface BlueskyPostResult {
   uri: string;
   cid: string;
@@ -98,6 +220,13 @@ export async function postToBluesky(args: {
   permalinkUrl?: string;
   text: string;
   imageUrls?: string[];
+  /**
+   * Optional video URLs. Bluesky allows only ONE video per post and can't
+   * mix video with images, so we only use the first entry and ignore
+   * `imageUrls` when a video successfully uploads. If video upload fails
+   * we fall back to the image path.
+   */
+  videoUrls?: string[];
 }): Promise<BlueskyPostResult | null> {
   return withRetry(async (agent) => {
     let RichText: any;
@@ -110,7 +239,10 @@ export async function postToBluesky(args: {
     }
 
     let plain = stripHtml(args.text).trim();
-    if (!plain && (!args.imageUrls || args.imageUrls.length === 0)) {
+    const hasMedia =
+      (args.imageUrls && args.imageUrls.length > 0) ||
+      (args.videoUrls && args.videoUrls.length > 0);
+    if (!plain && !hasMedia) {
       console.warn("[bluesky] skipping empty post");
       return null;
     }
@@ -132,20 +264,56 @@ export async function postToBluesky(args: {
       try { await rt.detectFacets(agent); } catch { /* ignore facet errors */ }
     }
 
-    const images = (args.imageUrls ?? []).slice(0, MAX_IMAGES);
-    const embed: any = images.length
-      ? { $type: "app.bsky.embed.images", images: [] as any[] }
-      : undefined;
-    for (const url of images) {
+    // Try video first — Bluesky doesn't allow images + video in the same
+    // post, and a video is the more interesting payload. If the video
+    // pipeline fails or times out we'll fall through to images.
+    let embed: any;
+    const videoUrl = args.videoUrls?.[0];
+    if (videoUrl) {
       try {
-        const res = await fetch(url);
-        if (!res.ok) continue;
-        const contentType = res.headers.get("content-type") ?? "image/jpeg";
-        const blob = new Uint8Array(await res.arrayBuffer());
-        const uploaded = await agent.uploadBlob(blob, { encoding: contentType });
-        embed.images.push({ alt: "", image: uploaded.data.blob });
+        const res = await fetch(videoUrl);
+        if (res.ok) {
+          const contentType = res.headers.get("content-type") ?? "video/mp4";
+          const filename = videoUrl.split("/").pop() ?? "video.mp4";
+          const bytes = new Uint8Array(await res.arrayBuffer());
+          const blobRef = await uploadBlueskyVideo({
+            bytes,
+            filename,
+            contentType,
+          });
+          if (blobRef) {
+            embed = { $type: "app.bsky.embed.video", video: blobRef };
+          }
+        } else {
+          console.error(
+            `[bluesky] could not fetch video ${videoUrl}: HTTP ${res.status}`
+          );
+        }
       } catch (err) {
-        console.error(`[bluesky] image upload failed for ${url}:`, err);
+        console.error(`[bluesky] video upload pipeline failed for ${videoUrl}:`, err);
+      }
+    }
+
+    // Fall back to images only when video didn't produce an embed.
+    if (!embed) {
+      const images = (args.imageUrls ?? []).slice(0, MAX_IMAGES);
+      if (images.length) {
+        embed = { $type: "app.bsky.embed.images", images: [] as any[] };
+        for (const url of images) {
+          try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const contentType = res.headers.get("content-type") ?? "image/jpeg";
+            const blob = new Uint8Array(await res.arrayBuffer());
+            const uploaded = await agent.uploadBlob(blob, { encoding: contentType });
+            embed.images.push({ alt: "", image: uploaded.data.blob });
+          } catch (err) {
+            console.error(`[bluesky] image upload failed for ${url}:`, err);
+          }
+        }
+        // If every image upload failed, drop the empty embed so we don't
+        // post a malformed record.
+        if (embed.images.length === 0) embed = undefined;
       }
     }
 
