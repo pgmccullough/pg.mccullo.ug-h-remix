@@ -23,6 +23,8 @@ import { clientPromise } from "~/lib/mongodb";
 import {
   fetchBlueskyTimeline,
   fetchBlueskyFollowing,
+  fetchBlueskyThreadReplies,
+  getMyBlueskyDid,
   blueskyEnabled,
 } from "~/utils/bluesky.server";
 
@@ -256,6 +258,49 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       });
     }
 
+    // Fetch the public Bluesky thread for each Bluesky-sourced post so
+    // we surface replies from accounts we don't follow (the inbox
+    // approach only captures replies federated to us). One getPostThread
+    // per visible post, parallelized — typically <500ms total.
+    if (blueskyEnabled() && blueskyPosts.length) {
+      const myDid = await getMyBlueskyDid();
+      const results = await Promise.allSettled(
+        blueskyPosts.map((p) =>
+          fetchBlueskyThreadReplies({ uri: p.uri })
+        )
+      );
+      for (let i = 0; i < blueskyPosts.length; i++) {
+        const r = results[i];
+        if (r.status !== "fulfilled") continue;
+        const parentUri = blueskyPosts[i].uri;
+        for (const reply of r.value) {
+          // Skip replies we made ourselves — they're already in the
+          // "mine" bucket above via our local myPosts → cross-post mirror.
+          if (myDid && reply.authorDid === myDid) continue;
+          const authorKey = `bsky:${reply.authorDid}`;
+          // Stash the replier's profile in the actors map so the
+          // <Comment>-style render gets avatar + name.
+          actors[authorKey] = {
+            actorUri: authorKey,
+            handle: reply.authorHandle,
+            fqHandle: `@${reply.authorHandle}`,
+            displayName: reply.authorDisplayName,
+            avatarUrl: reply.authorAvatarUrl,
+            profileUrl: `https://bsky.app/profile/${reply.authorHandle}`,
+            updatedAt: Date.now(),
+          };
+          (repliesByParent[parentUri] ??= []).push({
+            kind: "remote",
+            content: `<p>${escapeHtml(reply.text).replace(/\n/g, "<br/>")}</p>`,
+            authorActorUri: authorKey,
+            timestampMs: reply.publishedMs,
+            noteUri: reply.uri,
+            url: reply.webUrl,
+          });
+        }
+      }
+    }
+
     // Sort each thread oldest → newest (conversation reads top to bottom).
     for (const k of Object.keys(repliesByParent)) {
       repliesByParent[k].sort((a, b) => a.timestampMs - b.timestampMs);
@@ -363,6 +408,14 @@ type ThreadedReply = {
   timestampMs: number;
   noteUri: string;
   url?: string;
+  /** Inline author for replies that arrived via async client-side
+   *  fetch (not in actorsLookup). Renderer prefers this when present. */
+  inlineAuthor?: {
+    displayName?: string;
+    handle?: string;
+    fqHandle?: string;
+    avatarUrl?: string;
+  };
 };
 
 type LoaderData = {
@@ -796,6 +849,55 @@ const FriendPostCard: React.FC<{
   const [replyHtml, setReplyHtml] = useState("");
   const [clearContent, setClearContent] = useState(false);
 
+  // Async-loaded reply thread for Mastodon posts. The Bluesky thread
+  // is already populated server-side; for Mastodon we walk the AP
+  // replies Collection on demand to avoid blocking the page load.
+  const [asyncReplies, setAsyncReplies] = useState<ThreadedReply[]>([]);
+  useEffect(() => {
+    if (post.source !== "mastodon") return;
+    let cancelled = false;
+    const fd = new FormData();
+    fd.set("source", post.source);
+    fd.set("noteUri", post.noteUri);
+    fetch("/api/friends/thread-replies", { method: "POST", body: fd })
+      .then((r) => r.json())
+      .then((data: { replies?: Array<{
+        noteUri: string; content: string; timestampMs: number;
+        url?: string; author?: {
+          displayName?: string; handle?: string;
+          fqHandle?: string; avatarUrl?: string;
+        };
+      }> }) => {
+        if (cancelled || !Array.isArray(data?.replies)) return;
+        const existingUris = new Set((replies ?? []).map((r) => r.noteUri));
+        const fresh: ThreadedReply[] = data.replies
+          // Avoid showing the same reply twice when one came in via
+          // the inbox AND via the AP walk.
+          .filter((r) => r.noteUri && !existingUris.has(r.noteUri))
+          .map((r) => ({
+            kind: "remote" as const,
+            content: r.content,
+            authorActorUri: r.noteUri, // unused for render; we use inlineAuthor
+            timestampMs: r.timestampMs,
+            noteUri: r.noteUri,
+            url: r.url,
+            inlineAuthor: r.author,
+          }));
+        setAsyncReplies(fresh);
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("[friends] async replies fetch failed:", err);
+      });
+    return () => { cancelled = true; };
+  }, [post.noteUri, post.source, replies]);
+
+  // Merge loader-provided replies (mine + inboxed + Bluesky thread)
+  // with anything we fetched on the client. Re-sort each render so
+  // streaming-in replies slot into chronological order.
+  const allReplies = [...(replies ?? []), ...asyncReplies].sort(
+    (a, b) => a.timestampMs - b.timestampMs
+  );
+
   // Optimistic like state: when a submit is in-flight, reflect its intent.
   const liked = reactFetcher.formData
     ? reactFetcher.formData.get("undo") !== "1"
@@ -1017,13 +1119,21 @@ const FriendPostCard: React.FC<{
                 home-page <Comment> uses (.comment / .comment__poster /
                 .comment__user-image / .comment__content / etc.) so
                 styling, spacing, and avatar treatment match exactly. */}
-            {replies && replies.map((r) => {
+            {allReplies.map((r) => {
               const ra = actorsLookup?.[r.authorActorUri];
               const isMine = r.kind === "mine";
+              // Prefer inlineAuthor (from client-side async fetch),
+              // fall back to the actors cache populated by the loader.
               const displayName = isMine
                 ? "You"
-                : ra?.displayName || ra?.fqHandle || r.authorActorUri;
-              const avatarUrl = isMine ? undefined : ra?.avatarUrl;
+                : r.inlineAuthor?.displayName
+                  || r.inlineAuthor?.fqHandle
+                  || ra?.displayName
+                  || ra?.fqHandle
+                  || r.authorActorUri;
+              const avatarUrl = isMine
+                ? undefined
+                : r.inlineAuthor?.avatarUrl ?? ra?.avatarUrl;
               return (
                 <div key={r.noteUri} className="comment">
                   <div className="comment__poster">

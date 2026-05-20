@@ -118,6 +118,8 @@ export default [
     route("bluesky/reply", "routes/api/bluesky/reply/index.ts"),
     route("bluesky/post-deferred", "routes/api/bluesky/post-deferred/index.ts"),
 
+    route("friends/thread-replies", "routes/api/friends/thread-replies/index.ts"),
+
     // OAuth (Google / GitHub / Mastodon)
     route("auth/google", "routes/api/auth/google/index.tsx"),
     route("auth/google/callback", "routes/api/auth/google/callback/index.tsx"),

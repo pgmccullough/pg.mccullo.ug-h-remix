@@ -547,6 +547,66 @@ export async function fetchBlueskyTimeline(opts: { limit?: number } = {}): Promi
 }
 
 // ---------------------------------------------------------------------------
+// Threads — fetch the direct replies on a post we don't own
+// ---------------------------------------------------------------------------
+
+export interface BlueskyThreadReply {
+  uri: string;
+  cid: string;
+  authorDid: string;
+  authorHandle: string;
+  authorDisplayName?: string;
+  authorAvatarUrl?: string;
+  text: string;
+  publishedMs: number;
+  webUrl: string;
+}
+
+/**
+ * Fetch direct (depth = 1) replies on a Bluesky post. Returns an empty
+ * list on any failure — caller should treat threads as optional UI.
+ *
+ * The bsky `getPostThread` response is a tagged union; we look only at
+ * the `threadViewPost` shape and ignore notFound / blocked variants.
+ */
+export async function fetchBlueskyThreadReplies(args: {
+  uri: string;
+}): Promise<BlueskyThreadReply[]> {
+  const result = await withRetry(async (agent) => {
+    const res: any = await agent.getPostThread({ uri: args.uri, depth: 1 });
+    const thread = res?.data?.thread;
+    if (!thread || thread.$type !== "app.bsky.feed.defs#threadViewPost") {
+      return [];
+    }
+    const out: BlueskyThreadReply[] = [];
+    for (const r of thread.replies ?? []) {
+      if (r?.$type !== "app.bsky.feed.defs#threadViewPost") continue;
+      const p = r.post;
+      if (!p?.author?.handle) continue;
+      out.push({
+        uri: p.uri,
+        cid: p.cid,
+        authorDid: p.author.did,
+        authorHandle: p.author.handle,
+        authorDisplayName: p.author.displayName,
+        authorAvatarUrl: p.author.avatar,
+        text: p.record?.text ?? "",
+        publishedMs: new Date(p.record?.createdAt ?? Date.now()).getTime(),
+        webUrl: `https://bsky.app/profile/${p.author.handle}/post/${atUriToRkey(p.uri)}`,
+      });
+    }
+    return out;
+  });
+  return result ?? [];
+}
+
+/** Return the logged-in Bluesky account's DID, or null if not configured. */
+export async function getMyBlueskyDid(): Promise<string | null> {
+  const result = await withRetry(async (agent) => agent.session?.did ?? null);
+  return result ?? null;
+}
+
+// ---------------------------------------------------------------------------
 // Following (graph)
 // ---------------------------------------------------------------------------
 
