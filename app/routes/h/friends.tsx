@@ -43,6 +43,13 @@ type UnifiedPost = {
   announcedBy?: string;
   /** Bluesky-only: content hash, needed by the like API. */
   cid?: string;
+  /** Open-Graph-style link card (currently populated from Bluesky's embed). */
+  external?: {
+    uri: string;
+    title: string;
+    description: string;
+    thumbUrl?: string;
+  };
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -102,6 +109,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           url: img.url,
         }))
       : undefined,
+    external: p.external,
   }));
 
   // Merge by timestamp, newest first.
@@ -309,6 +317,14 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function hostFromUrl(u: string): string {
+  try {
+    return new URL(u).hostname.replace(/^www\./, "");
+  } catch {
+    return u;
+  }
+}
+
 export default function Friends() {
   const { posts, actors, nextCursorMs, following, myReactions, inboxByActor, repliesByParent } =
     useLoaderData<LoaderData>();
@@ -443,6 +459,56 @@ export default function Friends() {
           font-size: 14px; line-height: 1.4; margin-top: 2px;
         }
         .friend-reply__content p { margin: 0.3rem 0; }
+
+        /* OG-style link card under post text (currently sourced from
+           Bluesky's app.bsky.embed.external embed). */
+        .friend-link-card {
+          display: block;
+          margin-top: 10px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          overflow: hidden;
+          text-decoration: none;
+          color: inherit;
+          background: #fff;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .friend-link-card:hover {
+          border-color: #4A6CBA;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .friend-link-card__thumb {
+          display: block;
+          width: 100%;
+          max-height: 320px;
+          object-fit: cover;
+          background: #f3f3f3;
+        }
+        .friend-link-card__body {
+          padding: 10px 12px;
+        }
+        .friend-link-card__title {
+          font-weight: 600;
+          color: #222;
+          font-size: 14px;
+          line-height: 1.3;
+          margin: 0 0 4px 0;
+        }
+        .friend-link-card__desc {
+          color: #555;
+          font-size: 13px;
+          line-height: 1.4;
+          margin: 0 0 6px 0;
+          /* Clamp to ~2 lines so the card stays a card, not a wall of text. */
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .friend-link-card__host {
+          color: #888;
+          font-size: 12px;
+        }
 
         /* Heart-only React popup — same chrome as EmojiReact, single emoji. */
         .heart-react__pop {
@@ -714,6 +780,37 @@ const FriendPostCard: React.FC<{
           ) : null}
           <div className="postcard__content__text">
             <div className="fake-p" dangerouslySetInnerHTML={{ __html: post.content }} />
+            {post.external ? (
+              <a
+                className="friend-link-card"
+                href={post.external.uri}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {post.external.thumbUrl ? (
+                  <img
+                    className="friend-link-card__thumb"
+                    src={post.external.thumbUrl}
+                    alt=""
+                  />
+                ) : null}
+                <div className="friend-link-card__body">
+                  {post.external.title ? (
+                    <div className="friend-link-card__title">
+                      {post.external.title}
+                    </div>
+                  ) : null}
+                  {post.external.description ? (
+                    <div className="friend-link-card__desc">
+                      {post.external.description}
+                    </div>
+                  ) : null}
+                  <div className="friend-link-card__host">
+                    {hostFromUrl(post.external.uri)}
+                  </div>
+                </div>
+              </a>
+            ) : null}
           </div>
           <div className="postcard__content__meta">
             {/* Heart-only react button, visually matches EmojiReact. */}

@@ -258,6 +258,13 @@ export async function replyOnBluesky(args: {
 // Inbound: timeline
 // ---------------------------------------------------------------------------
 
+export interface BlueskyExternalEmbed {
+  uri: string;
+  title: string;
+  description: string;
+  thumbUrl?: string;
+}
+
 export interface BlueskyFeedPost {
   uri: string;
   cid: string;
@@ -269,6 +276,8 @@ export interface BlueskyFeedPost {
   publishedMs: number;
   webUrl: string;
   images: Array<{ url: string; alt: string }>;
+  /** OG-style link card Bluesky already extracted for us. */
+  external?: BlueskyExternalEmbed;
 }
 
 export async function fetchBlueskyTimeline(opts: { limit?: number } = {}): Promise<
@@ -284,10 +293,34 @@ export async function fetchBlueskyTimeline(opts: { limit?: number } = {}): Promi
       const handle = author.handle;
       const webUrl = `https://bsky.app/profile/${handle}/post/${atUriToRkey(p.uri)}`;
       const images: BlueskyFeedPost["images"] = [];
+      let external: BlueskyExternalEmbed | undefined;
       const embed: any = p.embed;
-      if (embed?.$type === "app.bsky.embed.images#view" && embed.images) {
-        for (const img of embed.images) {
-          images.push({ url: img.fullsize ?? img.thumb, alt: img.alt ?? "" });
+      // Bluesky's view-layer embed types we care about:
+      //   app.bsky.embed.images#view         -> attached photos
+      //   app.bsky.embed.external#view       -> OG link card
+      //   app.bsky.embed.recordWithMedia#view-> quoted post + media (the
+      //                                         media side can be either of the
+      //                                         above; check both)
+      const candidates: any[] = [embed];
+      if (embed?.$type === "app.bsky.embed.recordWithMedia#view") {
+        candidates.push(embed.media);
+      }
+      for (const e of candidates) {
+        if (!e) continue;
+        if (e.$type === "app.bsky.embed.images#view" && e.images) {
+          for (const img of e.images) {
+            images.push({ url: img.fullsize ?? img.thumb, alt: img.alt ?? "" });
+          }
+        } else if (
+          e.$type === "app.bsky.embed.external#view" &&
+          e.external?.uri
+        ) {
+          external = {
+            uri: e.external.uri,
+            title: e.external.title ?? "",
+            description: e.external.description ?? "",
+            thumbUrl: e.external.thumb || undefined,
+          };
         }
       }
       posts.push({
@@ -301,6 +334,7 @@ export async function fetchBlueskyTimeline(opts: { limit?: number } = {}): Promi
         publishedMs: new Date(record?.createdAt ?? Date.now()).getTime(),
         webUrl,
         images,
+        external,
       });
     }
     return posts;
