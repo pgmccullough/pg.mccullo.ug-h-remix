@@ -15,12 +15,20 @@ if (!(S3_KEY && S3_SECRET && S3_REGION && S3_BUCKET)) {
 
 // One client per server instance. v3's S3Client is thread-safe and caches
 // connections internally.
+//
+// `requestChecksumCalculation: "WHEN_REQUIRED"` is critical for presigned
+// PUT URLs: the default ("WHEN_SUPPORTED") makes the SDK precompute a
+// CRC32 of an EMPTY body and sign it into the URL — then when the browser
+// uploads real bytes the server-computed checksum doesn't match and S3
+// rejects the PUT with 400. Same hazard with response checksums.
 const s3Client = new S3Client({
   region: S3_REGION,
   credentials: {
     accessKeyId: S3_KEY,
     secretAccessKey: S3_SECRET,
   },
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 });
 
 const publicLocation = (key: string) =>
