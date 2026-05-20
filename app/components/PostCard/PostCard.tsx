@@ -379,27 +379,33 @@ export const PostCard: React.FC<{
             <div
               className="postcard__content__media"
               ref={galWid}
-              style={
-                sliderHeight != null
-                  ? { height: sliderHeight, transition: "height 0.3s ease" }
-                  : undefined
-              }
             >
               <figure 
                 className="postcard__content__media__slider"
                 onTouchStart={setSwipe} 
-                onTouchMove={setSwipe} 
+                onTouchMove={setSwipe}
                 onTouchEnd={setSwipe}
                 ref={galSlide}
-                style={
-                  mediaSlides.itemLength > 1
-                    ?{transform: `translateX(${
-                      (Number(galSlide.current?.style.marginLeft.replace('px',''))*-1+swipe) > -1 
-                      && (Number(galSlide.current?.style.marginLeft.replace('px',''))) > (galWid.current?.offsetWidth*(mediaSlides.itemLength-1)*-1)
-                      ? swipe*-1 : 0
-                    }px)`}
-                    :{}
-                }
+                style={{
+                  // Height the slider — not the container — so the
+                  // container auto-sizes around it. Centering the
+                  // container itself (justify-content: center in CSS)
+                  // pushes the slide's top above the visible area if
+                  // its content overflows. Letting the container fit
+                  // the slider sidesteps that entirely; the active
+                  // slide is always anchored at the top.
+                  height: sliderHeight != null ? sliderHeight : undefined,
+                  transition: sliderHeight != null ? "height 0.3s ease" : undefined,
+                  ...(mediaSlides.itemLength > 1
+                    ? {
+                        transform: `translateX(${
+                          (Number(galSlide.current?.style.marginLeft.replace('px',''))*-1+swipe) > -1
+                          && (Number(galSlide.current?.style.marginLeft.replace('px',''))) > (galWid.current?.offsetWidth*(mediaSlides.itemLength-1)*-1)
+                          ? swipe*-1 : 0
+                        }px)`,
+                      }
+                    : {}),
+                }}
               >
                 {
                   // The carousel relies on every slide being inline-block
