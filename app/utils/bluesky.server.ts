@@ -343,6 +343,54 @@ export async function fetchBlueskyTimeline(opts: { limit?: number } = {}): Promi
 }
 
 // ---------------------------------------------------------------------------
+// Following (graph)
+// ---------------------------------------------------------------------------
+
+export interface BlueskyFollow {
+  did: string;
+  handle: string;
+  displayName?: string;
+  avatarUrl?: string;
+  profileUrl: string;
+}
+
+/**
+ * Fetch the accounts the logged-in Bluesky user follows. Paginates through
+ * the cursor up to a safety cap so we don't accidentally pull thousands.
+ */
+export async function fetchBlueskyFollowing(opts: { limit?: number } = {}): Promise<
+  BlueskyFollow[]
+> {
+  const cap = opts.limit ?? 500;
+  const result = await withRetry(async (agent) => {
+    const me = agent.session?.did ?? agent.session?.handle;
+    if (!me) return [];
+    const follows: BlueskyFollow[] = [];
+    let cursor: string | undefined;
+    while (follows.length < cap) {
+      const res: any = await agent.getFollows({
+        actor: me,
+        limit: Math.min(100, cap - follows.length),
+        cursor,
+      });
+      for (const f of res.data.follows ?? []) {
+        follows.push({
+          did: f.did,
+          handle: f.handle,
+          displayName: f.displayName,
+          avatarUrl: f.avatar,
+          profileUrl: `https://bsky.app/profile/${f.handle}`,
+        });
+      }
+      cursor = res.data.cursor;
+      if (!cursor) break;
+    }
+    return follows;
+  });
+  return result ?? [];
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

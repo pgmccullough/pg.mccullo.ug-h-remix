@@ -16,12 +16,15 @@ import type {
   RemoteActorCache,
 } from "~/utils/federation-inbox-posts.server";
 import { listFollowing } from "~/utils/federation-following.server";
-import type { FollowingRecord } from "~/utils/federation-following.server";
 import { federation } from "~/utils/federation.server";
 import { lookupObject } from "@fedify/fedify";
 import { getMyReactionsFor } from "~/utils/federation-interactions.server";
 import { clientPromise } from "~/lib/mongodb";
-import { fetchBlueskyTimeline, blueskyEnabled } from "~/utils/bluesky.server";
+import {
+  fetchBlueskyTimeline,
+  fetchBlueskyFollowing,
+  blueskyEnabled,
+} from "~/utils/bluesky.server";
 
 const PRIMARY_USERNAME = "patrick";
 
@@ -270,6 +273,54 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (f.inboxUri) inboxByActor[f.actorUri] = f.inboxUri;
   }
 
+  // Pull Bluesky follows alongside Mastodon follows so the Following
+  // panel shows both. Bluesky follows are always "accepted" — there's no
+  // pending state on the AT Protocol graph.
+  let blueskyFollows: Awaited<ReturnType<typeof fetchBlueskyFollowing>> = [];
+  if (blueskyEnabled()) {
+    try {
+      blueskyFollows = await fetchBlueskyFollowing({ limit: 500 });
+    } catch (err) {
+      console.error("[friends] Bluesky follows fetch failed:", err);
+    }
+  }
+
+  type UnifiedFollow = {
+    source: "mastodon" | "bluesky";
+    key: string;
+    status: "accepted" | "pending";
+    displayName?: string;
+    fqHandle?: string;
+    avatarUrl?: string;
+    profileUrl?: string;
+    // Mastodon-only: needed by the unfollow endpoint.
+    actorUri?: string;
+  };
+
+  const unifiedMastodon: UnifiedFollow[] = followingItems.map((f) => {
+    const profile = followingActors[f.actorUri] ?? null;
+    return {
+      source: "mastodon",
+      key: f.actorUri,
+      status: f.status === "pending" ? "pending" : "accepted",
+      displayName: profile?.displayName,
+      fqHandle: profile?.fqHandle,
+      avatarUrl: profile?.avatarUrl,
+      profileUrl: profile?.profileUrl,
+      actorUri: f.actorUri,
+    };
+  });
+  const unifiedBluesky: UnifiedFollow[] = blueskyFollows.map((f) => ({
+    source: "bluesky",
+    key: `bsky:${f.did}`,
+    status: "accepted",
+    displayName: f.displayName,
+    fqHandle: `@${f.handle}`,
+    avatarUrl: f.avatarUrl,
+    profileUrl: f.profileUrl,
+  }));
+  const following = [...unifiedMastodon, ...unifiedBluesky];
+
   return {
     posts,
     actors,
@@ -277,11 +328,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     myReactions,
     inboxByActor,
     repliesByParent,
-    following: followingItems.map((f) => ({
-      ...f,
-      profile: followingActors[f.actorUri] ?? null,
-    })),
+    following,
   };
+};
+
+type UnifiedFollow = {
+  source: "mastodon" | "bluesky";
+  key: string;
+  status: "accepted" | "pending";
+  displayName?: string;
+  fqHandle?: string;
+  avatarUrl?: string;
+  profileUrl?: string;
+  actorUri?: string;
 };
 
 type ThreadedReply = {
@@ -300,9 +359,7 @@ type LoaderData = {
   myReactions: Record<string, { like?: boolean; boost?: boolean }>;
   inboxByActor: Record<string, string | undefined>;
   repliesByParent: Record<string, ThreadedReply[]>;
-  following: Array<
-    FollowingRecord & { profile: RemoteActorCache | null }
-  >;
+  following: UnifiedFollow[];
 };
 
 // formatWhen removed — friend posts now use stampToTime from the rest of
@@ -364,11 +421,48 @@ export default function Friends() {
           border: 1px solid #979997;
         }
         .friends__btn--ghost:hover { color: #506982; }
+        /* Section card chrome — matches the home-feed PostCard look:
+           centered gray header with optional chevron, white body below. */
+        .friends__section {
+          background: #fff;
+          border: 1px solid #979997;
+          border-radius: 4px;
+          margin-bottom: 1.5rem;
+          overflow: hidden;
+        }
+        .friends__section-header {
+          position: relative;
+          background: #eee;
+          border-bottom: 1px solid #979997;
+          padding: 8px 36px;
+          text-align: center;
+          font: 600 14px 'PGM Sans', sans-serif;
+          color: #506982;
+        }
+        .friends__section-header__chev {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 22px;
+          height: 22px;
+          border: 1px solid #979997;
+          border-radius: 4px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #fff;
+          color: #506982;
+          font-size: 12px;
+          line-height: 1;
+        }
+        .friends__section-body {
+          padding: 12px;
+        }
         .friends__following {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
-          margin-bottom: 1.5rem;
         }
         .friends__following-chip {
           display: inline-flex;
@@ -382,7 +476,17 @@ export default function Friends() {
         }
         .friends__following-chip img {
           width: 18px; height: 18px; border-radius: 50%;
+          object-fit: cover;
         }
+        .friends__following-chip__src {
+          font-size: 11px;
+          opacity: 0.7;
+        }
+        .friends__following-chip a {
+          color: #506982;
+          text-decoration: none;
+        }
+        .friends__following-chip a:hover { text-decoration: underline; }
         .friends__following-chip button {
           margin-left: 4px;
           background: transparent;
@@ -568,37 +672,65 @@ export default function Friends() {
         )}
 
         {following.length > 0 && (
-          <>
-            <h2>Following ({following.filter((f) => f.status === "accepted").length})</h2>
-            <div className="friends__following">
-              {following.map((f) => (
-                <span key={f.actorUri} className="friends__following-chip">
-                  {f.profile?.avatarUrl ? (
-                    <img src={f.profile.avatarUrl} alt="" />
-                  ) : null}
-                  <span>
-                    {f.profile?.displayName ||
-                      f.profile?.fqHandle ||
-                      f.actorUri}
-                  </span>
-                  {f.status === "pending" && (
-                    <em style={{ color: "#888", fontSize: 11 }}> (pending)</em>
-                  )}
-                  <unfollowForm.Form
-                    method="post"
-                    action="/api/federation/unfollow"
-                    style={{ display: "inline" }}
-                  >
-                    <input type="hidden" name="actorUri" value={f.actorUri} />
-                    <button type="submit" title="Unfollow">×</button>
-                  </unfollowForm.Form>
-                </span>
-              ))}
+          <div className="friends__section">
+            <div className="friends__section-header">
+              Following ({following.filter((f) => f.status === "accepted").length})
+              <span className="friends__section-header__chev" aria-hidden="true">
+                v
+              </span>
             </div>
-          </>
+            <div className="friends__section-body">
+              <div className="friends__following">
+                {following.map((f) => {
+                  const label =
+                    f.displayName || f.fqHandle || f.key;
+                  return (
+                    <span key={f.key} className="friends__following-chip">
+                      {f.avatarUrl ? <img src={f.avatarUrl} alt="" /> : null}
+                      {f.profileUrl ? (
+                        <a href={f.profileUrl} target="_blank" rel="noreferrer">
+                          {label}
+                        </a>
+                      ) : (
+                        <span>{label}</span>
+                      )}
+                      <span
+                        className="friends__following-chip__src"
+                        title={
+                          f.source === "bluesky" ? "From Bluesky" : "From Mastodon"
+                        }
+                      >
+                        {f.source === "bluesky" ? "🦋" : "🐘"}
+                      </span>
+                      {f.status === "pending" && (
+                        <em style={{ color: "#888", fontSize: 11 }}>
+                          (pending)
+                        </em>
+                      )}
+                      {f.source === "mastodon" && f.actorUri && (
+                        <unfollowForm.Form
+                          method="post"
+                          action="/api/federation/unfollow"
+                          style={{ display: "inline" }}
+                        >
+                          <input
+                            type="hidden"
+                            name="actorUri"
+                            value={f.actorUri}
+                          />
+                          <button type="submit" title="Unfollow">
+                            ×
+                          </button>
+                        </unfollowForm.Form>
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         )}
 
-        <h2>Recent posts</h2>
         {posts.length === 0 ? (
           <div style={{ fontSize: 14, color: "#666" }}>
             Nothing here yet. Follow someone above, then wait for them to post.
