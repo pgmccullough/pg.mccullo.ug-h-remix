@@ -47,24 +47,39 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   useEffect(() => {
     const words = postText.split(" ");
     words.pop();
+    // The editor wraps URLs in `<a href="...">…</a>`. Splitting on
+    // whitespace gives us things like `href="https://youtu.be/abc"`,
+    // so when we slice off `https://you...` we still need to stop at
+    // the next quote/angle-bracket, otherwise the trailing `"` gets
+    // baked into the URL and the iframe ends up with `…?v=abc%22`.
+    const cleanUrlFrom = (word: string): string | null => {
+      const idx = word.indexOf("https://you");
+      if (idx < 0) return null;
+      const tail = word.slice(idx + "https://you".length);
+      const ended = tail.split(/[\s"'<>]/)[0];
+      return "https://you" + ended;
+    };
     if((words.join("").includes('https://youtu.be/'))||(words.join("").includes('youtube.com/watch'))) {
-      words.forEach(word => {
+      words.forEach(rawWord => {
+        let word = rawWord;
         if(word.includes("https://youtu.be/")) {
-          word = "https://you"+word.split("https://you")[1];
-          setYouTubePreviews((prev: YouTubeVideo[]) => 
-              prev.find((video: YouTubeVideo) => video.video===word)
+          const cleaned = cleanUrlFrom(word);
+          if (!cleaned) return;
+          setYouTubePreviews((prev: YouTubeVideo[]) =>
+              prev.find((video: YouTubeVideo) => video.video===cleaned)
                 ?[...prev]
-                :[...prev, {video: word, show: true, meta: null}]
+                :[...prev, {video: cleaned, show: true, meta: null}]
           )
         }
         if(word.includes("youtube.com")) {
           word = word.replace("://www.","://");
           word = word.replace("://music.","://");
-          word = "https://you"+word.split("https://you")[1];
-          setYouTubePreviews((prev: YouTubeVideo[]) => 
-              prev.find((video: YouTubeVideo) => video.video===word)
+          const cleaned = cleanUrlFrom(word);
+          if (!cleaned) return;
+          setYouTubePreviews((prev: YouTubeVideo[]) =>
+              prev.find((video: YouTubeVideo) => video.video===cleaned)
                 ?[...prev]
-                :[...prev, {video: word, show: true, meta: null}]
+                :[...prev, {video: cleaned, show: true, meta: null}]
           )
         }
       })

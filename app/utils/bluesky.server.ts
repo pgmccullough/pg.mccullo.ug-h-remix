@@ -93,7 +93,10 @@ const MAX_IMAGES = 4;
 // also bound how long we'll wait for the encode job to finish before we
 // post without the video — a Vercel function only has so much budget.
 const VIDEO_UPLOAD_POLL_MS = 1000;
-const VIDEO_UPLOAD_TIMEOUT_MS = 10000;
+// Tight budget — Vercel hobby functions cap at 10s. The post-create
+// flow also needs time for Mongo + Mastodon fan-out, so the Bluesky
+// video pipeline can't monopolize the whole window.
+const VIDEO_UPLOAD_TIMEOUT_MS = 6000;
 // Don't even try Bluesky video for files bigger than this — the bytes
 // have to ride through our Vercel function and we don't want to OOM.
 // Bump if you upgrade Vercel function memory.
@@ -227,6 +230,16 @@ export async function postToBluesky(args: {
    * we fall back to the image path.
    */
   videoUrls?: string[];
+  /**
+   * Pre-fetched video bytes — preferred over `videoUrls` when present.
+   * The caller already has the bytes (e.g. read directly from S3),
+   * which is much faster than making us fetch them ourselves.
+   */
+  videoSource?: {
+    bytes: Uint8Array;
+    contentType: string;
+    filename: string;
+  };
 }): Promise<BlueskyPostResult | null> {
   return withRetry(async (agent) => {
     let RichText: any;
@@ -269,13 +282,31 @@ export async function postToBluesky(args: {
     // pipeline fails or times out we'll fall through to images.
     let embed: any;
     const videoUrl = args.videoUrls?.[0];
-    if (videoUrl) {
+    if (args.videoSource || videoUrl) {
       try {
-        const res = await fetch(videoUrl);
-        if (res.ok) {
-          const contentType = res.headers.get("content-type") ?? "video/mp4";
-          const filename = videoUrl.split("/").pop() ?? "video.mp4";
-          const bytes = new Uint8Array(await res.arrayBuffer());
+        let bytes: Uint8Array | undefined;
+        let contentType: string | undefined;
+        let filename: string | undefined;
+        if (args.videoSource) {
+          bytes = args.videoSource.bytes;
+          contentType = args.videoSource.contentType;
+          filename = args.videoSource.filename;
+        } else if (videoUrl) {
+          // Fallback when the caller didn't pre-fetch bytes. This path
+          // is slow on Vercel because it hops through our own media
+          // proxy — caller should pass `videoSource` whenever possible.
+          const res = await fetch(videoUrl);
+          if (res.ok) {
+            contentType = res.headers.get("content-type") ?? "video/mp4";
+            filename = videoUrl.split("/").pop() ?? "video.mp4";
+            bytes = new Uint8Array(await res.arrayBuffer());
+          } else {
+            console.error(
+              `[bluesky] could not fetch video ${videoUrl}: HTTP ${res.status}`
+            );
+          }
+        }
+        if (bytes && contentType && filename) {
           const blobRef = await uploadBlueskyVideo({
             bytes,
             filename,
@@ -284,13 +315,9 @@ export async function postToBluesky(args: {
           if (blobRef) {
             embed = { $type: "app.bsky.embed.video", video: blobRef };
           }
-        } else {
-          console.error(
-            `[bluesky] could not fetch video ${videoUrl}: HTTP ${res.status}`
-          );
         }
       } catch (err) {
-        console.error(`[bluesky] video upload pipeline failed for ${videoUrl}:`, err);
+        console.error("[bluesky] video upload pipeline failed:", err);
       }
     }
 

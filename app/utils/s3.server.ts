@@ -115,6 +115,35 @@ export async function uploadFileToS3(
   return { Key: key, Location: publicLocation(key) };
 }
 
+/**
+ * Read an S3 object's bytes directly. Used by server-side code that
+ * needs the raw content (e.g. cross-posting a video to Bluesky) and
+ * would otherwise have to fetch its own `/api/media/...` proxy URL —
+ * paying a Vercel→Vercel HTTP hop that easily costs 2-3 seconds.
+ * Returns null if the object is missing or unreadable.
+ */
+export async function getObjectBytes(key: string): Promise<{
+  bytes: Uint8Array;
+  contentType?: string;
+  contentLength?: number;
+} | null> {
+  try {
+    const obj = await s3Client.send(
+      new GetObjectCommand({ Bucket: S3_BUCKET!, Key: key })
+    );
+    if (!obj.Body) return null;
+    const buf = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
+    return {
+      bytes: new Uint8Array(buf),
+      contentType: obj.ContentType,
+      contentLength: obj.ContentLength,
+    };
+  } catch (err) {
+    console.error(`[s3] getObjectBytes failed for ${key}:`, err);
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Presigned uploads — used for media that can't fit through a Vercel
 // serverless function body (cap ~4.5 MB). The browser PUTs the bytes

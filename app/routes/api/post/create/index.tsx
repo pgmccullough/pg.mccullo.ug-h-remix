@@ -3,6 +3,7 @@ import { getUser } from "~/utils/session.server";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { federatePostToFollowers } from "~/utils/federation-posts.server";
 import { postToBluesky, blueskyEnabled } from "~/utils/bluesky.server";
+import { getObjectBytes } from "~/utils/s3.server";
 
 const DOMAIN = "pg.mccullo.ug";
 const MEDIA_BASE = `https://${DOMAIN}/api/media/`;
@@ -62,11 +63,43 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       // the post doc so future delete/edit ops can also touch Bluesky.
       if (blueskyEnabled()) {
         try {
+          // For videos, read the bytes straight from S3 with the SDK
+          // instead of letting postToBluesky go back through our own
+          // /api/media/... proxy. That round-trip cost ~3s on Vercel
+          // and was the proximate cause of post-create timeouts.
+          let videoSource: {
+            bytes: Uint8Array;
+            contentType: string;
+            filename: string;
+          } | undefined;
+          const videoBasenames: string[] = Array.isArray(newPost.media?.videos)
+            ? newPost.media.videos.filter((v: any) => typeof v === "string")
+            : [];
+          if (videoBasenames.length) {
+            const first = videoBasenames[0];
+            const ext = first.split(".").pop()?.toLowerCase() ?? "";
+            const mimeByExt: Record<string, string> = {
+              mp4: "video/mp4", mov: "video/quicktime",
+              webm: "video/webm", m4v: "video/x-m4v",
+            };
+            const fetched = await getObjectBytes(`videos/${first}`);
+            if (fetched) {
+              videoSource = {
+                bytes: fetched.bytes,
+                contentType:
+                  fetched.contentType ?? mimeByExt[ext] ?? "video/mp4",
+                filename: first,
+              };
+            }
+          }
+
           const result = await postToBluesky({
             text: newPost.content ?? "",
             permalinkUrl: `${origin}/h/post/${postId}`,
             imageUrls: mediaUrlsFromBucket(newPost.media, "images"),
+            // Pre-fetched bytes preferred; videoUrls left in as fallback.
             videoUrls: mediaUrlsFromBucket(newPost.media, "videos"),
+            videoSource,
           });
           if (result) {
             await db
