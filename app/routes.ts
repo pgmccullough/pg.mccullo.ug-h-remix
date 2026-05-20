@@ -116,6 +116,7 @@ export default [
     route("federation/reply", "routes/api/federation/reply/index.ts"),
     route("bluesky/react", "routes/api/bluesky/react/index.ts"),
     route("bluesky/reply", "routes/api/bluesky/reply/index.ts"),
+    route("bluesky/post-deferred", "routes/api/bluesky/post-deferred/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)
     route("auth/google", "routes/api/auth/google/index.tsx"),

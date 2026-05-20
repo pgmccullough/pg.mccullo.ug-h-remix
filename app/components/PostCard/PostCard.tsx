@@ -350,19 +350,40 @@ export const PostCard: React.FC<{
                 }
               >
                 {
+                  // The carousel relies on every slide being inline-block
+                  // at 100% width so the children sit side-by-side under
+                  // `white-space: nowrap` and translateX scrolls between
+                  // them. <Image> is naturally inline (<img>), but <Video>
+                  // and <Weblink> render block-level wrappers that broke
+                  // the layout — wrapping them all in this slide div
+                  // normalizes the geometry.
                   Object.keys(post.media).map(key => {
                     const DynamicComponent = mediaComponents.find(match => match.db_prop === key);
-                    return(
-                      Array.isArray(post.media[key])&&DynamicComponent
-                        ?post.media[key].map((item:string) =>
+                    if (!Array.isArray(post.media[key]) || !DynamicComponent) return null;
+                    return post.media[key].map((item: any, i: number) => {
+                      // Items can be strings or objects (e.g. YouTube links).
+                      const slideKey =
+                        typeof item === "string"
+                          ? `${key}-${i}-${item}`
+                          : `${key}-${i}-${item?.video ?? item?.url ?? i}`;
+                      return (
+                        <div
+                          key={slideKey}
+                          className="postcard__content__media__slider__slide"
+                          style={{
+                            display: "inline-block",
+                            width: "100%",
+                            verticalAlign: "top",
+                            whiteSpace: "normal",
+                          }}
+                        >
                           <DynamicComponent.component
-                            key={item} 
-                            src={item} 
+                            src={item}
                             alt=""
                           />
-                        )
-                        :null
-                    )
+                        </div>
+                      );
+                    });
                   })
                 }
               </figure>
