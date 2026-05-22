@@ -1,4 +1,4 @@
-import { useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { useState } from "react";
 
 interface VisitorDoc {
@@ -136,10 +136,13 @@ export const SiteActivity: React.FC<{}> = () => {
         .siteActivity__row:last-child { border-bottom: 0; }
         .siteActivity__line1 { color: #333; }
         .siteActivity__line2 { color: #888; font-size: 12px; }
-        .siteActivity__path {
+        .siteActivity__path,
+        .siteActivity__path:visited {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
           color: #4A6CBA;
+          text-decoration: none;
         }
+        .siteActivity__path:hover { text-decoration: underline; }
       `}</style>
 
       <div className={`siteActivity${expanded ? " siteActivity--open" : ""}`}>
@@ -173,7 +176,9 @@ export const SiteActivity: React.FC<{}> = () => {
                   {place(v)}
                 </div>
                 <div className="siteActivity__line2">
-                  <span className="siteActivity__path">{lastPath(v)}</span>
+                  <Link className="siteActivity__path" to={lastPath(v)}>
+                    {lastPath(v)}
+                  </Link>
                   {" · "}
                   {whenLabel(v.lastSeen)}
                 </div>
