@@ -55,3 +55,18 @@ export const newProfileImg = async(profileImg: any) => {
   });
 }
 
+// ANALYTICS PUSHERS
+
+/**
+ * Broadcast a new (or just-updated) visitor record so the admin's
+ * Recent Visitors widget can update in real time and trigger a
+ * desktop notification. The payload is the full upserted document
+ * shape — same as what the loader sends down on a page render — so
+ * the client doesn't need any source-specific parsing.
+ */
+export const newVisitor = async(visitor: any) => {
+  await pusher.trigger("client-new-visitor", "refresh", {
+    visitor,
+  });
+}
+

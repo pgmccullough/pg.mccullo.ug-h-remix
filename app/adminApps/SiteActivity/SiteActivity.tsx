@@ -1,5 +1,5 @@
 import { Link, useLoaderData } from "react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface VisitorDoc {
   _id?: string;
@@ -55,10 +55,100 @@ function identity(visitor: VisitorDoc): string {
 }
 
 export const SiteActivity: React.FC<{}> = () => {
-  const { visitors } = useLoaderData<{ visitors: VisitorDoc[] }>();
+  const { visitors: loaderVisitors } = useLoaderData<{ visitors: VisitorDoc[] }>();
   // Collapsed by default — the drawer just shows its header tab at the
   // bottom of the screen until clicked.
   const [expanded, setExpanded] = useState<boolean>(false);
+
+  // Take over visitor state from the loader so we can push live
+  // updates onto it via Pusher. The loader still does the first paint.
+  const [visitors, setVisitors] = useState<VisitorDoc[]>(loaderVisitors ?? []);
+  useEffect(() => {
+    // If the loader re-renders with a fresh list (route navigation),
+    // start over from that snapshot.
+    setVisitors(loaderVisitors ?? []);
+  }, [loaderVisitors]);
+
+  // Desktop notification permission state. We let the admin opt in
+  // via a tiny bell in the header bar; once granted, every live
+  // visitor event fires a Notification.
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | "unknown">(
+    "unknown"
+  );
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotifPerm(Notification.permission);
+    }
+  }, []);
+  const notifPermRef = useRef(notifPerm);
+  useEffect(() => { notifPermRef.current = notifPerm; }, [notifPerm]);
+
+  const requestNotifPerm = async (e: React.MouseEvent) => {
+    // Don't let the click bubble up and toggle the drawer.
+    e.stopPropagation();
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    try {
+      const result = await Notification.requestPermission();
+      setNotifPerm(result);
+    } catch {
+      // Some browsers (older Safari) throw; treat as denied.
+      setNotifPerm("denied");
+    }
+  };
+
+  // Subscribe to the live visitor channel. Dynamic-import pusher-js
+  // so its `self`-touching module init can't break the SSR bundle.
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    let cancelled = false;
+    (async () => {
+      const { default: Pusher } = await import("pusher-js");
+      if (cancelled) return;
+      const pusher = new Pusher("1463cc5404c5aa8377ba", { cluster: "mt1" });
+      const channel = pusher.subscribe("client-new-visitor");
+      channel.bind("refresh", (data: { visitor: VisitorDoc }) => {
+        const v = data?.visitor;
+        if (!v?._id) return;
+        // Move/insert at the top of the list.
+        setVisitors((prev) => {
+          const others = prev.filter((p) => String(p._id) !== String(v._id));
+          return [v, ...others];
+        });
+        // Fire a desktop notification if the admin opted in.
+        if (
+          typeof window !== "undefined" &&
+          "Notification" in window &&
+          notifPermRef.current === "granted"
+        ) {
+          try {
+            const title = "New visitor";
+            const body = `${identity(v)} ${flag(v)} ${place(v)} · ${lastPath(v)}`;
+            const n = new Notification(title, {
+              body,
+              icon: "/favicon.ico",
+              tag: String(v._id), // collapses repeated visits by the same person
+            });
+            // Click-through opens the visited path.
+            n.onclick = () => {
+              window.focus();
+              window.location.href = lastPath(v);
+            };
+          } catch {
+            /* swallow — notifications are best effort */
+          }
+        }
+      });
+      cleanup = () => {
+        try { channel.unbind_all(); } catch {}
+        try { channel.unsubscribe(); } catch {}
+        try { pusher.disconnect(); } catch {}
+      };
+    })();
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, []);
 
   const sorted = [...(visitors ?? [])].sort(
     (a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0)
@@ -156,10 +246,42 @@ export const SiteActivity: React.FC<{}> = () => {
           onClick={() => setExpanded(!expanded)}
         >
           <span>Recent visitors ({sorted.length})</span>
-          <span
-            className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
-          >
-            ^
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            {/* Notification permission button: shows a bell when the
+                admin hasn't decided yet. Hides after grant; shows a
+                muted variant when denied so the admin sees why no
+                notifications are firing. */}
+            {notifPerm === "default" && (
+              <button
+                type="button"
+                onClick={requestNotifPerm}
+                title="Enable desktop notifications for new visitors"
+                style={{
+                  background: "transparent",
+                  border: 0,
+                  padding: 0,
+                  cursor: "pointer",
+                  fontSize: 16,
+                  height: "auto",
+                  lineHeight: 1,
+                }}
+              >
+                🔔
+              </button>
+            )}
+            {notifPerm === "denied" && (
+              <span
+                title="Notifications blocked — enable in your browser site settings"
+                style={{ fontSize: 13, opacity: 0.6 }}
+              >
+                🔕
+              </span>
+            )}
+            <span
+              className={`siteActivity__caret${expanded ? " siteActivity__caret--down" : ""}`}
+            >
+              ^
+            </span>
           </span>
         </div>
         <div className="siteActivity__body" aria-hidden={!expanded}>

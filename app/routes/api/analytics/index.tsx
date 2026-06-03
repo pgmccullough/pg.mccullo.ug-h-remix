@@ -2,6 +2,7 @@ import type { ActionFunctionArgs } from "react-router";
 
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { getUser } from "~/utils/session.server";
+import { newVisitor } from "~/utils/pusher.server";
 
 /**
  * Visitor pinger backend. The client tells us what page they're on; we
@@ -80,6 +81,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const now = Date.now();
     const historyEntry = { path, referrer, timestamp: now };
 
+    let visitorId: ObjectId | null = null;
+    let didChange = false;
     if (existing) {
       // Dedup: if last entry was the same path within the last 30s, skip.
       const lastEntry = existing.history?.[existing.history.length - 1];
@@ -101,9 +104,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             } as any,
           }
         );
+        visitorId = new ObjectId(existing._id);
+        didChange = true;
       }
     } else {
-      await col.insertOne({
+      const insertRes = await col.insertOne({
         firstSeen: now,
         lastSeen: now,
         ip: [ip],
@@ -114,6 +119,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         lastUserName: userName || null,
         history: [historyEntry],
       });
+      visitorId = insertRes.insertedId;
+      didChange = true;
+    }
+
+    // Broadcast the (just-modified) visitor doc so the admin's Recent
+    // Visitors widget can update live + show a desktop notification.
+    // Skipping the broadcast on dedup avoids spamming on the same path
+    // refresh within 30 seconds.
+    if (didChange && visitorId) {
+      try {
+        const fresh = await col.findOne({ _id: visitorId });
+        if (fresh) {
+          // Mongo ObjectId / Date serialization quirk: pass plain
+          // strings so the client doesn't choke on EJSON.
+          const serializable = {
+            ...fresh,
+            _id: fresh._id.toString(),
+          };
+          await newVisitor(serializable);
+        }
+      } catch (err) {
+        console.error("[analytics] pusher broadcast failed:", err);
+      }
     }
 
     return { msg: "ok" };
