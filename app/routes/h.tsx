@@ -39,6 +39,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   let jobs: any[] = [];
   let visitors: any[] = [];
   if (user?.role === "administrator") {
+    // One-shot cleanup: purge any existing records from known
+    // datacenter-origin "visitors" (scrapers/lambdas/VPN exit nodes).
+    // Mirrors the filter list in /api/analytics so future visits never
+    // land in the collection; this catches anything that landed before
+    // the filter was added. Idempotent + cheap.
+    try {
+      await db.collection("myVisitors").deleteMany({
+        $or: [
+          {
+            "lastIpData.city": "Boardman",
+            "lastIpData.region_code": "OR",
+            "lastIpData.country_code": "US",
+          },
+        ],
+      });
+    } catch (err) {
+      console.error("[h loader] scraper-visitor cleanup failed:", err);
+    }
     visitors = await db
       .collection("myVisitors")
       .find()

@@ -59,6 +59,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
+    // Filter out traffic from known datacenter regions — those are
+    // almost always scrapers / serverless functions / VPNs, not real
+    // visitors. Skipping here keeps the DB clean and avoids firing
+    // a desktop notification every few minutes. Add to this list as
+    // new sources of junk traffic show up.
+    if (isLikelyScraperOrigin(ipData)) {
+      return { msg: "filtered" };
+    }
+
     const client = await clientPromise;
     const db = client.db("user_posts");
     const col = db.collection("myVisitors");
@@ -150,6 +159,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return { msg: "error" };
   }
 };
+
+// ---------------------------------------------------------------------------
+// Datacenter-origin filter — see the call site for rationale.
+// ---------------------------------------------------------------------------
+
+const DATACENTER_CITIES: Array<{ city: string; region: string; country: string }> = [
+  // AWS us-east-1 (N. Virginia) — also a huge bot hub, but the city
+  // there is "Ashburn" and we get legitimate East-Coast traffic from
+  // surrounding areas, so we intentionally don't blanket-filter it.
+  // Add more entries here as new sources of junk show up.
+  { city: "Boardman", region: "OR", country: "US" },   // AWS us-west-2
+];
+
+function isLikelyScraperOrigin(ipData: any): boolean {
+  if (!ipData) return false;
+  const city = String(ipData.city ?? "").toLowerCase();
+  const region = String(ipData.region_code ?? "").toLowerCase();
+  const country = String(ipData.country_code ?? "").toLowerCase();
+  return DATACENTER_CITIES.some(
+    (d) =>
+      d.city.toLowerCase() === city &&
+      d.region.toLowerCase() === region &&
+      d.country.toLowerCase() === country
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Vercel geo headers → IPStack-shaped object (so SiteActivity rendering
