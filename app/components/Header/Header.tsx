@@ -63,26 +63,34 @@ export const Header: React.FC<{
 
   /**
    * Receive the cropped File from <ImageCropModal>, name it the way
-   * the existing pipeline expects (slashes in the prefix get swapped
-   * for underscores so the browser File API accepts the name), drop
-   * it into the hidden form's file input, and submit the form. The
-   * rest of the pipeline (s3 upload, sharp resize, siteData update,
-   * pusher broadcast) keeps working as-is.
+   * the existing pipeline expects (slashes in the prefix become
+   * underscores so the browser File API accepts the filename — the
+   * /api/upload server reverses that to get the real S3 key), then
+   * submit it directly via the fetcher.
+   *
+   * We bypass the hidden <form> + DataTransfer + button.click() dance
+   * because setting input.files programmatically can fail to trigger
+   * the form's submit pipeline reliably across React Router versions.
+   * fetcher.submit(formData) is direct and unambiguous, and feeds the
+   * same /api/upload → fetcher.data.imgSrc → siteData update chain.
    */
   const handleCroppedImage = (kind: "profile" | "story", croppedFile: File) => {
     const prefix = kind === "story" ? "images/user/cover/" : "images/user/profile/";
     const safeName = prefix.replaceAll("/", "_") +
       croppedFile.name.split("/").pop()!;
     const renamed = new File([croppedFile], safeName, { type: croppedFile.type });
-    const inputRef = kind === "story" ? storyImageInput : profileImageInput;
-    const submitRef = kind === "story" ? storyImageSubmit : profileImageSubmit;
-    const previewEl = kind === "story" ? storyImage : profileImage;
-    if (!inputRef.current || !submitRef.current) return;
-    const dt = new DataTransfer();
-    dt.items.add(renamed);
-    inputRef.current.files = dt.files;
+
+    const fd = new FormData();
+    fd.append("img", renamed);
+    fetcher.submit(fd, {
+      method: "post",
+      action: "/api/upload?index",
+      encType: "multipart/form-data",
+    });
+
     // Optimistic preview swap so the user sees their crop before the
     // server roundtrip lands.
+    const previewEl = kind === "story" ? storyImage : profileImage;
     const reader = new FileReader();
     reader.onload = (e: any) => {
       if (!previewEl.current) return;
@@ -94,7 +102,7 @@ export const Header: React.FC<{
       }
     };
     reader.readAsDataURL(renamed);
-    submitRef.current.click();
+
     setCropModalKind(null);
   }
 
@@ -170,9 +178,20 @@ export const Header: React.FC<{
   }
 
   if(fetcher.data?.imgSrc?.length) {
-    const imgName = fetcher.data.imgSrc.split("/").slice(4);
-    if(imgName[2]==="cover") {
-      const permaName = "/api/media/"+imgName.join("/");
+    // Detect cover vs profile by substring instead of slicing the
+    // response URL by path index — the S3 URL format (virtual-hosted
+    // vs path-style) shifts segment positions, so the old slice(4)
+    // approach silently mismatched. Substring matching is robust to
+    // either format and to bucket names that contain dots.
+    const imgSrc: string = fetcher.data.imgSrc;
+    const isCover = imgSrc.includes("/user/cover/");
+    const isProfile = imgSrc.includes("/user/profile/");
+    // Extract the "images/..." portion of the key so we can build a
+    // permalink that goes through our own /api/media proxy.
+    const keyMatch = imgSrc.match(/\/(images\/[^?#]+)$/);
+    const permaName = keyMatch ? `/api/media/${keyMatch[1]}` : null;
+
+    if(isCover && permaName) {
       gpsFromImg(permaName).then(({ latitude, longitude }) => {
         fetcher.submit(
           {
@@ -185,8 +204,7 @@ export const Header: React.FC<{
         fetcher.data.imgSrc = "";
       });
     }
-    else if(imgName[2]==="profile") {
-      const permaName = "/api/media/"+imgName.join("/");
+    else if(isProfile && permaName) {
       gpsFromImg(permaName).then(({ latitude, longitude }) => {
         fetcher.submit(
           {
