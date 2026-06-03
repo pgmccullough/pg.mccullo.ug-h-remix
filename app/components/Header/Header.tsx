@@ -5,6 +5,7 @@ import { Post, SiteData, User } from '~/common/types';
 import { stampToTime } from '~/functions/functions';
 import { PostCreator } from '../PostCreator/PostCreator';
 import { StoryPost } from '../StoryPost/StoryPost';
+import { ImageCropModal } from '../ImageCropModal/ImageCropModal';
 import { v4 as uuidv4 } from 'uuid';
 // exifr v7 changed its export shape; the named { gps } import no longer
 // resolves over ESM. Use the default export and call exifr.gps() instead.
@@ -34,6 +35,9 @@ export const Header: React.FC<{
   const [ inEdit, toggleInEdit ] = useState<boolean>(false);
   const [ watchWordActive, setWatchWordActive ] = useState<{ inEdit: boolean, watchword: string|undefined }>({ inEdit: false,  watchword: siteData?.watchword.word });
   const [ storyImageVisibility, setStoryImageVisibility ] = useState<boolean>(false);
+  // Which (if any) image-upload modal is open. Each opens an
+  // ImageCropModal with the right aspect ratio.
+  const [ cropModalKind, setCropModalKind ] = useState<"profile" | "story" | null>(null);
   const watchWordRef = useRef<HTMLDivElement>(null);
 
   const storyImageSubmit = useRef<HTMLButtonElement>(null);
@@ -47,11 +51,51 @@ export const Header: React.FC<{
   const profTimestamp = useRef<HTMLSpanElement>(null);
 
   const uploadStoryImg = () => {
-    if(storyImageInput.current) storyImageInput.current.click();
+    // Open the crop modal instead of going straight to the file picker.
+    setCropModalKind("story");
+    toggleInEdit(false);
   }
 
   const uploadProfileImg = () => {
-    if(profileImageInput.current) profileImageInput.current.click();
+    setCropModalKind("profile");
+    toggleInEdit(false);
+  }
+
+  /**
+   * Receive the cropped File from <ImageCropModal>, name it the way
+   * the existing pipeline expects (slashes in the prefix get swapped
+   * for underscores so the browser File API accepts the name), drop
+   * it into the hidden form's file input, and submit the form. The
+   * rest of the pipeline (s3 upload, sharp resize, siteData update,
+   * pusher broadcast) keeps working as-is.
+   */
+  const handleCroppedImage = (kind: "profile" | "story", croppedFile: File) => {
+    const prefix = kind === "story" ? "images/user/cover/" : "images/user/profile/";
+    const safeName = prefix.replaceAll("/", "_") +
+      croppedFile.name.split("/").pop()!;
+    const renamed = new File([croppedFile], safeName, { type: croppedFile.type });
+    const inputRef = kind === "story" ? storyImageInput : profileImageInput;
+    const submitRef = kind === "story" ? storyImageSubmit : profileImageSubmit;
+    const previewEl = kind === "story" ? storyImage : profileImage;
+    if (!inputRef.current || !submitRef.current) return;
+    const dt = new DataTransfer();
+    dt.items.add(renamed);
+    inputRef.current.files = dt.files;
+    // Optimistic preview swap so the user sees their crop before the
+    // server roundtrip lands.
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      if (!previewEl.current) return;
+      if (kind === "story") {
+        (previewEl.current as HTMLImageElement).src = e.target.result;
+      } else {
+        (previewEl.current as HTMLImageElement).style.backgroundImage =
+          `url(${e.target.result})`;
+      }
+    };
+    reader.readAsDataURL(renamed);
+    submitRef.current.click();
+    setCropModalKind(null);
   }
 
   const blurWatchWord = () => {
@@ -388,10 +432,27 @@ export const Header: React.FC<{
           />
         </Link>
       }
-      {storyImageVisibility?<StoryPost 
+      {storyImageVisibility?<StoryPost
         storyPosts={storyPost}
         setStoryImageVisibility={setStoryImageVisibility}
       />:""}
+
+      <ImageCropModal
+        open={cropModalKind === "profile"}
+        aspect={1}
+        outputWidth={512}
+        fileNamePrefix="images/user/profile/"
+        onCropped={(file) => handleCroppedImage("profile", file)}
+        onClose={() => setCropModalKind(null)}
+      />
+      <ImageCropModal
+        open={cropModalKind === "story"}
+        aspect={16 / 9}
+        outputWidth={1600}
+        fileNamePrefix="images/user/cover/"
+        onCropped={(file) => handleCroppedImage("story", file)}
+        onClose={() => setCropModalKind(null)}
+      />
     </header>
   )
 }
