@@ -132,6 +132,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .sort({ created: -1 })
     .toArray();
   return {
+    // Exposed so SiteActivity can subscribe the browser to Web Push.
+    // Safe to hand to the client — VAPID public keys are meant to be
+    // shared. The private key stays server-side.
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
     calDates,
     emails,
     IPSTACK_APIKEY,

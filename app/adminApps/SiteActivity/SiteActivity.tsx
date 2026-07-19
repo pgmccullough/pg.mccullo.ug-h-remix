@@ -75,8 +75,24 @@ function identity(visitor: VisitorDoc): string {
 
 const LAST_READ_KEY = "siteActivityLastRead";
 
+/**
+ * Convert a URL-safe base64 VAPID public key (Uint8Array bytes) into
+ * the raw byte array that pushManager.subscribe() wants.
+ */
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
 export const SiteActivity: React.FC<{}> = () => {
-  const { visitors: loaderVisitors } = useLoaderData<{ visitors: VisitorDoc[] }>();
+  const { visitors: loaderVisitors, vapidPublicKey } = useLoaderData<{
+    visitors: VisitorDoc[];
+    vapidPublicKey?: string;
+  }>();
   // Collapsed by default — the drawer just shows its header tab at the
   // bottom of the screen until clicked.
   const [expanded, setExpanded] = useState<boolean>(false);
@@ -130,8 +146,99 @@ export const SiteActivity: React.FC<{}> = () => {
   const notifPermRef = useRef(notifPerm);
   useEffect(() => { notifPermRef.current = notifPerm; }, [notifPerm]);
 
+  // Track whether this browser is already subscribed for Web Push
+  // (checked once on mount, and after a subscribe/unsubscribe flip).
+  const [pushSubscribed, setPushSubscribed] = useState<boolean>(false);
+  const refreshPushState = async () => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      setPushSubscribed(!!sub);
+    } catch { /* ignore */ }
+  };
+  useEffect(() => { void refreshPushState(); }, []);
+
+  /**
+   * Enable push:
+   *   1. Ask for Notification permission if not granted yet.
+   *   2. Register the service worker.
+   *   3. pushManager.subscribe() with the site's VAPID public key.
+   *   4. POST the subscription to /api/push/subscribe so the server
+   *      can send us notifications later.
+   *
+   * Idempotent — calling it when already subscribed is a no-op.
+   */
+  const enablePush = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+      alert("This browser doesn't support push notifications.");
+      return;
+    }
+    if (!vapidPublicKey) {
+      alert("Push isn't configured on the server yet (missing VAPID_PUBLIC_KEY).");
+      return;
+    }
+    try {
+      // 1. Permission
+      if (Notification.permission !== "granted") {
+        const perm = await Notification.requestPermission();
+        setNotifPerm(perm);
+        if (perm !== "granted") return;
+      }
+      // 2. Service worker (idempotent — re-register is a cheap check)
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+      // 3. Subscribe (or return the existing sub)
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+      }
+      // 4. Ship the subscription to the server
+      const res = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub.toJSON()),
+      });
+      if (!res.ok) {
+        console.error("[push] subscribe endpoint failed:", await res.text());
+        alert("Server rejected the subscription.");
+        return;
+      }
+      setPushSubscribed(true);
+    } catch (err) {
+      console.error("[push] enable failed:", err);
+      alert("Could not enable push notifications. See console for details.");
+    }
+  };
+
+  const disablePush = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      if (sub) {
+        await fetch("/api/push/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        }).catch(() => {});
+        await sub.unsubscribe();
+      }
+      setPushSubscribed(false);
+    } catch (err) {
+      console.error("[push] disable failed:", err);
+    }
+  };
+
   const requestNotifPerm = async (e: React.MouseEvent) => {
-    // Don't let the click bubble up and toggle the drawer.
+    // Legacy fallback: if push isn't available, still let the admin
+    // grant permission for the tab-only in-page notification path.
     e.stopPropagation();
     if (typeof window === "undefined" || !("Notification" in window)) return;
     try {
@@ -317,15 +424,14 @@ export const SiteActivity: React.FC<{}> = () => {
             })()}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-            {/* Notification permission button: shows a bell when the
-                admin hasn't decided yet. Hides after grant; shows a
-                muted variant when denied so the admin sees why no
-                notifications are firing. */}
-            {notifPerm === "default" && (
+            {/* Push-subscription button. If not subscribed yet, one
+                click enables permission + service worker + push. If
+                already subscribed, a filled bell + click to opt out. */}
+            {notifPerm !== "denied" && !pushSubscribed && (
               <button
                 type="button"
-                onClick={requestNotifPerm}
-                title="Enable desktop notifications for new visitors"
+                onClick={enablePush}
+                title="Enable push notifications on this device (works even when the tab is closed)"
                 style={{
                   background: "transparent",
                   border: 0,
@@ -337,6 +443,24 @@ export const SiteActivity: React.FC<{}> = () => {
                 }}
               >
                 🔔
+              </button>
+            )}
+            {pushSubscribed && (
+              <button
+                type="button"
+                onClick={disablePush}
+                title="Push subscribed on this device. Click to unsubscribe."
+                style={{
+                  background: "transparent",
+                  border: 0,
+                  padding: 0,
+                  cursor: "pointer",
+                  fontSize: 16,
+                  height: "auto",
+                  lineHeight: 1,
+                }}
+              >
+                🔕
               </button>
             )}
             {notifPerm === "denied" && (

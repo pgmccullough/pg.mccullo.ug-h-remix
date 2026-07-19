@@ -1,6 +1,15 @@
 {
+  "name": "Patrick Glendon McCullough",
+  "short_name": "pgm",
+  "description": "Personal site of Patrick Glendon McCullough",
+  "start_url": "/h",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#4A6CBA",
   "icons": [
-    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },
-    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512" }
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
   ]
 }

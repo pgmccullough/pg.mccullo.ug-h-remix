@@ -123,6 +123,9 @@ export default [
     route("bluesky/reply", "routes/api/bluesky/reply/index.ts"),
     route("bluesky/post-deferred", "routes/api/bluesky/post-deferred/index.ts"),
 
+    route("push/subscribe", "routes/api/push/subscribe/index.ts"),
+    route("push/unsubscribe", "routes/api/push/unsubscribe/index.ts"),
+
     route("friends/thread-replies", "routes/api/friends/thread-replies/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)

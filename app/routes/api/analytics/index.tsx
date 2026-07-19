@@ -3,6 +3,7 @@ import type { ActionFunctionArgs } from "react-router";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { getUser } from "~/utils/session.server";
 import { newVisitor } from "~/utils/pusher.server";
+import { sendPushToAll, pushConfigured } from "~/utils/web-push.server";
 
 /**
  * Visitor pinger backend. The client tells us what page they're on; we
@@ -186,6 +187,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             _id: fresh._id.toString(),
           };
           await newVisitor(serializable);
+
+          // Web Push: reaches devices even when no tab is open (e.g.
+          // phone in your pocket). Best-effort, fire-and-forget so a
+          // slow push service can't slow down the analytics response.
+          if (pushConfigured()) {
+            const identity =
+              serializable.lastUserName ||
+              serializable.user?.find((u: any) => u?.user_name)?.user_name ||
+              "anon";
+            const geo = serializable.lastIpData ?? {};
+            const place = [geo.city, geo.region_code, geo.country_code]
+              .filter((x: any) => typeof x === "string" && x.length)
+              .join(", ") || geo.country_name || "";
+            const body = place
+              ? `${identity} from ${place} · ${path}`
+              : `${identity} · ${path}`;
+            void sendPushToAll({
+              title: "New visitor",
+              body,
+              url: path,
+              tag: String(serializable._id), // collapse repeated visits from same person
+            }).catch((err) => console.error("[analytics] web-push failed:", err));
+          }
         }
       } catch (err) {
         console.error("[analytics] pusher broadcast failed:", err);

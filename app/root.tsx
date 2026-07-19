@@ -70,7 +70,13 @@ export const meta: MetaFunction = () => [
 const GA_TRACKING_ID: string = import.meta.env.VITE_GA_TRACKING_ID ?? "";
 
 export const loader = async (_args: LoaderFunctionArgs) => {
-  return { gaTrackingId: GA_TRACKING_ID };
+  // The VAPID public key is safe to expose (its whole point is being
+  // shared with the client so the browser can create a push
+  // subscription). The private key stays server-side.
+  return {
+    gaTrackingId: GA_TRACKING_ID,
+    vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
+  };
 };
 
 export default function App() {
