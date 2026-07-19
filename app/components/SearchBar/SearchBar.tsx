@@ -38,27 +38,35 @@ export const SearchBar: React.FC<{
     );
   }
 
+  // `state` is "idle" | "submitting" | "loading" in RR v7. Anything
+  // but idle means a fetch is in flight — treat that as "loading" for
+  // the button UI so the user sees the click did something.
+  const isSearching = mongoFetch.state !== "idle";
+
   return (
     <div className="search">
-      <input 
+      <input
         className="search__input"
         type="text"
         placeholder="Search posts"
         value={searchQuery}
-        onChange={(e) => {setSearchQuery(e.target.value)}} 
-        onKeyDown={(e) => {if(e.key==="Enter") {e.preventDefault(); searchPosts()}}}
+        onChange={(e) => {setSearchQuery(e.target.value)}}
+        onKeyDown={(e) => {if(e.key==="Enter") {e.preventDefault(); if(!isSearching) searchPosts()}}}
+        disabled={isSearching}
       />
-      <button 
-        className={`search__button${searchQuery.length===0?" search__button--disabled":""}`}
+      <button
+        className={`search__button${searchQuery.length===0 || isSearching ?" search__button--disabled":""}`}
         onClick={searchPosts}
-      >SEARCH</button>
-      <button 
-        className={`search__button search__button--clear${searchQuery.length===0?" search__button--disabled":""}`}
+        disabled={isSearching || searchQuery.length===0}
+      >{isSearching ? "LOADING…" : "SEARCH"}</button>
+      <button
+        className={`search__button search__button--clear${(searchQuery.length===0 || isSearching) ?" search__button--disabled":""}`}
         onClick={() => {
-          setSearchQuery(""); 
-          alterPostArray([]); 
+          setSearchQuery("");
+          alterPostArray([]);
           setPostSearchResults(null)
         }}
+        disabled={isSearching}
       >CLEAR</button>
     </div>
   )

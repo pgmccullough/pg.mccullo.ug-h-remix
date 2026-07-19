@@ -4,6 +4,7 @@ import {
   isRouteErrorResponse,
   useLoaderData,
   useLocation,
+  useNavigation,
   useRouteError,
 } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
@@ -182,12 +183,35 @@ export default function Index() {
   const { storyPost, user } = useLoaderData<typeof loader>();
   const [newPost, setNewPost] = useState<Post | undefined>();
   const location = useLocation();
+  // navigation.state === "loading" during route transitions (loader
+  // running). `.location.pathname` is the destination — we use it to
+  // instantly mark the clicked tab active while the loader fetches.
+  const navigation = useNavigation();
+  const pendingPath = navigation.state === "loading"
+    ? navigation.location?.pathname
+    : undefined;
 
   // The Me/Friends toggle is admin-only (only admin has a friends feed
   // page to switch to). It also only makes sense on those two routes —
   // hide it on single-post pages, login, the book, etc.
-  const isOnMe = location.pathname === "/h" || location.pathname === "/h/";
-  const isOnFriends = location.pathname.startsWith("/h/friends");
+  const rawIsOnMe = location.pathname === "/h" || location.pathname === "/h/";
+  const rawIsOnFriends = location.pathname.startsWith("/h/friends");
+
+  // Optimistic active state: while a nav is in flight to the OTHER
+  // feed, treat the destination as "active" for both the tab styling
+  // and the outlet-vs-loading-placeholder swap.
+  const pendingIsFriends = pendingPath?.startsWith("/h/friends");
+  const pendingIsMe = pendingPath === "/h" || pendingPath === "/h/";
+  const isOnMe = pendingIsMe ? true : pendingIsFriends ? false : rawIsOnMe;
+  const isOnFriends = pendingIsFriends ? true : pendingIsMe ? false : rawIsOnFriends;
+
+  // True when the pending destination is a different feed than the
+  // current — swap the Outlet for a loading placeholder so the old
+  // feed doesn't sit there stale while the loader runs.
+  const swappingFeeds =
+    !!pendingPath &&
+    ((rawIsOnMe && pendingIsFriends) || (rawIsOnFriends && pendingIsMe));
+
   const showToggle =
     user?.role === "administrator" && (isOnMe || isOnFriends);
 
@@ -256,7 +280,38 @@ export default function Index() {
               </nav>
             </>
           )}
-          {user?.role === "administrator" ? (
+          {swappingFeeds ? (
+            <>
+              <style>{`
+                .feed-loading {
+                  text-align: center;
+                  padding: 40px 16px;
+                  color: #506982;
+                  font: 600 14px 'PGM Sans', sans-serif;
+                  letter-spacing: 0.05em;
+                }
+                .feed-loading__dots::after {
+                  content: "";
+                  display: inline-block;
+                  width: 1.2em;
+                  text-align: left;
+                  animation: feed-loading-dots 1s steps(4, end) infinite;
+                }
+                @keyframes feed-loading-dots {
+                  0%   { content: ""; }
+                  25%  { content: "."; }
+                  50%  { content: ".."; }
+                  75%  { content: "..."; }
+                  100% { content: ""; }
+                }
+              `}</style>
+              <div className="feed-loading">
+                <span>Loading</span>
+                <span className="feed-loading__dots" aria-hidden="true" />
+                <span className="visually-hidden">…</span>
+              </div>
+            </>
+          ) : user?.role === "administrator" ? (
             <Outlet context={newPost} />
           ) : (
             <Outlet />
