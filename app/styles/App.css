@@ -2011,22 +2011,27 @@ button {
 }
 
 .upload {
-  position: absolute;
+  position: static;
   background: #fff;
   border: 1px solid #979997;
   border-radius: 4px;
   height: 60px;
-  margin-top: -20px;
   cursor: text;
   padding: 8px;
   box-sizing: border-box;
   overflow: hidden;
   transition: 0.2s;
+  /* On the smallest viewports the composer flows naturally below the
+     header — no negative margin, no absolute positioning — so the
+     centered profile pic can't overlap it. Above 500px it goes back
+     to peeking into the header. */
   width: 96%;
-  right: 2%;
+  margin: 8px auto 0;
 }
 @media (min-width: 500px) {
   .upload {
+    position: absolute;
+    margin: -20px 0 0 0;
     width: calc(100% - 190px);
     right: 20px;
   }
