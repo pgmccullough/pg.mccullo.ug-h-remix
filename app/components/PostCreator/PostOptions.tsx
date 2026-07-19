@@ -109,17 +109,18 @@ export const PostOptions: React.FC<{
       ) : null}
 
       <style>{`
-        /* Wrapper takes over the top-right anchor that the old solo
-           POST button used, and flex-lays the three buttons across
-           it. The buttons themselves override .upload__feedback__submit's
-           absolute positioning inline. */
+        /* Right-aligned button row that flows in the natural document
+           layout — no position:absolute (which was letting the row
+           escape the composer's right edge). The individual buttons
+           override .upload__feedback__submit's absolute positioning
+           inline. Also reserves proper vertical space beneath, since
+           the old solo POST button was out of flow. */
         .upload__feedback__actions {
-          position: absolute;
-          right: 0;
+          text-align: right;
           margin-top: 8px;
-          display: flex;
-          gap: 6px;
-          align-items: center;
+        }
+        .upload__feedback__actions button {
+          margin-left: 4px;
         }
 
         /* Ghost variant of the submit button — matches the site's

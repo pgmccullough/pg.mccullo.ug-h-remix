@@ -501,6 +501,75 @@ export const ThemeToggle: React.FC = () => {
         [data-theme="dark"] .postcard__content__text a:visited {
           color: #6b8dd8;
         }
+
+        /* ------------------------------------------------------------
+         *  Force override any surface that App.css explicitly sets
+         *  to white. Otherwise nested opaque backgrounds show through
+         *  the themed parent card as white rectangles.
+         * ---------------------------------------------------------- */
+        [data-theme="dark"] .postcard__content {
+          background: #1a2028 !important;
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .postcard__content__modal {
+          background: #1a2028 !important;
+          border-color: #2a3543 !important;
+          color: #e5e7eb;
+        }
+        [data-theme="dark"] .postcard__content__modal::before {
+          border-bottom-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .postcard__content__modal::after {
+          border-bottom-color: #1a2028 !important;
+        }
+        [data-theme="dark"] .postcard__content__meta { background: #232b36; }
+        [data-theme="dark"] .postcard__time__option {
+          background: #232b36 !important;
+          color: #a1b5c9 !important;
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .postcard__time__option:hover { background: #2a3543 !important; }
+        [data-theme="dark"] .postcard__content-edit,
+        [data-theme="dark"] .postcard__content-edit--active {
+          background: rgba(26, 32, 40, 0.9) !important;
+        }
+        [data-theme="dark"] .upload {
+          background: #1a2028 !important;
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .hidden-app-list {
+          background: #1a2028 !important;
+          border-color: #2a3543 !important;
+          color: #e5e7eb;
+        }
+        [data-theme="dark"] .sidebar-button,
+        [data-theme="dark"] .register__card__button {
+          background: #232b36 !important;
+          color: #e5e7eb !important;
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .sidebar-button:hover { background: #2a3543 !important; }
+        [data-theme="dark"] .writingMain {
+          background: #0f1419 !important;
+          color: #e5e7eb;
+        }
+        [data-theme="dark"] .search {
+          background: #1a2028 !important;
+        }
+        [data-theme="dark"] .snippet {
+          background: #1a2028 !important;
+          border-color: #2a3543 !important;
+          color: #e5e7eb;
+        }
+        [data-theme="dark"] .email-attachments__remove {
+          background: #232b36 !important;
+        }
+        [data-theme="dark"] .wish-list__delete { background: #232b36 !important; }
+        [data-theme="dark"] .comment__content-inner { background: transparent !important; }
+        [data-theme="dark"] .comment__input {
+          background: #232b36 !important;
+          color: #e5e7eb !important;
+        }
       `}</style>
 
       <button
