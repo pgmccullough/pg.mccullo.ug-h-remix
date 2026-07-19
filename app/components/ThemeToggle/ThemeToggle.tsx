@@ -381,6 +381,126 @@ export const ThemeToggle: React.FC = () => {
 
         /* Notifications page + friends errors --------------------- */
         [data-theme="dark"] .friends__error { color: #f87171; }
+
+        /* ------------------------------------------------------------
+         *  Admin widgets — Calendar / Notes / WishList / etc.
+         * ---------------------------------------------------------- */
+
+        /* Calendar day-of-week strip: light gray band in light mode;
+           in dark mode make it a muted elevated surface. */
+        [data-theme="dark"] .calendar__days--day {
+          background: #232b36 !important;
+          border-color: #2a3543 !important;
+          color: #a1b5c9 !important;
+        }
+        /* Date cells: were dark #ccc borders on white bg; flip to
+           subtle borders on the card surface with legible numbers. */
+        [data-theme="dark"] .calendar__dates__block,
+        [data-theme="dark"] .calendar__dates__block--current {
+          border-color: #2a3543 !important;
+          color: #e5e7eb !important;
+        }
+        [data-theme="dark"] .calendar__dates__block:hover,
+        [data-theme="dark"] .calendar__dates__block--current {
+          background: #232b36 !important;
+        }
+        [data-theme="dark"] .calendar__header,
+        [data-theme="dark"] .calendar__header--current { color: #a1b5c9; }
+        [data-theme="dark"] .calendar__appointments__ind {
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .calendar__appointments__ind--event {
+          border-left-color: #2a3543 !important;
+          color: #e5e7eb;
+        }
+        [data-theme="dark"] .calendar__sync {
+          background: #232b36 !important;
+          color: #e5e7eb !important;
+          border-color: #2a3543 !important;
+        }
+
+        /* Notes: tab strip + textarea. Existing rules make active
+           tabs white and inactive tabs #eee (grey) — flip so active
+           reads as elevated surface and inactive as muted. */
+        [data-theme="dark"] .note { border-color: #2a3543; color: #e5e7eb; }
+        [data-theme="dark"] .note__title {
+          background: #232b36 !important;
+          border-color: #2a3543 !important;
+          color: #94a3b8 !important;
+        }
+        [data-theme="dark"] .note__title:hover { background: #2a3543 !important; }
+        [data-theme="dark"] .note__title--active,
+        [data-theme="dark"] .note__title--active:hover {
+          background: #1a2028 !important;
+          color: #e5e7eb !important;
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .note__input,
+        [data-theme="dark"] .note__textarea {
+          background: #232b36 !important;
+          border-color: #2a3543 !important;
+          color: #e5e7eb !important;
+        }
+        [data-theme="dark"] .note__input::placeholder,
+        [data-theme="dark"] .note__textarea::placeholder {
+          color: #6b7280 !important;
+        }
+        [data-theme="dark"] .note__progress {
+          background: #232b36 !important;
+          border-color: #2a3543 !important;
+        }
+
+        /* React button pill lives on the post meta row — currently
+           its light-mode style is a small white pill that reads much
+           too bright in dark mode. */
+        [data-theme="dark"] .react-button {
+          background: #232b36 !important;
+          color: #a1b5c9 !important;
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .react-button:hover {
+          background: #2a3543 !important;
+        }
+
+        /* Postcard time bar's "Public" pill (privacy label) — appears
+           as a dark blue button element in light mode; keep the blue
+           accent but make it read cleanly on the dark timestamp bar. */
+        [data-theme="dark"] .postcard__privacy {
+          background: transparent !important;
+          color: #a1b5c9 !important;
+          border-color: #2a3543 !important;
+        }
+
+        /* Story image button and other WishList / RentalProperties
+           admin cards inherit .postcard--left which is already
+           themed, but their inputs / buttons may need help. */
+        [data-theme="dark"] input[type="text"]:not(.search__input):not(.comment__input),
+        [data-theme="dark"] input[type="email"],
+        [data-theme="dark"] input[type="password"],
+        [data-theme="dark"] input[type="url"],
+        [data-theme="dark"] input[type="number"],
+        [data-theme="dark"] input[type="datetime-local"],
+        [data-theme="dark"] input[type="date"],
+        [data-theme="dark"] textarea:not(.note__textarea),
+        [data-theme="dark"] select:not(.upload__feedback__privacy) {
+          background: #232b36;
+          color: #e5e7eb;
+          border-color: #2a3543;
+        }
+        [data-theme="dark"] input::placeholder,
+        [data-theme="dark"] textarea::placeholder { color: #6b7280; }
+
+        /* Post content: bump the body copy up to full primary text
+           color so long-form reads at full contrast (some inline
+           spans were inheriting weaker greys). */
+        [data-theme="dark"] .postcard__content__text,
+        [data-theme="dark"] .postcard__content__text * {
+          color: #e5e7eb;
+        }
+        [data-theme="dark"] .postcard__content__text a,
+        [data-theme="dark"] .postcard__content__text a:visited {
+          color: #6b8dd8;
+        }
       `}</style>
 
       <button
