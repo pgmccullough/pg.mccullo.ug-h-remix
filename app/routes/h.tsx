@@ -143,7 +143,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     siteData: { ...siteData[0] },
     storyPost: serializeDocs(storyPost),
     user,
-    visitors,
+    // serializeDocs stringifies Mongo ObjectIds so they survive the
+    // loader boundary — without this, _id lands on the client as {}
+    // and String(v._id) becomes "[object Object]".
+    visitors: serializeDocs(visitors),
     wishList,
     unreadNotifications:
       user?.role === "administrator"
