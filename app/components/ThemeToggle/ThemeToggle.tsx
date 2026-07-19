@@ -570,6 +570,47 @@ export const ThemeToggle: React.FC = () => {
           background: #232b36 !important;
           color: #e5e7eb !important;
         }
+
+        /* Sidebar bio-card name — the anchor inside
+           .postcard__time__link--unlink has color:#000 hard-coded. */
+        [data-theme="dark"] .postcard__time__link--unlink,
+        [data-theme="dark"] .postcard__time__link--unlink a,
+        [data-theme="dark"] .postcard__time__link--unlink a:visited {
+          color: #e5e7eb !important;
+        }
+
+        /* "On this Day" / "N years ago" pill in the timestamp bar —
+           had a solid white background in light mode. */
+        [data-theme="dark"] .postcard__time__onThisDay {
+          background: transparent !important;
+          border: 1px solid #2a3543;
+          color: #6b8dd8 !important;
+        }
+
+        /* Emoji-vote pills (React count) — .emoji-vote--mine has a
+           hard-coded #eee background that reads as bright white. */
+        [data-theme="dark"] .emoji-vote--mine {
+          background: #2a3543 !important;
+          border-bottom-color: #6b8dd8 !important;
+          color: #e5e7eb !important;
+        }
+        [data-theme="dark"] .emoji-vote:hover {
+          background: #232b36 !important;
+        }
+        [data-theme="dark"] .emoji-vote-count { color: #e5e7eb; }
+
+        /* Comment/composer toolbar (B / I / U / S / </> / LINK) uses
+           the email__formatter + email__format-button classes. Both
+           had light-gray backgrounds. */
+        [data-theme="dark"] .email__formatter { background: #232b36 !important; }
+        [data-theme="dark"] .email__format-button {
+          background: #2a3543 !important;
+          color: #e5e7eb !important;
+          border-color: #374151 !important;
+        }
+        [data-theme="dark"] .email__format-button--active {
+          border-bottom-color: #6b8dd8 !important;
+        }
       `}</style>
 
       <button
