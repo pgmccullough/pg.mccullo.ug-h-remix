@@ -145,8 +145,13 @@ export const Calendar: React.FC<{}> = () => {
   },[calendarNotif])
 
   useEffect(() => {
-    if(saveGoogleEvents.type==="done") {
-      setCalendarNotif({active: true, message: `Succesfully updated ${saveGoogleEvents.data.events.updated} events, created ${saveGoogleEvents.data.events.added} events`, completed: true})
+    // RR v7 removed fetcher.type. Wait for state idle + data.events
+    // to be present, and null it out after so we don't re-fire the
+    // notification on unrelated re-renders.
+    if(saveGoogleEvents.state === "idle" && saveGoogleEvents.data?.events) {
+      const { updated, added } = saveGoogleEvents.data.events;
+      setCalendarNotif({active: true, message: `Succesfully updated ${updated} events, created ${added} events`, completed: true})
+      ;(saveGoogleEvents as any).data.events = null;
     }
   },[saveGoogleEvents])
 

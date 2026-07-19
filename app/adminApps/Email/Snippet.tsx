@@ -62,10 +62,15 @@ export const Snippet: React.FC<{
   },[])
 
   useEffect(() => {
-    if(swipeDelete.type==="done") {
+    // RR v7: `fetcher.type` is gone; success = state idle + data present.
+    // The swipe-delete endpoint doesn't return a specific payload we
+    // depend on, so we key on data.ok / any truthy data.
+    if(swipeDelete.state === "idle" && swipeDelete.data) {
       let newEmailArr:EmailInterface[] = emailArray.filter(itEmail => itEmail._id !== email._id);
       alterEmailArray(newEmailArr);
       emNotif(false);
+      // Clear so this doesn't re-fire on unrelated re-renders.
+      (swipeDelete as any).data = null;
     }
   },[swipeDelete])
 

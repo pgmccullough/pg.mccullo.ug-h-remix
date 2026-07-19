@@ -118,8 +118,9 @@ export const Composer: React.FC<{
 
   useEffect(() => {
     if(attachFetch.state==="submitting") emNotif(true, "Uploading file")
-    if(attachFetch.type==="done") {
-      if(attachFetch.data?.imgSrc) {
+    // RR v7 removed fetcher.type. Done = state idle + data.imgSrc.
+    if(attachFetch.state === "idle" && attachFetch.data?.imgSrc) {
+      {
         const cloneAtts = [...tempAttachment];
         const finishedAtts = cloneAtts.map((tempAtt:any, i:number) => {
           if(attachFetch.data.imgSrc.ContentLength===tempAtt.ContentLength) {
@@ -151,6 +152,8 @@ export const Composer: React.FC<{
           return cleanObj;
         });
         emNotif(false);
+        // Prevent this effect from re-running on unrelated re-renders.
+        ;(attachFetch as any).data.imgSrc = null;
       }
     }
   },[attachFetch, setAttachments, editNewEmail])

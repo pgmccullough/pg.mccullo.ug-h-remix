@@ -7,15 +7,22 @@ export const SearchBar: React.FC<{
   setPostSearchResults: SetStateAction<any>
 }> = ({alterPostArray, setPostSearchResults}) => {
 
-  const mongoFetch = useFetcher();
+  const mongoFetch = useFetcher<{ searchResults?: any[] }>();
   const [ searchQuery, setSearchQuery ] = useState<string>("");
 
+  // React Router v7 removed `fetcher.type` — the "done" signal is now
+  // `state === "idle"` combined with the presence of `data`. Without
+  // this rewrite the effect never fires, results come back from the
+  // server but never make it into parent state, and the feed doesn't
+  // change. We also null-out data after handing it upstream so we
+  // don't re-apply the same results on unrelated re-renders.
   useEffect(() => {
-    if(mongoFetch.type==="done") {
+    if (mongoFetch.state === "idle" && mongoFetch.data?.searchResults) {
       setPostSearchResults(mongoFetch.data.searchResults);
       alterPostArray(mongoFetch.data.searchResults);
+      mongoFetch.data.searchResults = undefined;
     }
-  },[mongoFetch])
+  }, [mongoFetch]);
 
   const searchPosts = () => {
     if(searchQuery.length===0) return;

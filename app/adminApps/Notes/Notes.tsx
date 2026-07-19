@@ -24,13 +24,18 @@ export const Notes: React.FC<{}> = () => {
   },[activeNote, cacheNote, setCacheNote])
 
   useEffect(() => {
-    if(fetcher.type==="done") {
+    // RR v7 removed `fetcher.type`; the done signal is
+    // `state === "idle"` with `data` present. Null out `data.note`
+    // after handling so this effect doesn't re-fire on unrelated
+    // re-renders and try to insert the same new note twice.
+    if(fetcher.state === "idle" && fetcher.data?.note) {
       if(fetcher.data.note.insertedId) {
         const newNote = {_id: fetcher.data.note.insertedId, title: "Untitled", content: "", order: noteTitles.length+1};
         setNoteTitles(prev => [...prev, newNote]);
         setActiveNote(newNote);
       }
       if(fetcher.data.note.modifiedCount) setIsUpdating(false);
+      fetcher.data.note = null;
     }
   },[fetcher])
 
