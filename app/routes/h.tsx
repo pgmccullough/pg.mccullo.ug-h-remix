@@ -58,11 +58,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     } catch (err) {
       console.error("[h loader] scraper-visitor cleanup failed:", err);
     }
+    // myVisitors documents don't have a `created` field — the loader
+    // was sorting on an undefined field, so Mongo returned whichever
+    // 25 rows the storage engine served first (roughly insertion
+    // order, which drifts as records get updated). The client's own
+    // resort by lastSeen then made 25 unrelated rows LOOK chronological.
+    // Sort by lastSeen at query time so we actually get the newest.
     visitors = await db
       .collection("myVisitors")
       .find()
-      .sort({ created: -1 })
-      .limit(25)
+      .sort({ lastSeen: -1 })
+      .limit(50)
       .toArray();
     notes = await db.collection("myNotes").find().sort({ created: -1 }).toArray();
     calDates = await db.collection("myDates").find().sort({ created: -1 }).toArray();
