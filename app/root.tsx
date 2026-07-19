@@ -16,6 +16,30 @@ import { useEffect } from "react";
 
 import * as gtag from "~/utils/gtags.client";
 import styles from "~/styles/App.css?url";
+import { ThemeToggle } from "~/components/ThemeToggle/ThemeToggle";
+
+/**
+ * Inline theme-resolution script — runs before React hydrates, so
+ * dark-mode users don't see a white flash on first paint. Reads
+ * localStorage first (explicit user choice), falls back to the OS
+ * prefers-color-scheme. Writes the result to <html data-theme="...">;
+ * the ThemeToggle component reads that back to sync its icon state.
+ *
+ * Injecting via dangerouslySetInnerHTML in <head> guarantees it fires
+ * synchronously before <body> renders.
+ */
+const THEME_INIT_SCRIPT = `
+(function() {
+  try {
+    var stored = null;
+    try { stored = localStorage.getItem('theme'); } catch (e) {}
+    var theme = stored === 'dark' || stored === 'light'
+      ? stored
+      : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) { /* if anything explodes, we fall back to light — safest */ }
+})();
+`;
 
 export const links: LinksFunction = () => {
   return process.env.NODE_ENV === "development"
@@ -64,6 +88,7 @@ export default function App() {
       <head>
         <Meta />
         <Links />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
         {!import.meta.env.PROD || !gaTrackingId ? null : (
@@ -92,6 +117,7 @@ export default function App() {
           </>
         )}
         <Outlet />
+        <ThemeToggle />
         <ScrollRestoration />
         <Scripts />
       </body>

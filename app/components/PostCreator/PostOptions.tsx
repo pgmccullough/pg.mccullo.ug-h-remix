@@ -64,24 +64,30 @@ export const PostOptions: React.FC<{
       </select>
 
       {/* Post / Save Draft / Schedule — three actions on the same row.
-          Schedule reveals a datetime picker + confirm button beneath. */}
-      <button
-        onClick={() => submitPost()}
-        className="upload__feedback__submit"
-      >POST</button>
-      <button
-        onClick={() => submitPost({ state: "draft" })}
-        className="upload__feedback__submit upload__feedback__submit--ghost"
-        style={{ marginLeft: 4 }}
-      >SAVE DRAFT</button>
-      <button
-        onClick={() => setShowSchedule((v) => !v)}
-        className="upload__feedback__submit upload__feedback__submit--ghost"
-        style={{ marginLeft: 4 }}
-      >SCHEDULE</button>
+          The existing .upload__feedback__submit CSS is position:absolute
+          so we wrap the buttons in a container that inherits that same
+          top-right anchor and lays the buttons out in a flex row inside.
+          Overriding position:static on each button so they flow. */}
+      <div className="upload__feedback__actions">
+        <button
+          onClick={() => submitPost({ state: "draft" })}
+          className="upload__feedback__submit upload__feedback__submit--ghost"
+          style={{ position: "static", marginTop: 0 }}
+        >SAVE DRAFT</button>
+        <button
+          onClick={() => setShowSchedule((v) => !v)}
+          className="upload__feedback__submit upload__feedback__submit--ghost"
+          style={{ position: "static", marginTop: 0 }}
+        >SCHEDULE</button>
+        <button
+          onClick={() => submitPost()}
+          className="upload__feedback__submit"
+          style={{ position: "static", marginTop: 0 }}
+        >POST</button>
+      </div>
 
       {showSchedule ? (
-        <div style={{ marginTop: 8, display: "flex", gap: 6, alignItems: "center" }}>
+        <div style={{ marginTop: 44, display: "flex", gap: 6, alignItems: "center", justifyContent: "flex-end" }}>
           <input
             type="datetime-local"
             value={scheduleValue}
@@ -97,11 +103,25 @@ export const PostOptions: React.FC<{
           <button
             onClick={submitScheduled}
             className="upload__feedback__submit"
+            style={{ position: "static", marginTop: 0 }}
           >SCHEDULE POST</button>
         </div>
       ) : null}
 
       <style>{`
+        /* Wrapper takes over the top-right anchor that the old solo
+           POST button used, and flex-lays the three buttons across
+           it. The buttons themselves override .upload__feedback__submit's
+           absolute positioning inline. */
+        .upload__feedback__actions {
+          position: absolute;
+          right: 0;
+          margin-top: 8px;
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+
         /* Ghost variant of the submit button — matches the site's
            existing button chrome but with a lighter surface so the
            primary POST button still reads as primary. */
