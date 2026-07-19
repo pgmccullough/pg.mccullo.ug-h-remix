@@ -2021,24 +2021,20 @@ button {
   box-sizing: border-box;
   overflow: hidden;
   transition: 0.2s;
-  /* On the smallest viewports the composer flows naturally below the
-     header — no negative margin, no absolute positioning — so the
-     centered profile pic can't overlap it. Above 500px it goes back
-     to peeking into the header. */
+  /* Below true desktop (992px), the composer flows normally after
+     the header. That avoids the mid-viewport case (500-991px) where
+     absolute positioning + a fixed-position profile pic + the search
+     bar all tried to occupy the same horizontal band and the composer
+     ended up hidden behind the pic. At 992px+ there's plenty of room
+     for the classic "float into the header" look. */
   width: 96%;
   margin: 8px auto 0;
 }
-@media (min-width: 500px) {
-  .upload {
-    position: absolute;
-    margin: -20px 0 0 0;
-    width: calc(100% - 190px);
-    right: 20px;
-  }
-}
 @media (min-width: 992px) {
   .upload {
+    position: absolute;
     right: auto;
+    margin-top: -20px;
     margin-left: calc(50% - 250px);
     width: 500px;
   }
