@@ -611,6 +611,33 @@ export const ThemeToggle: React.FC = () => {
         [data-theme="dark"] .email__format-button--active {
           border-bottom-color: #6b8dd8 !important;
         }
+
+        /* Emoji-votes container (the pill wrapping the emoji + count)
+           has a hard-coded #faf8f8 (near-white) background. */
+        [data-theme="dark"] .emoji-votes {
+          background: #232b36 !important;
+          border-color: #2a3543 !important;
+        }
+        [data-theme="dark"] .emoji-votes-remnants {
+          background: #232b36 !important;
+          color: #e5e7eb;
+        }
+
+        /* Sign-out button — .sidebar-session__btn--ghost has a hard
+           white background inlined in Sidebar.tsx's <style> block. */
+        [data-theme="dark"] .sidebar-session__btn--ghost,
+        [data-theme="dark"] .sidebar-session__btn--ghost:visited {
+          background: #232b36 !important;
+          color: #a1b5c9 !important;
+          border-color: #2a3543 !important;
+          border-right-color: #374151 !important;
+          border-bottom-color: #374151 !important;
+        }
+        [data-theme="dark"] .sidebar-session__btn--ghost:hover,
+        [data-theme="dark"] .sidebar-session__btn--ghost:focus-visible {
+          background: #2a3543 !important;
+          color: #e5e7eb !important;
+        }
       `}</style>
 
       <button

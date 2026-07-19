@@ -349,7 +349,10 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
         .upload--expanded__backdrop {
           position: fixed; inset: 0;
           background: rgba(0,0,0,0.55);
-          z-index: 90;
+          /* Must sit above the profile pic (z:100) and the header bar
+             (z:100) so it truly covers everything, not just render
+             behind them. */
+          z-index: 150;
           display: flex; align-items: center; justify-content: center;
           padding: 16px;
         }
