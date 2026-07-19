@@ -27,9 +27,28 @@ function place(visitor: VisitorDoc): string {
   return ip || "unknown";
 }
 
-function flag(visitor: VisitorDoc): string {
+function countryCode(visitor: VisitorDoc): string {
   const d = visitor.lastIpData ?? visitor.ipData?.[visitor.ipData.length - 1];
-  return d?.location?.country_flag_emoji ?? "";
+  return typeof d?.country_code === "string" ? d.country_code : "";
+}
+
+// flag emoji glyphs don't render on Windows (Chrome/FF fall back to the
+// regional-indicator letters) and are inconsistent on other platforms
+// too. Render an actual PNG from flagcdn.com — free CDN, tiny files,
+// no auth. 16×12 pairs nicely with the 13px row text.
+function FlagIcon({ visitor }: { visitor: VisitorDoc }) {
+  const cc = countryCode(visitor);
+  if (!cc) return null;
+  return (
+    <img
+      src={`https://flagcdn.com/16x12/${cc.toLowerCase()}.png`}
+      srcSet={`https://flagcdn.com/32x24/${cc.toLowerCase()}.png 2x`}
+      alt={cc}
+      width={16}
+      height={12}
+      style={{ verticalAlign: "middle", borderRadius: 1 }}
+    />
+  );
 }
 
 function lastPath(visitor: VisitorDoc): string {
@@ -54,11 +73,39 @@ function identity(visitor: VisitorDoc): string {
   return "anon";
 }
 
+const LAST_READ_KEY = "siteActivityLastRead";
+
 export const SiteActivity: React.FC<{}> = () => {
   const { visitors: loaderVisitors } = useLoaderData<{ visitors: VisitorDoc[] }>();
   // Collapsed by default — the drawer just shows its header tab at the
   // bottom of the screen until clicked.
   const [expanded, setExpanded] = useState<boolean>(false);
+  const expandedRef = useRef(expanded);
+  useEffect(() => { expandedRef.current = expanded; }, [expanded]);
+
+  // Unread tracking: the number that appears in the header parens is
+  // the count of visitors whose `lastSeen` is newer than the last time
+  // the admin opened the drawer. Stored in localStorage so it persists
+  // across page loads. On very first mount (no stored value) we treat
+  // everything as unread — matches the pre-change "(50)" baseline until
+  // the admin opens the drawer once.
+  //
+  // `null` means "not yet loaded from localStorage" — used to avoid a
+  // hydration mismatch between SSR and client on the very first paint.
+  const [lastReadTs, setLastReadTs] = useState<number | null>(null);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LAST_READ_KEY);
+      setLastReadTs(stored ? Number(stored) : 0);
+    } catch {
+      setLastReadTs(0);
+    }
+  }, []);
+  const markAllRead = () => {
+    const now = Date.now();
+    setLastReadTs(now);
+    try { localStorage.setItem(LAST_READ_KEY, String(now)); } catch {}
+  };
 
   // Take over visitor state from the loader so we can push live
   // updates onto it via Pusher. The loader still does the first paint.
@@ -114,6 +161,10 @@ export const SiteActivity: React.FC<{}> = () => {
           const others = prev.filter((p) => String(p._id) !== String(v._id));
           return [v, ...others];
         });
+        // If the drawer is already open, the admin is looking at the
+        // widget — auto-mark this new visitor as read so the header
+        // count doesn't tick up while they're staring at the list.
+        if (expandedRef.current) markAllRead();
         // Fire a desktop notification if the admin opted in.
         if (
           typeof window !== "undefined" &&
@@ -122,7 +173,9 @@ export const SiteActivity: React.FC<{}> = () => {
         ) {
           try {
             const title = "New visitor";
-            const body = `${identity(v)} ${flag(v)} ${place(v)} · ${lastPath(v)}`;
+            // OS notifications can't render <img>, and flag emoji is
+            // unreliable in notification centers — fall back to text.
+            const body = `${identity(v)} ${place(v)} · ${lastPath(v)}`;
             const n = new Notification(title, {
               body,
               icon: "/favicon.ico",
@@ -243,9 +296,26 @@ export const SiteActivity: React.FC<{}> = () => {
             and the transition animates the slide. */}
         <div
           className="siteActivity__header"
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => {
+            // Opening the drawer marks everything as read. Closing
+            // doesn't rewind — a fresh (0) stays fresh.
+            const nowExpanded = !expanded;
+            setExpanded(nowExpanded);
+            if (nowExpanded) markAllRead();
+          }}
         >
-          <span>Recent visitors ({sorted.length})</span>
+          <span>
+            Recent visitors
+            {lastReadTs !== null && (() => {
+              // Unread count = visitors whose lastSeen postdates the
+              // last time the drawer was opened. Rendered as " (N)"
+              // only when N > 0 so a caught-up widget reads clean.
+              const unread = sorted.filter(
+                (v) => (v.lastSeen ?? 0) > lastReadTs
+              ).length;
+              return unread > 0 ? ` (${unread})` : "";
+            })()}
+          </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
             {/* Notification permission button: shows a bell when the
                 admin hasn't decided yet. Hides after grant; shows a
@@ -293,9 +363,18 @@ export const SiteActivity: React.FC<{}> = () => {
             sorted.map((v) => (
               <div key={String(v._id)} className="siteActivity__row">
                 <div className="siteActivity__line1">
-                  <strong>{identity(v)}</strong>{" "}
-                  {flag(v) && <span>{flag(v)} </span>}
-                  {place(v)}
+                  {/* Whole identity block is a click-through to the
+                      visitor detail page, where the admin can see the
+                      full history + fingerprint + geo trail. */}
+                  <Link
+                    to={`/h/visitor/${String(v._id)}`}
+                    style={{ color: "inherit", textDecoration: "none" }}
+                  >
+                    <strong>{identity(v)}</strong>{" "}
+                    <FlagIcon visitor={v} />
+                    {countryCode(v) && " "}
+                    {place(v)}
+                  </Link>
                 </div>
                 <div className="siteActivity__line2">
                   <Link className="siteActivity__path" to={lastPath(v)}>

@@ -30,6 +30,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const userId = form.get("userId")?.toString() ?? "";
     const userName = form.get("userName")?.toString() ?? "";
     const referrer = form.get("referrer")?.toString() ?? "";
+    const viewport = form.get("viewport")?.toString() ?? "";
+    const timezone = form.get("timezone")?.toString() ?? "";
+    const language = form.get("language")?.toString() ?? "";
+
+    // Server-derived signals — no client trust needed.
+    const userAgent = request.headers.get("user-agent") ?? "";
+    const acceptLanguage = request.headers.get("accept-language") ?? "";
 
     // Resolve client IP from Vercel headers. `x-forwarded-for` is a comma-
     // separated chain; the first entry is the original client.
@@ -73,9 +80,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const col = db.collection("myVisitors");
 
     // Try to find an existing visitor record. Identity precedence:
-    //   1. signed-in userId  →  same person regardless of browser
-    //   2. guestUUID         →  same browser, no account
-    //   3. IP                →  fallback (least reliable, shared NATs)
+    //   1. signed-in userId       →  same person regardless of browser
+    //   2. guestUUID              →  same browser + persistent storage
+    //   3. IP + user-agent        →  same connection + browser signature
+    //                                (much better than IP alone across
+    //                                 shared NATs — coffee shop, office)
+    //   4. IP                     →  weakest fallback
     let existing: any = null;
     if (userId) {
       existing = await col.findOne({ "user.id": userId });
@@ -83,12 +93,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!existing && guestUUID) {
       existing = await col.findOne({ guestUUID });
     }
+    if (!existing && userAgent) {
+      existing = await col.findOne({ ip, userAgent });
+    }
     if (!existing) {
       existing = await col.findOne({ ip });
     }
 
     const now = Date.now();
-    const historyEntry = { path, referrer, timestamp: now };
+    const historyEntry = {
+      path,
+      referrer,
+      timestamp: now,
+      // Snapshot the request context so we can reconstruct a
+      // session's device/network per hop.
+      userAgent,
+      ip,
+    };
 
     let visitorId: ObjectId | null = null;
     let didChange = false;
@@ -106,10 +127,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               lastSeen: now,
               ...(ipData ? { lastIpData: ipData } : {}),
               ...(userName ? { lastUserName: userName } : {}),
+              ...(userAgent ? { lastUserAgent: userAgent } : {}),
+              ...(acceptLanguage ? { lastAcceptLanguage: acceptLanguage } : {}),
+              ...(viewport ? { lastViewport: viewport } : {}),
+              ...(timezone ? { lastTimezone: timezone } : {}),
+              ...(language ? { lastLanguage: language } : {}),
             },
             $addToSet: {
               ip,
               ...(guestUUID ? { guestUUID } : {}),
+              ...(userAgent ? { userAgents: userAgent } : {}),
+              ...(viewport ? { viewports: viewport } : {}),
+              ...(timezone ? { timezones: timezone } : {}),
+              ...(language ? { languages: language } : {}),
             } as any,
           }
         );
@@ -126,6 +156,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         guestUUID: guestUUID ? [guestUUID] : [],
         user: userId ? [{ id: userId, user_name: userName }] : [],
         lastUserName: userName || null,
+        userAgents: userAgent ? [userAgent] : [],
+        lastUserAgent: userAgent || null,
+        lastAcceptLanguage: acceptLanguage || null,
+        viewports: viewport ? [viewport] : [],
+        lastViewport: viewport || null,
+        timezones: timezone ? [timezone] : [],
+        lastTimezone: timezone || null,
+        languages: language ? [language] : [],
+        lastLanguage: language || null,
         history: [historyEntry],
       });
       visitorId = insertRes.insertedId;

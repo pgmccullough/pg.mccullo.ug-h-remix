@@ -19,6 +19,24 @@ export const Analytics: React.FC = () => {
     if (lastReportedPath.current === curPath) return;
     lastReportedPath.current = curPath;
 
+    // Client-side signals for better returning-visitor matching. All
+    // are best-effort and coalesce to "" if the browser doesn't
+    // expose them.
+    let viewport = "";
+    let timezone = "";
+    let language = "";
+    try {
+      if (typeof window !== "undefined" && window.screen) {
+        viewport = `${window.screen.width}x${window.screen.height}`;
+      }
+      if (typeof Intl !== "undefined") {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+      }
+      if (typeof navigator !== "undefined") {
+        language = navigator.language ?? "";
+      }
+    } catch { /* swallow — analytics never blocks the page */ }
+
     updateVisitor.submit(
       {
         path: curPath,
@@ -26,6 +44,9 @@ export const Analytics: React.FC = () => {
         userId: user?.id?.toString() ?? "",
         userName: user?.user_name ?? "",
         referrer: typeof document !== "undefined" ? document.referrer : "",
+        viewport,
+        timezone,
+        language,
       },
       { method: "post", action: "/api/analytics?index" }
     );
