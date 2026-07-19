@@ -41,12 +41,37 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   newPost.lastEdited = Math.floor(Date.now() / 1000);
   delete newPost._id;
 
+  // Normalize the state field. Legacy posts (no state) are treated as
+  // "published" for backward compat. New posts default to "published"
+  // unless the client explicitly asks for draft or scheduled.
+  const rawState = typeof newPost.state === "string" ? newPost.state : "published";
+  const state: "draft" | "scheduled" | "published" =
+    rawState === "draft" || rawState === "scheduled" ? rawState : "published";
+  newPost.state = state;
+  // If it's marked scheduled but the time has already passed, promote
+  // it straight to published — no reason to wait for the next cron.
+  if (state === "scheduled") {
+    const scheduledFor = Number(newPost.scheduledFor);
+    if (!Number.isFinite(scheduledFor)) {
+      newPost.state = "draft";
+      delete newPost.scheduledFor;
+    } else if (scheduledFor <= Math.floor(Date.now() / 1000)) {
+      newPost.state = "published";
+      delete newPost.scheduledFor;
+    }
+  } else {
+    // Drop scheduledFor for anything that isn't scheduled.
+    delete newPost.scheduledFor;
+  }
+
+  const isPublished = newPost.state === "published";
+
   if (user?.role === "administrator") {
     const client = await clientPromise;
     const db = client.db("user_posts");
     insertedPost = await db.collection("myPosts").insertOne(newPost);
 
-    if (newPost.privacy === "Public" && insertedPost.insertedId) {
+    if (isPublished && newPost.privacy === "Public" && insertedPost.insertedId) {
       const origin = new URL(request.url).origin;
       const postId = insertedPost.insertedId.toString();
 

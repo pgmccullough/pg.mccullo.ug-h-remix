@@ -40,27 +40,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     mongoOrArray.push({ created: { $gt: thisDate, $lt: thisDate + 86400 } })
   );
   /* End On This Day Calculations */
+  // Drafts and scheduled posts never appear in the public feed; they
+  // have a dedicated /h/drafts page. $nin also matches documents where
+  // `state` is missing entirely (legacy posts), so backward compat holds.
+  const notDraftOrScheduled = { state: { $nin: ["draft", "scheduled"] } };
   if (user?.role !== "administrator") {
     onThisDay = await db
       .collection("myPosts")
-      .find({ $or: mongoOrArray, privacy: "Public" })
+      .find({ $or: mongoOrArray, privacy: "Public", ...notDraftOrScheduled })
       .sort({ created: -1 })
       .toArray();
     posts = await db
       .collection("myPosts")
-      .find({ privacy: "Public" })
+      .find({ privacy: "Public", ...notDraftOrScheduled })
       .sort({ created: -1 })
       .limit(25)
       .toArray();
   } else {
     onThisDay = await db
       .collection("myPosts")
-      .find({ $or: mongoOrArray })
+      .find({ $or: mongoOrArray, ...notDraftOrScheduled })
       .sort({ created: -1 })
       .toArray();
     posts = await db
       .collection("myPosts")
-      .find({ privacy: { $not: { $eq: "Story" } } })
+      .find({ privacy: { $not: { $eq: "Story" } }, ...notDraftOrScheduled })
       .sort({ created: -1 })
       .limit(25)
       .toArray();

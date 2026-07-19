@@ -323,6 +323,9 @@ export const Sidebar: React.FC<{
       {!manualSiteData && user?.role === "administrator"
         ?<>
           <NotificationsBadge />
+          <article className="postcard--left sidebar-notif">
+            <Link to="/h/drafts">Drafts</Link>
+          </article>
           {/* <Email /> */}
           <Calendar />
           <Notes />

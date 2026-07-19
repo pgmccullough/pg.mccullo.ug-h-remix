@@ -45,6 +45,7 @@ export default [
     route("writing/we-die-in-every-war", "routes/h/writing/we-die-in-every-war.tsx"),
     route("friends", "routes/h/friends.tsx"),
     route("notifications", "routes/h/notifications.tsx"),
+    route("drafts", "routes/h/drafts.tsx"),
     route("visitor/:visitorId", "routes/h/visitor/$visitorId.tsx"),
     // 404 catchall for any /h/* path that doesn't match above
     route("*", "routes/h/$notFound.tsx"),
@@ -84,9 +85,12 @@ export default [
     route("post/create", "routes/api/post/create/index.tsx"),
     route("post/delete/:postId", "routes/api/post/delete/$postId.tsx"),
     route("post/fetch", "routes/api/post/fetch/index.ts"),
+    route("post/publish/:postId", "routes/api/post/publish/$postId.tsx"),
     route("post/react", "routes/api/post/react/index.ts"),
     route("post/search", "routes/api/post/search/index.ts"),
     route("post/update/:postId", "routes/api/post/update/$postId.tsx"),
+
+    route("cron/publish-scheduled", "routes/api/cron/publish-scheduled/index.ts"),
 
     route("rentalExt", "routes/api/rentalExt/index.tsx"),
     route("rentalExt/fetch", "routes/api/rentalExt/fetch/index.tsx"),

@@ -38,9 +38,17 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   // const [ imagesUploading, setImagesUploading ] = useState<null|"uploading"|"done"|"error">(null);
   const [ imagesUploading, setImagesUploading ] = useState<number>(0);
   const [ youTubePreviews, setYouTubePreviews ] = useState<YouTubeVideo[]>([]);
+  // "Expanded" swaps the compact inline composer for a full-viewport
+  // overlay that gives the editor much more room — for writing longer
+  // pieces instead of tweet-length blurbs.
+  const [ expanded, setExpanded ] = useState<boolean>(false);
   
   const fileUploadForm = useFetcher();
   const submitPostForm = useFetcher();
+  // Stashes the state/scheduledFor requested by the user's click while
+  // the image-upload roundtrip is in flight. Read by the fileUploadForm
+  // useEffect below when it finalizes the create.
+  const pendingSubmitOpts = useRef<{ state?: "draft" | "scheduled"; scheduledFor?: number }>({});
   const focusedOverlay = useRef<HTMLDivElement>(null) // I would rather not use this
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -147,13 +155,25 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
         files: direct.files,
       };
       submitPostForm.submit(
-        { newPost: JSON.stringify({...postObject, content: postText, media }) },
+        {
+          newPost: JSON.stringify({
+            ...postObject,
+            content: postText,
+            media,
+            // Apply the state/scheduledFor the user picked back at
+            // click time — otherwise the base64-upload path always
+            // publishes immediately regardless of the button used.
+            state: pendingSubmitOpts.current.state ?? "published",
+            scheduledFor: pendingSubmitOpts.current.scheduledFor,
+          }),
+        },
         { method: "post", action: "/api/post/create?index" }
       );
+      pendingSubmitOpts.current = {};
     }
   },[fileUploadForm])
 
-  const submitPost = () => {
+  const submitPost = (opts?: { state?: "draft" | "scheduled"; scheduledFor?: number }) => {
     // Block submit while any direct-to-S3 upload is still in flight.
     // Without this guard, in-flight videos get silently excluded from
     // the post (collectDirectUploads filters on alreadyUploaded).
@@ -162,6 +182,11 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
       console.warn("[PostCreator] submit blocked: upload still in progress");
       return;
     }
+    // Stash the button's intent for the base64-upload async path to
+    // read when it finalizes the create. Direct path uses it inline.
+    pendingSubmitOpts.current = opts ?? {};
+    const submitState = opts?.state ?? "published";
+    const submitScheduledFor = opts?.scheduledFor;
 
     const clonePostObject = {...postObject};
     if(youTubePreviews.filter((video:YouTubeVideo) => video.show).length) {
@@ -211,10 +236,13 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
             ...clonePostObject,
             media,
             content: postText,
+            state: submitState,
+            scheduledFor: submitScheduledFor,
           }),
         },
         { method: "post", action: "/api/post/create?index" }
       );
+      pendingSubmitOpts.current = {};
     }
   }
 
@@ -262,33 +290,122 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
     return () => clearTimeout(checkBlur);
   },[ clearPostContent ])
 
+  // On successful publish, close the expanded view too so the admin
+  // lands back on the feed rather than staring at an empty modal.
+  useEffect(() => {
+    if(submitPostForm.data?.newPost) setExpanded(false);
+  },[ submitPostForm.data?.newPost ]);
+
+  const editorBlock = (
+    <>
+      <TextEditor
+        attachmentAction={() => fileInputRef.current?.click()}
+        clearContent={clearPostContent}
+        contentStateSetter={setPostText}
+        htmlString={lexicalFromDraft||""}
+        placeholderText={expanded ? `Write something…` : `Go ahead...`}
+        setIsFocused={setIsFocused}
+        styleClass={expanded ? "upload__editable upload__editable--expanded" : "upload__editable"}
+        tbProps={tbProps}
+      />
+      <FileUpload
+        fileInputRef={fileInputRef}
+        imagesUploading={imagesUploading}
+        pendingUploads={pendingUploads}
+        setPendingUploads={setPendingUploads}
+        youTubePreviews={youTubePreviews}
+        setYouTubePreviews={setYouTubePreviews}
+      />
+      <PostOptions
+        setPostPrivacy={setPostPrivacy}
+        submitPost={submitPost}
+      />
+    </>
+  );
+
   return (
     <>
-      {isActive?<div className="active-upload-background" ref={focusedOverlay} onClick={blurEditor}></div>:<></>}
-      <div className={`upload${isActive?" upload--active":""}`}>
-        <TextEditor 
-          attachmentAction={() => fileInputRef.current?.click()}
-          clearContent={clearPostContent}
-          contentStateSetter={setPostText}
-          htmlString={lexicalFromDraft||""}
-          placeholderText={`Go ahead...`}
-          setIsFocused={setIsFocused}
-          styleClass="upload__editable"
-          tbProps={tbProps}
-        />
-        <FileUpload
-          fileInputRef={fileInputRef}
-          imagesUploading={imagesUploading}
-          pendingUploads={pendingUploads}
-          setPendingUploads={setPendingUploads}
-          youTubePreviews={youTubePreviews}
-          setYouTubePreviews={setYouTubePreviews}
-        />
-        <PostOptions
-          setPostPrivacy={setPostPrivacy}
-          submitPost={submitPost}
-        />
-      </div>
+      <style>{`
+        /* Expand-toggle: a small button anchored top-right of the
+           composer. Uses "⤢" for the expand icon and "×" for close. */
+        .upload__expand {
+          position: absolute;
+          top: 6px; right: 8px;
+          z-index: 3;
+          background: transparent;
+          border: 0;
+          font-size: 18px;
+          line-height: 1;
+          color: #506982;
+          cursor: pointer;
+          padding: 4px 6px;
+          height: auto;
+        }
+        .upload__expand:hover { color: #4A6CBA; }
+        .upload { position: relative; }
+
+        /* Expanded overlay — near-fullscreen modal with a much taller
+           editor so long-form composing feels natural. */
+        .upload--expanded__backdrop {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.55);
+          z-index: 90;
+          display: flex; align-items: center; justify-content: center;
+          padding: 16px;
+        }
+        .upload--expanded__frame {
+          background: #fff;
+          border: 1px solid #979997;
+          border-radius: 6px;
+          width: 100%;
+          max-width: 900px;
+          max-height: 92vh;
+          overflow-y: auto;
+          padding: 40px 24px 24px;
+          position: relative;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        }
+        .upload__editable--expanded {
+          min-height: 60vh !important;
+          font-size: 16px !important;
+          line-height: 1.6;
+        }
+      `}</style>
+
+      {expanded ? (
+        <div
+          className="upload--expanded__backdrop"
+          onClick={(e) => {
+            // Click outside the frame closes; click inside doesn't.
+            if (e.target === e.currentTarget) setExpanded(false);
+          }}
+        >
+          <div className="upload--expanded__frame">
+            <button
+              className="upload__expand"
+              type="button"
+              onClick={() => setExpanded(false)}
+              title="Collapse editor"
+              aria-label="Collapse editor"
+            >×</button>
+            {editorBlock}
+          </div>
+        </div>
+      ) : (
+        <>
+          {isActive?<div className="active-upload-background" ref={focusedOverlay} onClick={blurEditor}></div>:<></>}
+          <div className={`upload${isActive?" upload--active":""}`}>
+            <button
+              className="upload__expand"
+              type="button"
+              onClick={() => setExpanded(true)}
+              title="Expand editor for long-form writing"
+              aria-label="Expand editor"
+            >⤢</button>
+            {editorBlock}
+          </div>
+        </>
+      )}
     </>
   )
 }
