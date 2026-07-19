@@ -360,21 +360,41 @@ export const SiteActivity: React.FC<{}> = () => {
               No visits recorded yet.
             </div>
           ) : (
-            sorted.map((v) => (
+            sorted.map((v) => {
+              const visitCount = v.history?.length ?? 0;
+              return (
               <div key={String(v._id)} className="siteActivity__row">
-                <div className="siteActivity__line1">
+                <div
+                  className="siteActivity__line1"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "baseline",
+                    gap: 8,
+                  }}
+                >
                   {/* Whole identity block is a click-through to the
                       visitor detail page, where the admin can see the
                       full history + fingerprint + geo trail. */}
                   <Link
                     to={`/h/visitor/${String(v._id)}`}
-                    style={{ color: "inherit", textDecoration: "none" }}
+                    style={{ color: "inherit", textDecoration: "none", minWidth: 0 }}
                   >
                     <strong>{identity(v)}</strong>{" "}
                     <FlagIcon visitor={v} />
                     {countryCode(v) && " "}
                     {place(v)}
                   </Link>
+                  <span
+                    style={{
+                      color: "#888",
+                      fontSize: 12,
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    ({visitCount} visit{visitCount === 1 ? "" : "s"})
+                  </span>
                 </div>
                 <div className="siteActivity__line2">
                   <Link className="siteActivity__path" to={lastPath(v)}>
@@ -384,7 +404,8 @@ export const SiteActivity: React.FC<{}> = () => {
                   {whenLabel(v.lastSeen)}
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
