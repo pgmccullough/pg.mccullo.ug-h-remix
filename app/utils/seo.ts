@@ -20,6 +20,11 @@ interface BuildMetaArgs {
   publishedTime?: string;     // ISO 8601 for og:article:published_time
   modifiedTime?: string;      // ISO 8601 for og:article:modified_time
   jsonLd?: Record<string, any>;
+  /** Append " — Patrick Glendon McCullough" to the title. Default
+   *  true, but article pages usually want to skip this since
+   *  og:site_name carries site attribution separately, and the
+   *  combined string tends to blow past Google + X title limits. */
+  appendSiteName?: boolean;
 }
 
 function toAbs(u?: string): string | undefined {
@@ -52,11 +57,18 @@ export function stripHtml(input?: string, max = 220): string {
 export function buildMeta(args: BuildMetaArgs): Array<Record<string, any>> {
   const url = toAbs(args.path)!;
   const image = toAbs(args.image ?? DEFAULT_OG_IMAGE)!;
-  const description = args.description ?? "";
+  // Cap description at 155 chars for Google + 200 for X. We take the
+  // stricter cap since a single description string is used for both.
+  const rawDescription = args.description ?? "";
+  const description = rawDescription.length > 155
+    ? rawDescription.slice(0, 154).trimEnd() + "…"
+    : rawDescription;
   const ogType = args.ogType ?? "website";
-  const fullTitle = args.title.includes(SITE_NAME)
-    ? args.title
-    : `${args.title} — ${SITE_NAME}`;
+  const appendSite = args.appendSiteName ?? true;
+  const fullTitle =
+    args.title.includes(SITE_NAME) || !appendSite
+      ? args.title
+      : `${args.title} — ${SITE_NAME}`;
 
   const out: Array<Record<string, any>> = [
     { title: fullTitle },

@@ -134,9 +134,6 @@ export default [
     route("push/subscribe", "routes/api/push/subscribe/index.ts"),
     route("push/unsubscribe", "routes/api/push/unsubscribe/index.ts"),
 
-    // Dynamic Open Graph image generator for post permalinks.
-    route("og/:postId", "routes/api/og/$postId.tsx"),
-
     route("friends/thread-replies", "routes/api/friends/thread-replies/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)

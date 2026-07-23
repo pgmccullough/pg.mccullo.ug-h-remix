@@ -134,18 +134,20 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
       path,
     });
   }
-  const bodyText = stripHtml(post.content, 220);
-  const excerptTitle = stripHtml(post.content, 70) || "Post";
-  // OG image priority:
-  //   1. First attached image on the post (real content wins)
-  //   2. Dynamically-generated card at /api/og/:postId (satori)
-  //   3. Site default (buildMeta fallback)
+  // Title excerpt cap of 55 lands nicely inside Google's ~60-char
+  // display window and X's ~70-char cap. buildMeta will also skip the
+  // site-name suffix on this article via appendSiteName:false since
+  // og:site_name already carries site attribution.
+  const excerptTitle = stripHtml(post.content, 55) || "Post";
+  // Description gets its own 155-char cap inside buildMeta.
+  const bodyText = stripHtml(post.content, 155);
+  // OG image: first attached image if present; otherwise fall back to
+  // the site default (buildMeta handles that). No dynamic /api/og for
+  // now — that path was returning invalid content.
   let image: string | undefined;
   const firstImg = Array.isArray(post.media?.images) ? post.media.images[0] : undefined;
   if (typeof firstImg === "string" && firstImg.length) {
     image = `${SEO_CONST.SITE_URL}/api/media/images/${firstImg}`;
-  } else if (params.postID) {
-    image = `${SEO_CONST.SITE_URL}/api/og/${params.postID}`;
   }
   const publishedIso = typeof post.created === "number"
     ? new Date(post.created * 1000).toISOString()
@@ -161,6 +163,10 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
     ogType: "article",
     publishedTime: publishedIso,
     modifiedTime: modifiedIso,
+    // Skip the " — Patrick Glendon McCullough" suffix on posts.
+    // Combined length blows past Google/X title limits; site name is
+    // already carried via og:site_name in the root default meta.
+    appendSiteName: false,
     jsonLd: blogPostingJsonLd({
       title: excerptTitle,
       description: bodyText,
