@@ -40,6 +40,80 @@ function looksLikeImagePath(p: string): boolean {
   return !!ext && IMAGE_EXTS.has(ext);
 }
 
+const OG_WIDTH = 1200;
+const OG_HEIGHT = 630;
+
+/**
+ * Serve a 1200x630 landscape crop of the original image, generated
+ * with Sharp and cached to S3 as `<original-without-ext>_og.jpg`.
+ * If the cached variant exists, we serve it. Otherwise generate,
+ * write to S3, and stream back the buffer.
+ *
+ * `fit: cover` + `position: attention` picks the most interesting
+ * region of the image (Sharp's built-in feature-detection) rather
+ * than a naive centre crop, so portrait/tall images don't lose the
+ * subject.
+ */
+async function serveOgCrop(fullPath: string): Promise<Response> {
+  const baseKey = fullPath.replace(/\.[^.]+$/, "");
+  const cachedKey = `${baseKey}_og.jpg`;
+
+  // Cached path — serve directly if it already exists.
+  try {
+    await s3Client.send(new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: cachedKey }));
+    const cached = await s3Client.send(new GetObjectCommand({ Bucket: S3_BUCKET!, Key: cachedKey }));
+    if (cached.Body) {
+      const nodeStream = cached.Body instanceof Readable
+        ? cached.Body
+        : Readable.from(cached.Body as AsyncIterable<Uint8Array>);
+      return new Response(createReadableStreamFromReadable(nodeStream), {
+        headers: {
+          "Content-Type": "image/jpeg",
+          "Cache-Control": "public, max-age=31536000, immutable",
+          ...(cached.ContentLength ? { "Content-Length": String(cached.ContentLength) } : {}),
+        },
+      });
+    }
+  } catch { /* cache miss — fall through to generate */ }
+
+  // Generate: fetch original, crop with Sharp, put back to S3.
+  try {
+    const original = await s3Client.send(
+      new GetObjectCommand({ Bucket: S3_BUCKET!, Key: fullPath })
+    );
+    if (!original.Body) {
+      return new Response("Not Found", { status: 404 });
+    }
+    const buf = await streamToBuffer(original.Body as AsyncIterable<Uint8Array>);
+    const cropped = await sharp(buf)
+      .resize(OG_WIDTH, OG_HEIGHT, { fit: "cover", position: "attention" })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toBuffer();
+
+    // Fire-and-forget cache write — we don't want to block the response.
+    void s3Client.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET!,
+        Key: cachedKey,
+        Body: cropped,
+        ContentType: "image/jpeg",
+        CacheControl: "public, max-age=31536000, immutable",
+      })
+    ).catch((err) => console.error("[og-crop] cache write failed:", err));
+
+    return new Response(cropped, {
+      headers: {
+        "Content-Type": "image/jpeg",
+        "Content-Length": String(cropped.byteLength),
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  } catch (err) {
+    console.error("[og-crop] generation failed:", err);
+    return new Response("OG crop failed", { status: 500 });
+  }
+}
+
 export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const user = await getUser(request);
 
@@ -47,6 +121,16 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const { filePath } = params;
   const rest = params["*"];
   const fullPath = rest ? `${filePath}/${rest}` : filePath;
+
+  // ?og=1 flag — social platforms want a 1200x630 (1.91:1) landscape
+  // crop. We generate one on demand via Sharp and cache to S3 as
+  // <original>_og.jpg so subsequent scrapes are cheap. Only applies
+  // to images.
+  const urlObj = new URL(request.url);
+  const wantsOg = urlObj.searchParams.get("og") === "1";
+  if (wantsOg && fullPath && looksLikeImagePath(fullPath)) {
+    return await serveOgCrop(fullPath);
+  }
 
   if (!fullPath) {
     throw new Response("Bad Request", { status: 400 });

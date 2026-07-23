@@ -141,13 +141,15 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   const excerptTitle = stripHtml(post.content, 55) || "Post";
   // buildMeta caps to 125 internally; we still pre-strip HTML.
   const bodyText = stripHtml(post.content, 125);
-  // OG image: first attached image if present; otherwise fall back to
-  // the site default (buildMeta handles that). No dynamic /api/og for
-  // now — that path was returning invalid content.
+  // OG image: first attached image if present, served through the
+  // media proxy with ?og=1 which produces a 1200x630 landscape crop
+  // (aspect ratio social platforms expect). Sharp handles the resize
+  // and caches to S3 as `<name>_og.jpg`. If no attached image, fall
+  // back to the site default (buildMeta handles that).
   let image: string | undefined;
   const firstImg = Array.isArray(post.media?.images) ? post.media.images[0] : undefined;
   if (typeof firstImg === "string" && firstImg.length) {
-    image = `${SEO_CONST.SITE_URL}/api/media/images/${firstImg}`;
+    image = `${SEO_CONST.SITE_URL}/api/media/images/${firstImg}?og=1`;
   }
   const publishedIso = typeof post.created === "number"
     ? new Date(post.created * 1000).toISOString()
