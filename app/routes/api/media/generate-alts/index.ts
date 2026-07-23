@@ -96,13 +96,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const written = Object.keys(newAlts).length;
   if (written > 0) {
-    // Mongo $set on a nested object merges non-destructively at the
-    // field level via a build-and-set approach.
-    const setDoc: Record<string, string> = {};
-    for (const [k, v] of Object.entries({ ...existing, ...newAlts })) {
-      setDoc[`media.imageAlts.${k}`] = v;
-    }
-    await col.updateOne({ _id: new ObjectId(postId) }, { $set: setDoc });
+    // Filenames contain dots (the extension separator) which Mongo
+    // interprets as nested-field syntax when used inside a `$set`
+    // path like "media.imageAlts.foo.jpg" — that would try to create
+    // both `foo.jpg` and `foo` fields simultaneously and blow up
+    // with a conflict error.
+    //
+    // Solve by writing the WHOLE merged map to `media.imageAlts` in
+    // one atomic $set. The path only nests `media` → `imageAlts`;
+    // whatever keys live inside are just an opaque object value to
+    // Mongo. Dots in stored object keys are legal in MongoDB 5.0+.
+    const merged: Record<string, string> = { ...existing, ...newAlts };
+    await col.updateOne(
+      { _id: new ObjectId(postId) },
+      { $set: { "media.imageAlts": merged } }
+    );
   }
 
   console.log(`[alt-gen] post ${postId}: generated ${written}/${targets.length}`);
