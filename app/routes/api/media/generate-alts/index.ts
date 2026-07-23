@@ -21,6 +21,10 @@ import { generateAltText, openAiConfigured } from "~/utils/openai.server";
 const MAX_IMAGES_PER_RUN = 6;
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  // Internal-token only — this endpoint is triggered by server-side
+  // fire-and-forget calls (from /api/post/create after publish, and
+  // from the post-permalink loader on any pageview with missing alts).
+  // Never fires from client JS, so no cookie path needed.
   const expected = process.env.INTERNAL_API_TOKEN;
   if (!expected) {
     return Response.json(
@@ -28,8 +32,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       { status: 500 }
     );
   }
-  const token = request.headers.get("x-internal-token") ?? "";
-  if (token !== expected) {
+  const providedToken = request.headers.get("x-internal-token") ?? "";
+  if (providedToken !== expected) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!openAiConfigured()) {

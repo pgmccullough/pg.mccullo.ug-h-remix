@@ -65,6 +65,41 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
   }
 
+  // Backfill hook: if this post has images without alt text, fire a
+  // deferred kickoff to generate them. Any visitor triggers it — the
+  // server does the work behind the scenes; the client is unaware.
+  // Idempotent: the deferred endpoint skips images that already have
+  // alts, so repeat pageviews are no-ops beyond a cheap Mongo check.
+  try {
+    const media: any = (serialized as any)?.media ?? {};
+    const images: any[] = Array.isArray(media.images) ? media.images : [];
+    const altMap: Record<string, string> = media.imageAlts && typeof media.imageAlts === "object"
+      ? media.imageAlts
+      : {};
+    const missingAlt = images.some((img: any) => {
+      const fn = typeof img === "string" ? img : img?.url || img?.file;
+      return typeof fn === "string" && fn.length && !altMap[fn];
+    });
+    if (missingAlt) {
+      const internalToken = process.env.INTERNAL_API_TOKEN;
+      if (internalToken) {
+        const origin = new URL(request.url).origin;
+        const body = `postId=${encodeURIComponent(postID)}`;
+        // Fire-and-forget — don't await; if it fails, the next
+        // pageview will try again. The .catch() suppresses the
+        // unhandled-rejection warning.
+        void fetch(`${origin}/api/media/generate-alts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Internal-Token": internalToken,
+          },
+          body,
+        }).catch(() => { /* silently drop; backfill is best-effort */ });
+      }
+    }
+  } catch { /* never let backfill kickoff block the page render */ }
+
   return { post: serialized, parent, user };
 };
 
