@@ -45,7 +45,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   urls.push({ loc: `${origin}/h`, priority: "1.0" });
   urls.push({ loc: `${origin}/h/about`, priority: "0.9" });
-  urls.push({ loc: `${origin}/h/writing/we-die-in-every-war`, priority: "0.8" });
 
   for (const p of posts) {
     const id = String(p._id);

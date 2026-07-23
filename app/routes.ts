@@ -54,7 +54,6 @@ export default [
     // post has an LLM-generated slug on it.
     route("post/:postID", "routes/h/post/$postID.tsx", { id: "post-bare" }),
     route("post/:postID/:slug", "routes/h/post/$postID.tsx", { id: "post-slugged" }),
-    route("writing/we-die-in-every-war", "routes/h/writing/we-die-in-every-war.tsx"),
     route("friends", "routes/h/friends.tsx"),
     route("notifications", "routes/h/notifications.tsx"),
     route("drafts", "routes/h/drafts.tsx"),

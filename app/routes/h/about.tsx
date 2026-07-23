@@ -15,7 +15,7 @@ import { buildMeta, SEO_CONST } from "~/utils/seo";
 
 export const meta: MetaFunction = () => {
   const description =
-    "Patrick Glendon McCullough — writer, dispatches from St. Mark's Place, author of the book-length poem We Die in Every War.";
+    "Patrick Glendon McCullough — writer and tinkerer, dispatches from St. Mark's Place.";
   return buildMeta({
     title: "About",
     description,
@@ -90,14 +90,7 @@ export default function About() {
         <p>
           This site is where I keep the pieces that don't quite fit
           anywhere else — a personal feed, a scratchpad for essays,
-          and a slow-burning book-length poem titled{" "}
-          <a
-            rel="me"
-            href="https://pg.mccullo.ug/h/writing/we-die-in-every-war"
-          >
-            We Die in Every War
-          </a>
-          .
+          and running notes on the projects I'm tinkering with.
         </p>
 
         <h2>Elsewhere</h2>
@@ -126,13 +119,9 @@ export default function About() {
 
         <h2>Site</h2>
         <p>
-          Read <a href="/h">the feed</a>, subscribe via{" "}
+          Read <a href="/h">the feed</a> or subscribe via{" "}
           <a href="/feed.xml">Atom</a> or{" "}
-          <a href="/feed.json">JSON Feed</a>, or read{" "}
-          <a href="/h/writing/we-die-in-every-war">
-            the book
-          </a>
-          .
+          <a href="/feed.json">JSON Feed</a>.
         </p>
       </section>
     </>
