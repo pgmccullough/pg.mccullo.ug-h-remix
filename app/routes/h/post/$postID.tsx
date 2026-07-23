@@ -1,11 +1,11 @@
 import type { LoaderFunction, MetaFunction } from "react-router";
-import { useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { useEffect, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
 import type { PostParentSnippet } from "~/components/PostCard/PostCard";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
-import { serializeDoc } from "~/utils/serialize.server";
+import { serializeDoc, serializeDocs } from "~/utils/serialize.server";
 import {
   getInboxPostsByUris,
   getRemoteActors,
@@ -100,7 +100,23 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
   } catch { /* never let backfill kickoff block the page render */ }
 
-  return { post: serialized, parent, user };
+  // Related posts for internal linking + dwell time.
+  // Simplest workable heuristic: 5 most recent public+published posts
+  // other than this one. Could later swap for embedding similarity.
+  const relatedRaw = await db
+    .collection("myPosts")
+    .find({
+      privacy: "Public",
+      state: { $nin: ["draft", "scheduled"] },
+      _id: { $ne: new ObjectId(postID) },
+    })
+    .project({ _id: 1, content: 1, created: 1 })
+    .sort({ created: -1 })
+    .limit(6)
+    .toArray();
+  const related = serializeDocs(relatedRaw).slice(0, 5);
+
+  return { post: serialized, parent, related, user };
 };
 
 /**
@@ -137,7 +153,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   const modifiedIso = typeof post.lastEdited === "number"
     ? new Date(post.lastEdited * 1000).toISOString()
     : undefined;
-  return buildMeta({
+  const descriptors = buildMeta({
     title: excerptTitle,
     description: bodyText,
     path,
@@ -154,12 +170,61 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
       modifiedIso,
     }),
   });
+
+  // BreadcrumbList JSON-LD — surfaces breadcrumbs in Google's SERP
+  // entry ("pg.mccullo.ug › July 2019 › Do any places…") which reads
+  // better than a bare URL and typically bumps CTR.
+  descriptors.push({
+    "script:ld+json": {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: `${SEO_CONST.SITE_URL}/h`,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: excerptTitle,
+          item: `${SEO_CONST.SITE_URL}${path}`,
+        },
+      ],
+    },
+  });
+
+  return descriptors;
 };
 
+interface RelatedPost {
+  _id: string;
+  content?: string;
+  created?: number;
+}
+
+function relatedExcerpt(html: string | undefined, max = 90): string {
+  if (!html) return "Untitled";
+  const s = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (!s) return "Untitled";
+  return s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
+}
+
+function relatedDate(unix?: number): string {
+  if (!unix) return "";
+  return new Date(unix * 1000).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function SinglePost() {
-  const { post, parent } = useLoaderData<{
+  const { post, parent, related = [] } = useLoaderData<{
     post: any;
     parent: PostParentSnippet | null;
+    related?: RelatedPost[];
   }>();
 
   const [editState, setEditState] = useState<{
@@ -191,6 +256,82 @@ export default function SinglePost() {
       ) : (
         ""
       )}
+      {/* Related posts — internal linking that helps Google map the
+          site's topical structure AND gives readers a next click.
+          Rendered as a short simple list (styled like other admin
+          card lists) instead of full PostCards so it doesn't
+          compete visually with the main post. */}
+      {related && related.length > 0 ? (
+        <>
+          <style>{`
+            .related-posts {
+              margin: 24px 0 8px;
+              background: #fff;
+              border: 1px solid #979997;
+              border-radius: 4px;
+              overflow: hidden;
+            }
+            .related-posts__head {
+              background: #eee;
+              padding: 8px 12px;
+              font: 600 12px 'PGM Sans', sans-serif;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+              color: #506982;
+              border-bottom: 1px solid #979997;
+            }
+            .related-posts__item,
+            .related-posts__item:visited {
+              display: flex;
+              gap: 10px;
+              align-items: baseline;
+              padding: 10px 12px;
+              border-bottom: 1px solid #f0f0f0;
+              color: inherit;
+              text-decoration: none;
+              font-size: 14px;
+              line-height: 1.4;
+            }
+            .related-posts__item:last-child { border-bottom: 0; }
+            .related-posts__item:hover { background: #f8f8f8; }
+            .related-posts__date {
+              flex: 0 0 90px;
+              color: #888;
+              font-size: 12px;
+              text-align: right;
+            }
+            .related-posts__excerpt { flex: 1; min-width: 0; }
+            [data-theme="dark"] .related-posts {
+              background: #1a2028;
+              border-color: #2a3543;
+            }
+            [data-theme="dark"] .related-posts__head {
+              background: #232b36;
+              color: #a1b5c9;
+              border-color: #2a3543;
+            }
+            [data-theme="dark"] .related-posts__item {
+              border-color: #232b36;
+              color: #e5e7eb;
+            }
+            [data-theme="dark"] .related-posts__item:hover { background: #232b36; }
+            [data-theme="dark"] .related-posts__date { color: #94a3b8; }
+          `}</style>
+          <nav className="related-posts" aria-label="More posts">
+            <div className="related-posts__head">More posts</div>
+            {related.map((rp) => (
+              <Link
+                key={rp._id}
+                to={`/h/post/${rp._id}`}
+                className="related-posts__item"
+              >
+                <span className="related-posts__date">{relatedDate(rp.created)}</span>
+                <span className="related-posts__excerpt">{relatedExcerpt(rp.content)}</span>
+              </Link>
+            ))}
+          </nav>
+        </>
+      ) : null}
     </>
   );
 }

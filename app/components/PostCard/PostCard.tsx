@@ -169,7 +169,7 @@ export const PostCard: React.FC<{
       >
         <div className="postcard__time">
           <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
-            {canShowDate?<time dateTime={post.created.toString()}>{stampToTime(post.created)}</time>:""}
+            {canShowDate?<time dateTime={new Date(post.created * 1000).toISOString()}>{stampToTime(post.created)}</time>:""}
           </Link>
           <div style={{display: "flex"}}>
             {user?.role==="administrator"

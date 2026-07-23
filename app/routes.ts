@@ -29,6 +29,8 @@ export default [
   // reference the current origin and pull live data from Mongo.
   route("robots.txt", "routes/robots.tsx"),
   route("sitemap.xml", "routes/sitemap.tsx"),
+  route("feed.xml", "routes/feed.xml.tsx"),
+  route("feed.json", "routes/feed.json.tsx"),
 
   // ActivityPub federation endpoints (Phase A1).
   // These all delegate to Fedify, which handles the protocol details.

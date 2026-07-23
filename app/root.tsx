@@ -79,6 +79,47 @@ export const meta: MetaFunction = () => [
   { property: "og:url", content: "https://pg.mccullo.ug/" },
   { property: "og:image", content: "https://pg.mccullo.ug/apple-touch-icon.png" },
   { name: "twitter:card", content: "summary_large_image" },
+
+  // Feed autodiscovery — feed readers + browsers show a subscribe
+  // affordance when they see these.
+  { tagName: "link", rel: "alternate", type: "application/atom+xml",
+    title: "Patrick Glendon McCullough (Atom)", href: "https://pg.mccullo.ug/feed.xml" },
+  { tagName: "link", rel: "alternate", type: "application/feed+json",
+    title: "Patrick Glendon McCullough (JSON Feed)", href: "https://pg.mccullo.ug/feed.json" },
+
+  // rel="me" identity chain — verifies profiles for Mastodon
+  // (Mastodon shows a green checkmark on links that mutually
+  // rel="me" back to your profile) and contributes to Google's
+  // E-E-A-T evaluation of the author.
+  { tagName: "link", rel: "me", href: "https://pg.mccullo.ug/users/patrick" },
+  { tagName: "link", rel: "me", href: "https://bsky.app/profile/patrick.mccullo.ug" },
+  { tagName: "link", rel: "me", href: "https://beige.party/@mycotropic" },
+  { tagName: "link", rel: "me", href: "https://github.com/pgmccullough" },
+
+  // Site-wide WebSite JSON-LD. No SearchAction — the site's search
+  // is a POST-based fetcher, not a GET URL Google can invoke; add
+  // that later if we want a Sitelinks Search Box.
+  {
+    "script:ld+json": {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Patrick Glendon McCullough",
+      url: "https://pg.mccullo.ug/",
+      description:
+        "Personal site of Patrick Glendon McCullough — writing, notes, and dispatches from St. Mark's Place.",
+      author: {
+        "@type": "Person",
+        name: "Patrick Glendon McCullough",
+        url: "https://pg.mccullo.ug/",
+        sameAs: [
+          "https://pg.mccullo.ug/users/patrick",
+          "https://bsky.app/profile/patrick.mccullo.ug",
+          "https://beige.party/@mycotropic",
+          "https://github.com/pgmccullough",
+        ],
+      },
+    },
+  },
 ];
 
 // GA tracking ID is a public value (the "measurement ID" shows up in any
