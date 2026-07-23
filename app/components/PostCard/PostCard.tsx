@@ -424,18 +424,27 @@ export const PostCard: React.FC<{
                     const fallbackAlt = post.content
                       ? String(post.content).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 140)
                       : "";
+                    // Alt lookup map populated by the LLM alt-gen worker
+                    // (/api/media/generate-alts). Keyed by filename.
+                    const altMap: Record<string, string> =
+                      (post.media?.imageAlts && typeof post.media.imageAlts === "object")
+                        ? post.media.imageAlts
+                        : {};
                     return post.media[key].map((item: any, i: number) => {
                       // Items can be strings or objects (e.g. YouTube links).
                       const slideKey =
                         typeof item === "string"
                           ? `${key}-${i}-${item}`
                           : `${key}-${i}-${item?.video ?? item?.url ?? i}`;
-                      // Per-item alt if one was stored (item.alt from
-                      // a future upload flow), else post-content fallback.
+                      // Alt priority:
+                      //   1. item.alt (stored on the item itself)
+                      //   2. media.imageAlts[filename] (LLM-generated)
+                      //   3. stripped post content (context fallback)
+                      const filename = typeof item === "string" ? item : "";
                       const itemAlt =
-                        typeof item === "object" && item?.alt
-                          ? String(item.alt)
-                          : fallbackAlt;
+                        (typeof item === "object" && item?.alt && String(item.alt)) ||
+                        (filename && altMap[filename]) ||
+                        fallbackAlt;
                       return (
                         <div
                           key={slideKey}

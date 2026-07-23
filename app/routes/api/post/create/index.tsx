@@ -82,6 +82,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         console.error("[federation] post-create federation failed:", err);
       }
 
+      // Fire-and-forget LLM alt-text generation for any attached
+      // images. Own function invocation (own 10s budget) so the create
+      // response doesn't wait on OpenAI. Results are written back to
+      // media.imageAlts and picked up by PostCard on next render.
+      const hasImages = Array.isArray(newPost.media?.images)
+        && newPost.media.images.length > 0;
+      if (hasImages) {
+        const internalToken = process.env.INTERNAL_API_TOKEN;
+        if (internalToken) {
+          const body = `postId=${encodeURIComponent(postId)}`;
+          void fetch(`${origin}/api/media/generate-alts`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "X-Internal-Token": internalToken,
+            },
+            body,
+          }).catch((err) => {
+            console.error("[alt-gen] deferred kickoff failed:", err);
+          });
+        }
+      }
+
       // Cross-post to Bluesky (if credentials are set). Best-effort —
       // failures don't fail the user-facing save. Store the at:// URI on
       // the post doc so future delete/edit ops can also touch Bluesky.

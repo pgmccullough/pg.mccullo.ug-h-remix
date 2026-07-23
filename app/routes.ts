@@ -84,6 +84,7 @@ export default [
     // from `params`.
     route("media/:filePath/*", "routes/api/media/$filePath/$.ts"),
     route("media/scrape", "routes/api/media/scrape/index.ts"),
+    route("media/generate-alts", "routes/api/media/generate-alts/index.ts"),
 
     route("notes", "routes/api/notes/index.tsx"),
 
