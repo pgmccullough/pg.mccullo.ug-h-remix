@@ -11,8 +11,15 @@
  * (/h/post/:postID) via the edit-in-place flow, so we just link there.
  */
 
+import { useEffect } from "react";
 import type { LoaderFunctionArgs } from "react-router";
-import { Link, redirect, useFetcher, useLoaderData } from "react-router";
+import {
+  Link,
+  redirect,
+  useFetcher,
+  useLoaderData,
+  useRevalidator,
+} from "react-router";
 
 import { getUser } from "~/utils/session.server";
 import { clientPromise } from "~/lib/mongodb";
@@ -58,11 +65,27 @@ function fmt(ts?: number, unit: "seconds" | "ms" = "seconds"): string {
 
 export default function DraftsPage() {
   const { posts } = useLoaderData<{ posts: DraftPost[] }>();
-  const publish = useFetcher<{ ok?: boolean; error?: string }>();
+  const publish = useFetcher<{ ok?: boolean; published?: boolean; error?: string }>();
   const del = useFetcher<{ postDeleted?: boolean; error?: string }>();
+  const revalidator = useRevalidator();
+
+  // When either publish or delete completes successfully, re-run the
+  // loader so the just-touched row disappears from the list without
+  // needing a manual refresh.
+  useEffect(() => {
+    if (publish.state === "idle" && publish.data?.ok) {
+      revalidator.revalidate();
+    }
+  }, [publish.state, publish.data]);
+  useEffect(() => {
+    if (del.state === "idle" && del.data?.postDeleted) {
+      revalidator.revalidate();
+    }
+  }, [del.state, del.data]);
 
   const drafts = posts.filter((p) => p.state === "draft");
   const scheduled = posts.filter((p) => p.state === "scheduled");
+  const isBusy = publish.state !== "idle" || del.state !== "idle";
 
   return (
     <>
@@ -146,7 +169,15 @@ export default function DraftsPage() {
                   action={`/api/post/publish/${p._id}`}
                   style={{ display: "inline" }}
                 >
-                  <button type="submit" className="drafts__btn">Publish now</button>
+                  <button
+                    type="submit"
+                    className="drafts__btn"
+                    disabled={isBusy}
+                  >
+                    {publish.state !== "idle" && publish.formAction?.includes(p._id)
+                      ? "Publishing…"
+                      : "Publish now"}
+                  </button>
                 </publish.Form>
                 <del.Form
                   method="post"
@@ -189,7 +220,15 @@ export default function DraftsPage() {
                   action={`/api/post/publish/${p._id}`}
                   style={{ display: "inline" }}
                 >
-                  <button type="submit" className="drafts__btn">Publish now</button>
+                  <button
+                    type="submit"
+                    className="drafts__btn"
+                    disabled={isBusy}
+                  >
+                    {publish.state !== "idle" && publish.formAction?.includes(p._id)
+                      ? "Publishing…"
+                      : "Publish now"}
+                  </button>
                 </publish.Form>
                 <del.Form
                   method="post"

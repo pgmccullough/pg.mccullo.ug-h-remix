@@ -418,12 +418,24 @@ export const PostCard: React.FC<{
                   Object.keys(post.media).map(key => {
                     const DynamicComponent = mediaComponents.find(match => match.db_prop === key);
                     if (!Array.isArray(post.media[key]) || !DynamicComponent) return null;
+                    // Fallback alt text from the post's own body — a
+                    // generic-but-honest description for screen readers
+                    // and search engines when no explicit alt is stored.
+                    const fallbackAlt = post.content
+                      ? String(post.content).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 140)
+                      : "";
                     return post.media[key].map((item: any, i: number) => {
                       // Items can be strings or objects (e.g. YouTube links).
                       const slideKey =
                         typeof item === "string"
                           ? `${key}-${i}-${item}`
                           : `${key}-${i}-${item?.video ?? item?.url ?? i}`;
+                      // Per-item alt if one was stored (item.alt from
+                      // a future upload flow), else post-content fallback.
+                      const itemAlt =
+                        typeof item === "object" && item?.alt
+                          ? String(item.alt)
+                          : fallbackAlt;
                       return (
                         <div
                           key={slideKey}
@@ -437,7 +449,7 @@ export const PostCard: React.FC<{
                         >
                           <DynamicComponent.component
                             src={item}
-                            alt=""
+                            alt={itemAlt}
                           />
                         </div>
                       );

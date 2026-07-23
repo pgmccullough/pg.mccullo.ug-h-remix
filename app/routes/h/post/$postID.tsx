@@ -1,4 +1,4 @@
-import { LoaderFunction } from "react-router";
+import type { LoaderFunction, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 import { useEffect, useState } from "react";
 import { getUser } from "~/utils/session.server";
@@ -11,6 +11,7 @@ import {
   getRemoteActors,
 } from "~/utils/federation-inbox-posts.server";
 import * as gtag from "~/utils/gtags.client";
+import { blogPostingJsonLd, buildMeta, stripHtml, SEO_CONST } from "~/utils/seo";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { postID = "" } = params;
@@ -65,6 +66,59 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   }
 
   return { post: serialized, parent, user };
+};
+
+/**
+ * Per-post SEO metadata. Renders proper title, description, canonical,
+ * OG + Twitter Card, plus a BlogPosting JSON-LD blob. Falls back to
+ * site defaults when the post is missing (e.g. 404 render).
+ */
+export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
+  const post: any = (data as any)?.post;
+  const path = `/h/post/${params.postID ?? ""}`;
+  if (!post) {
+    return buildMeta({
+      title: "Post not found",
+      description: "This post either doesn't exist or isn't visible to you.",
+      path,
+    });
+  }
+  const bodyText = stripHtml(post.content, 220);
+  const excerptTitle = stripHtml(post.content, 70) || "Post";
+  // OG image priority:
+  //   1. First attached image on the post (real content wins)
+  //   2. Dynamically-generated card at /api/og/:postId (satori)
+  //   3. Site default (buildMeta fallback)
+  let image: string | undefined;
+  const firstImg = Array.isArray(post.media?.images) ? post.media.images[0] : undefined;
+  if (typeof firstImg === "string" && firstImg.length) {
+    image = `${SEO_CONST.SITE_URL}/api/media/images/${firstImg}`;
+  } else if (params.postID) {
+    image = `${SEO_CONST.SITE_URL}/api/og/${params.postID}`;
+  }
+  const publishedIso = typeof post.created === "number"
+    ? new Date(post.created * 1000).toISOString()
+    : undefined;
+  const modifiedIso = typeof post.lastEdited === "number"
+    ? new Date(post.lastEdited * 1000).toISOString()
+    : undefined;
+  return buildMeta({
+    title: excerptTitle,
+    description: bodyText,
+    path,
+    image,
+    ogType: "article",
+    publishedTime: publishedIso,
+    modifiedTime: modifiedIso,
+    jsonLd: blogPostingJsonLd({
+      title: excerptTitle,
+      description: bodyText,
+      url: path,
+      image,
+      publishedIso,
+      modifiedIso,
+    }),
+  });
 };
 
 export default function SinglePost() {

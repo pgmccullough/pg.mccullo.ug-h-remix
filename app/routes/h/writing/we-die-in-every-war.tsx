@@ -1,4 +1,20 @@
 import { useState } from "react";
+import type { MetaFunction } from "react-router";
+import { blogPostingJsonLd, buildMeta } from "~/utils/seo";
+
+export const meta: MetaFunction = () => {
+  const title = "We Die in Every War";
+  const description =
+    "A Supernatural Horror by Patrick Glendon McCullough. A book-length poem in the mode of a mid-century pulp paperback.";
+  const path = "/h/writing/we-die-in-every-war";
+  return buildMeta({
+    title,
+    description,
+    path,
+    ogType: "article",
+    jsonLd: blogPostingJsonLd({ title, description, url: path }),
+  });
+};
 
 const pages = [
   ``,

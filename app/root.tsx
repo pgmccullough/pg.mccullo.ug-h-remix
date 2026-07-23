@@ -57,10 +57,28 @@ export const links: LinksFunction = () => {
 };
 
 // React Router v7 meta returns an array of descriptors instead of an object.
+// Site-wide default meta. Per-route `meta` exports override title,
+// description, canonical, OG, Twitter Card, and JSON-LD via
+// `~/utils/seo.buildMeta()`.
 export const meta: MetaFunction = () => [
   { charSet: "utf-8" },
   { title: "Patrick Glendon McCullough" },
   { name: "viewport", content: "width=device-width,initial-scale=1" },
+  {
+    name: "description",
+    content:
+      "Personal site of Patrick Glendon McCullough — writing, notes, and dispatches from St. Mark's Place.",
+  },
+  { name: "author", content: "Patrick Glendon McCullough" },
+  { name: "color-scheme", content: "light dark" },
+  { name: "theme-color", content: "#4A6CBA" },
+  // Default OG (post pages override with per-post data)
+  { property: "og:site_name", content: "Patrick Glendon McCullough" },
+  { property: "og:type", content: "website" },
+  { property: "og:title", content: "Patrick Glendon McCullough" },
+  { property: "og:url", content: "https://pg.mccullo.ug/" },
+  { property: "og:image", content: "https://pg.mccullo.ug/apple-touch-icon.png" },
+  { name: "twitter:card", content: "summary_large_image" },
 ];
 
 // GA tracking ID is a public value (the "measurement ID" shows up in any

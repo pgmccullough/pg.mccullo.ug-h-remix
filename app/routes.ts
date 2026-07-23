@@ -25,6 +25,11 @@ export default [
   // Root redirect: "/" -> "/h"
   index("routes/index.tsx"),
 
+  // SEO surfaces served as routes (not static files) so they can
+  // reference the current origin and pull live data from Mongo.
+  route("robots.txt", "routes/robots.tsx"),
+  route("sitemap.xml", "routes/sitemap.tsx"),
+
   // ActivityPub federation endpoints (Phase A1).
   // These all delegate to Fedify, which handles the protocol details.
   route(".well-known/webfinger", "routes/webfinger.ts"),
@@ -125,6 +130,9 @@ export default [
 
     route("push/subscribe", "routes/api/push/subscribe/index.ts"),
     route("push/unsubscribe", "routes/api/push/unsubscribe/index.ts"),
+
+    // Dynamic Open Graph image generator for post permalinks.
+    route("og/:postId", "routes/api/og/$postId.tsx"),
 
     route("friends/thread-replies", "routes/api/friends/thread-replies/index.ts"),
 
