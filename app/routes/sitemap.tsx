@@ -36,7 +36,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       privacy: "Public",
       state: { $nin: ["draft", "scheduled"] },
     })
-    .project({ _id: 1, created: 1, lastEdited: 1 })
+    .project({ _id: 1, created: 1, lastEdited: 1, seoMeta: 1 })
     .sort({ created: -1 })
     .limit(5000)
     .toArray();
@@ -48,11 +48,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   for (const p of posts) {
     const id = String(p._id);
+    const slug = (p as any)?.seoMeta?.slug;
+    const permalink = slug
+      ? `${origin}/h/post/${id}/${encodeURIComponent(slug)}`
+      : `${origin}/h/post/${id}`;
     const ts = typeof p.lastEdited === "number"
       ? p.lastEdited
       : (typeof p.created === "number" ? p.created : null);
     urls.push({
-      loc: `${origin}/h/post/${id}`,
+      loc: permalink,
       lastmod: ts ? new Date(ts * 1000).toISOString() : undefined,
       priority: "0.7",
     });

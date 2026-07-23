@@ -48,7 +48,11 @@ export default [
   route("h", "routes/h.tsx", [
     index("routes/h/index.tsx"),
     route("login", "routes/h/login.tsx"),
-    route("post/:postID", "routes/h/post/$postID.tsx"),
+    // Both bare-id and slug'd URLs resolve to the same route. Loader
+    // handles canonical redirect from bare-id → slug'd form when the
+    // post has an LLM-generated slug on it.
+    route("post/:postID", "routes/h/post/$postID.tsx", { id: "post-bare" }),
+    route("post/:postID/:slug", "routes/h/post/$postID.tsx", { id: "post-slugged" }),
     route("writing/we-die-in-every-war", "routes/h/writing/we-die-in-every-war.tsx"),
     route("friends", "routes/h/friends.tsx"),
     route("notifications", "routes/h/notifications.tsx"),
@@ -93,6 +97,7 @@ export default [
     route("post/create", "routes/api/post/create/index.tsx"),
     route("post/delete/:postId", "routes/api/post/delete/$postId.tsx"),
     route("post/fetch", "routes/api/post/fetch/index.ts"),
+    route("post/generate-seo-meta", "routes/api/post/generate-seo-meta/index.ts"),
     route("post/publish/:postId", "routes/api/post/publish/$postId.tsx"),
     route("post/react", "routes/api/post/react/index.ts"),
     route("post/search", "routes/api/post/search/index.ts"),

@@ -168,7 +168,14 @@ export const PostCard: React.FC<{
         key={post._id}
       >
         <div className="postcard__time">
-          <Link className="postcard__time__link" to={`/h/post/${post._id}`}>
+          <Link
+            className="postcard__time__link"
+            to={
+              post?.seoMeta?.slug
+                ? `/h/post/${post._id}/${encodeURIComponent(post.seoMeta.slug)}`
+                : `/h/post/${post._id}`
+            }
+          >
             {canShowDate?<time dateTime={new Date(post.created * 1000).toISOString()}>{stampToTime(post.created)}</time>:""}
           </Link>
           <div style={{display: "flex"}}>

@@ -82,16 +82,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         console.error("[federation] post-create federation failed:", err);
       }
 
-      // Fire-and-forget LLM alt-text generation for any attached
-      // images. Own function invocation (own 10s budget) so the create
-      // response doesn't wait on OpenAI. Results are written back to
-      // media.imageAlts and picked up by PostCard on next render.
+      // Fire-and-forget LLM deferred jobs — alt text for images, and
+      // SEO meta (slug + description). Own function invocations so
+      // the create response doesn't wait on OpenAI.
+      const internalToken = process.env.INTERNAL_API_TOKEN;
       const hasImages = Array.isArray(newPost.media?.images)
         && newPost.media.images.length > 0;
-      if (hasImages) {
-        const internalToken = process.env.INTERNAL_API_TOKEN;
-        if (internalToken) {
-          const body = `postId=${encodeURIComponent(postId)}`;
+      const body = `postId=${encodeURIComponent(postId)}`;
+      if (internalToken) {
+        if (hasImages) {
           void fetch(`${origin}/api/media/generate-alts`, {
             method: "POST",
             headers: {
@@ -103,6 +102,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             console.error("[alt-gen] deferred kickoff failed:", err);
           });
         }
+        // SEO meta: slug + description. Fires for every post so the
+        // permalink gets a clean URL before anyone shares it.
+        void fetch(`${origin}/api/post/generate-seo-meta`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Internal-Token": internalToken,
+          },
+          body,
+        }).catch((err) => {
+          console.error("[seo-meta] deferred kickoff failed:", err);
+        });
       }
 
       // Cross-post to Bluesky (if credentials are set). Best-effort —

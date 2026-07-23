@@ -25,6 +25,114 @@ export function openAiConfigured(): boolean {
   return !!(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.length);
 }
 
+// ---------------------------------------------------------------------------
+// SEO metadata: URL slug + meta description in one shot
+// ---------------------------------------------------------------------------
+
+const SEO_META_PROMPT = [
+  "You'll receive the plain text of a personal blog post.",
+  "Return JSON with exactly two fields:",
+  "  slug: a URL slug — 3 to 6 lowercase words, hyphen-separated, no punctuation, no filler words,",
+  "        no numbers unless meaningful. Should read like a phrase describing the topic.",
+  "  description: a meta description — max 150 characters, one sentence, factual, no clickbait,",
+  "        no phrases like \"this post is about\", written as a summary of the post's topic.",
+].join(" ");
+
+/**
+ * Sanitize an LLM-produced slug into a safe URL segment. Returns null
+ * if what came back was garbage (empty, entirely numeric, too short).
+ */
+function sanitizeSlug(raw: string): string | null {
+  if (typeof raw !== "string") return null;
+  let s = raw
+    .toLowerCase()
+    .replace(/[‘’“”]/g, "") // curly quotes
+    .replace(/[^a-z0-9\s-]/g, " ")             // strip everything else
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (s.length < 3) return null;
+  if (/^[0-9-]+$/.test(s)) return null; // reject pure-number slugs
+  if (s.length > 80) s = s.slice(0, 80).replace(/-+$/, "");
+  return s;
+}
+
+/**
+ * Sanitize the description: trim, collapse whitespace, hard cap at
+ * 155 chars so it stays inside social preview limits.
+ */
+function sanitizeDescription(raw: string): string | null {
+  if (typeof raw !== "string") return null;
+  let s = raw.trim().replace(/\s+/g, " ").replace(/^"|"$/g, "").trim();
+  if (!s) return null;
+  if (s.length > 155) s = s.slice(0, 154).trimEnd() + "…";
+  return s;
+}
+
+/**
+ * Ask the model to write a slug and a meta description for a post
+ * from its stripped body text. Returns { slug, description } on
+ * success, or null if the model / network / parse failed.
+ *
+ * Uses JSON mode so we get parseable structured output. Cheap: one
+ * gpt-4o-mini call, ~250 tokens round trip.
+ */
+export async function generateSeoMeta(args: {
+  content: string;
+  timeoutMs?: number;
+}): Promise<{ slug: string; description: string } | null> {
+  if (!openAiConfigured()) return null;
+  const body = args.content.trim();
+  if (!body) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? 15000);
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 220,
+        temperature: 0.3,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SEO_META_PROMPT },
+          { role: "user", content: body.slice(0, 3000) },
+        ],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      console.error(
+        "[openai] seo-meta failed:",
+        res.status,
+        await res.text().catch(() => "")
+      );
+      return null;
+    }
+    const data: any = await res.json();
+    const raw: string | undefined = data?.choices?.[0]?.message?.content;
+    if (typeof raw !== "string") return null;
+    let parsed: any;
+    try { parsed = JSON.parse(raw); } catch { return null; }
+    const slug = sanitizeSlug(parsed?.slug ?? "");
+    const description = sanitizeDescription(parsed?.description ?? "");
+    if (!slug || !description) return null;
+    return { slug, description };
+  } catch (err) {
+    console.error("[openai] seo-meta exception:", err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Generate alt text for a publicly-fetchable image URL. Returns the
  * text on success, or null on any failure (API error, timeout,

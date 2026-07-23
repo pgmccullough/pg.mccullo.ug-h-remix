@@ -1,5 +1,5 @@
 import type { LoaderFunction, MetaFunction } from "react-router";
-import { Link, useLoaderData } from "react-router";
+import { Link, redirect, useLoaderData } from "react-router";
 import { useEffect, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
@@ -14,7 +14,7 @@ import * as gtag from "~/utils/gtags.client";
 import { blogPostingJsonLd, buildMeta, stripHtml, SEO_CONST } from "~/utils/seo";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
-  const { postID = "" } = params;
+  const { postID = "", slug: urlSlug } = params;
   const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");
@@ -42,6 +42,15 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     });
   }
   const serialized = serializeDoc(post);
+
+  // Canonical URL redirect: if this post already has an LLM-generated
+  // slug on its seoMeta, the correct URL is /h/post/:id/:slug. Handle
+  // both cases: bare-id (`urlSlug` undefined) and stale slug in URL.
+  // 301 permanent so search engines drop the wrong variant from index.
+  const postSlug: string | undefined = (serialized as any)?.seoMeta?.slug;
+  if (postSlug && urlSlug !== postSlug) {
+    throw redirect(`/h/post/${postID}/${encodeURIComponent(postSlug)}`, 301);
+  }
 
   // If this post is a reply, try to load the parent for the inline snippet.
   let parent: PostParentSnippet | null = null;
@@ -100,6 +109,31 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
   } catch { /* never let backfill kickoff block the page render */ }
 
+  // SEO meta backfill: same invisible pattern for slug + meta
+  // description. Fires when either is missing. Fully idempotent —
+  // once written, we never regenerate (URL stability).
+  try {
+    const seoMeta: any = (serialized as any)?.seoMeta ?? {};
+    const missingSlug = !seoMeta.slug;
+    const missingDesc = !seoMeta.description;
+    const bodyText = String((serialized as any)?.content ?? "").replace(/<[^>]+>/g, "").trim();
+    if ((missingSlug || missingDesc) && bodyText.length > 0) {
+      const internalToken = process.env.INTERNAL_API_TOKEN;
+      if (internalToken) {
+        const origin = new URL(request.url).origin;
+        const body = `postId=${encodeURIComponent(postID)}`;
+        void fetch(`${origin}/api/post/generate-seo-meta`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Internal-Token": internalToken,
+          },
+          body,
+        }).catch(() => { /* silently drop; backfill is best-effort */ });
+      }
+    }
+  } catch { /* never let backfill kickoff block the page render */ }
+
   // Related posts for internal linking + dwell time.
   // Simplest workable heuristic: 5 most recent public+published posts
   // other than this one. Could later swap for embedding similarity.
@@ -110,7 +144,7 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       state: { $nin: ["draft", "scheduled"] },
       _id: { $ne: new ObjectId(postID) },
     })
-    .project({ _id: 1, content: 1, created: 1 })
+    .project({ _id: 1, content: 1, created: 1, seoMeta: 1 })
     .sort({ created: -1 })
     .limit(6)
     .toArray();
@@ -126,12 +160,19 @@ export const loader: LoaderFunction = async ({ params, request }) => {
  */
 export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   const post: any = (data as any)?.post;
-  const path = `/h/post/${params.postID ?? ""}`;
+  const postId = params.postID ?? "";
+  // Canonical path prefers the LLM-generated slug when the post has
+  // one (permalinks like /h/post/:id/best-guess-slug rank + read
+  // better than bare-id URLs).
+  const seoMeta = post?.seoMeta ?? {};
+  const canonicalPath = seoMeta?.slug
+    ? `/h/post/${postId}/${encodeURIComponent(seoMeta.slug)}`
+    : `/h/post/${postId}`;
   if (!post) {
     return buildMeta({
       title: "Post not found",
       description: "This post either doesn't exist or isn't visible to you.",
-      path,
+      path: canonicalPath,
     });
   }
   // Title excerpt cap of 55 lands nicely inside Google's ~60-char
@@ -139,8 +180,10 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   // site-name suffix on this article via appendSiteName:false since
   // og:site_name already carries site attribution.
   const excerptTitle = stripHtml(post.content, 55) || "Post";
-  // buildMeta caps to 125 internally; we still pre-strip HTML.
-  const bodyText = stripHtml(post.content, 125);
+  // LLM description wins when present — it's a real summary, not the
+  // first N chars of the body. Fallback keeps working for posts that
+  // haven't been backfilled yet.
+  const bodyText = seoMeta?.description || stripHtml(post.content, 125);
   // OG image: first attached image if present, served through the
   // media proxy with ?og=1 which produces a 1200x630 landscape crop
   // (aspect ratio social platforms expect). Sharp handles the resize
@@ -160,7 +203,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   const descriptors = buildMeta({
     title: excerptTitle,
     description: bodyText,
-    path,
+    path: canonicalPath,
     image,
     ogType: "article",
     publishedTime: publishedIso,
@@ -172,7 +215,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
     jsonLd: blogPostingJsonLd({
       title: excerptTitle,
       description: bodyText,
-      url: path,
+      url: canonicalPath,
       image,
       publishedIso,
       modifiedIso,
@@ -197,7 +240,7 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
           "@type": "ListItem",
           position: 2,
           name: excerptTitle,
-          item: `${SEO_CONST.SITE_URL}${path}`,
+          item: `${SEO_CONST.SITE_URL}${canonicalPath}`,
         },
       ],
     },
@@ -210,6 +253,7 @@ interface RelatedPost {
   _id: string;
   content?: string;
   created?: number;
+  seoMeta?: { slug?: string; description?: string };
 }
 
 function relatedExcerpt(html: string | undefined, max = 90): string {
@@ -330,7 +374,11 @@ export default function SinglePost() {
             {related.map((rp) => (
               <Link
                 key={rp._id}
-                to={`/h/post/${rp._id}`}
+                to={
+                  rp.seoMeta?.slug
+                    ? `/h/post/${rp._id}/${encodeURIComponent(rp.seoMeta.slug)}`
+                    : `/h/post/${rp._id}`
+                }
                 className="related-posts__item"
               >
                 <span className="related-posts__date">{relatedDate(rp.created)}</span>

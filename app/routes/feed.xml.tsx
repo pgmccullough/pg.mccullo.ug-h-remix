@@ -30,7 +30,7 @@ export const loader = async (_args: LoaderFunctionArgs) => {
       privacy: "Public",
       state: { $nin: ["draft", "scheduled"] },
     })
-    .project({ _id: 1, content: 1, created: 1, lastEdited: 1 })
+    .project({ _id: 1, content: 1, created: 1, lastEdited: 1, seoMeta: 1 })
     .sort({ created: -1 })
     .limit(50)
     .toArray();
@@ -44,7 +44,10 @@ export const loader = async (_args: LoaderFunctionArgs) => {
   const entries = posts
     .map((p) => {
       const id = String(p._id);
-      const url = `${site}/h/post/${id}`;
+      const slug = (p as any)?.seoMeta?.slug;
+      const url = slug
+        ? `${site}/h/post/${id}/${encodeURIComponent(slug)}`
+        : `${site}/h/post/${id}`;
       const excerpt = stripHtml(String(p.content ?? ""), 70) || "Untitled";
       const published = typeof p.created === "number"
         ? new Date(p.created * 1000).toISOString()
