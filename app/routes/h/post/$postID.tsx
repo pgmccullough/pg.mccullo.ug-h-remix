@@ -149,8 +149,28 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     .toArray();
   const related = serializeDocs(relatedRaw).slice(0, 5);
 
-  return { post: serialized, parent, related, user };
+  // Verified webmentions targeting this post. Keyed by targetPostId
+  // which the receive endpoint sets from the URL when it matches
+  // /h/post/:id or /h/post/:id/:slug.
+  const rawMentions = await db
+    .collection("webmentions")
+    .find({ targetPostId: postID, status: "verified" })
+    .sort({ "meta.publishedAt": -1, receivedAt: -1 })
+    .limit(50)
+    .toArray();
+  const webmentions = serializeDocs(rawMentions);
+
+  return { post: serialized, parent, related, webmentions, user };
 };
+
+// Advertise the webmention endpoint via HTTP Link header on post
+// pages — sites and scrapers that only look at headers (not <link>
+// in HTML) can still discover it.
+export function headers() {
+  return {
+    Link: '<https://pg.mccullo.ug/api/webmention>; rel="webmention"',
+  };
+}
 
 /**
  * Per-post SEO metadata. Renders proper title, description, canonical,
@@ -275,6 +295,39 @@ interface RelatedPost {
   seoMeta?: { slug?: string; description?: string };
 }
 
+interface WebmentionRow {
+  _id: string;
+  source: string;
+  target: string;
+  receivedAt?: number;
+  meta?: {
+    title?: string;
+    authorName?: string;
+    authorUrl?: string;
+    authorPhoto?: string;
+    content?: string;
+    publishedAt?: number;
+    type: "mention" | "reply" | "like" | "repost" | "bookmark";
+  };
+}
+
+function wmTypeLabel(t?: WebmentionRow["meta"]["type"]): string {
+  switch (t) {
+    case "like": return "❤️ liked";
+    case "repost": return "🔁 reposted";
+    case "reply": return "💬 replied";
+    case "bookmark": return "🔖 bookmarked";
+    default: return "🔗 mentioned";
+  }
+}
+function wmDate(ms?: number): string {
+  if (!ms) return "";
+  return new Date(ms).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+function wmHost(u: string): string {
+  try { return new URL(u).host.replace(/^www\./, ""); } catch { return u; }
+}
+
 function relatedExcerpt(html: string | undefined, max = 90): string {
   if (!html) return "Untitled";
   const s = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -292,11 +345,17 @@ function relatedDate(unix?: number): string {
 }
 
 export default function SinglePost() {
-  const { post, parent, related = [] } = useLoaderData<{
+  const { post, parent, related = [], webmentions = [] } = useLoaderData<{
     post: any;
     parent: PostParentSnippet | null;
     related?: RelatedPost[];
+    webmentions?: WebmentionRow[];
   }>();
+
+  // Split webmentions by type for display — "reactions" get compacted
+  // to avatars only, "replies/mentions" get the full quote card.
+  const compact = webmentions.filter((w) => w.meta?.type === "like" || w.meta?.type === "repost" || w.meta?.type === "bookmark");
+  const conversational = webmentions.filter((w) => w.meta?.type === "reply" || w.meta?.type === "mention" || !w.meta?.type);
 
   const [editState, setEditState] = useState<{
     isOn: boolean;
@@ -327,6 +386,175 @@ export default function SinglePost() {
       ) : (
         ""
       )}
+      {/* Webmentions — inbound backlinks and reactions from other
+          sites (and, via Bridgy, from Bluesky / Mastodon). Displayed
+          in two groups: compact reactions (likes / reposts) as an
+          avatar strip, and conversational (replies / mentions) as
+          full quote cards. Only verified mentions show up. */}
+      {(compact.length > 0 || conversational.length > 0) ? (
+        <>
+          <style>{`
+            .wm { margin: 24px 0 8px; }
+            .wm__section {
+              background: #fff;
+              border: 1px solid #979997;
+              border-radius: 4px;
+              margin-bottom: 12px;
+              overflow: hidden;
+            }
+            .wm__head {
+              background: #eee;
+              padding: 8px 12px;
+              font: 600 12px 'PGM Sans', sans-serif;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+              color: #506982;
+              border-bottom: 1px solid #979997;
+            }
+            .wm__body { padding: 10px 12px; }
+            .wm__facepile { display: flex; flex-wrap: wrap; gap: 6px; }
+            .wm__face,
+            .wm__face:visited {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 32px; height: 32px;
+              border-radius: 50%;
+              background: #ddd;
+              overflow: hidden;
+              color: #506982;
+              text-decoration: none;
+              font-size: 12px;
+            }
+            .wm__face img { width: 100%; height: 100%; object-fit: cover; }
+            .wm__reply {
+              display: flex; gap: 10px;
+              padding: 10px 0;
+              border-bottom: 1px solid #f0f0f0;
+            }
+            .wm__reply:last-child { border-bottom: 0; }
+            .wm__reply__avatar {
+              width: 40px; height: 40px; border-radius: 50%;
+              background: #ddd; overflow: hidden; flex-shrink: 0;
+            }
+            .wm__reply__avatar img { width: 100%; height: 100%; object-fit: cover; }
+            .wm__reply__body { flex: 1; min-width: 0; }
+            .wm__reply__head {
+              display: flex; align-items: baseline; gap: 8px;
+              font-size: 13px; margin-bottom: 4px;
+            }
+            .wm__reply__name { font-weight: 600; color: #506982; }
+            .wm__reply__source,
+            .wm__reply__source:visited {
+              margin-left: auto;
+              font-size: 11px;
+              color: #888;
+              text-decoration: none;
+            }
+            .wm__reply__source:hover { color: #4A6CBA; }
+            .wm__reply__content {
+              font-size: 14px; line-height: 1.5; color: #333;
+              word-break: break-word;
+            }
+            [data-theme="dark"] .wm__section {
+              background: #1a2028; border-color: #2a3543;
+            }
+            [data-theme="dark"] .wm__head {
+              background: #232b36; color: #a1b5c9; border-color: #2a3543;
+            }
+            [data-theme="dark"] .wm__reply { border-color: #232b36; }
+            [data-theme="dark"] .wm__reply__name { color: #a1b5c9; }
+            [data-theme="dark"] .wm__reply__content { color: #e5e7eb; }
+            [data-theme="dark"] .wm__reply__source { color: #94a3b8; }
+            [data-theme="dark"] .wm__face { background: #2a3543; color: #a1b5c9; }
+          `}</style>
+          <div className="wm">
+            {compact.length > 0 ? (
+              <div className="wm__section">
+                <div className="wm__head">
+                  {compact.length} {compact.length === 1 ? "reaction" : "reactions"}
+                </div>
+                <div className="wm__body">
+                  <div className="wm__facepile">
+                    {compact.map((w) => {
+                      const label = wmTypeLabel(w.meta?.type);
+                      const name = w.meta?.authorName || wmHost(w.source);
+                      const title = `${name} ${label} — ${wmHost(w.source)}`;
+                      return (
+                        <a
+                          key={w._id}
+                          className="wm__face"
+                          href={w.source}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={title}
+                        >
+                          {w.meta?.authorPhoto ? (
+                            <img src={w.meta.authorPhoto} alt="" />
+                          ) : (
+                            <span>{(name[0] || "?").toUpperCase()}</span>
+                          )}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {conversational.length > 0 ? (
+              <div className="wm__section">
+                <div className="wm__head">
+                  {conversational.length} mention{conversational.length === 1 ? "" : "s"} from other sites
+                </div>
+                <div className="wm__body">
+                  {conversational.map((w) => {
+                    const name = w.meta?.authorName || wmHost(w.source);
+                    return (
+                      <div key={w._id} className="wm__reply">
+                        <div className="wm__reply__avatar">
+                          {w.meta?.authorPhoto ? (
+                            <img src={w.meta.authorPhoto} alt="" />
+                          ) : null}
+                        </div>
+                        <div className="wm__reply__body">
+                          <div className="wm__reply__head">
+                            {w.meta?.authorUrl ? (
+                              <a
+                                href={w.meta.authorUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="wm__reply__name"
+                              >
+                                {name}
+                              </a>
+                            ) : (
+                              <span className="wm__reply__name">{name}</span>
+                            )}
+                            <a
+                              href={w.source}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="wm__reply__source"
+                            >
+                              {wmTypeLabel(w.meta?.type)} · {wmHost(w.source)}
+                              {w.meta?.publishedAt ? ` · ${wmDate(w.meta.publishedAt)}` : ""}
+                            </a>
+                          </div>
+                          <div className="wm__reply__content">
+                            {w.meta?.content || w.meta?.title || wmHost(w.source)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </>
+      ) : null}
+
       {/* Related posts — internal linking that helps Google map the
           site's topical structure AND gives readers a next click.
           Rendered as a short simple list (styled like other admin

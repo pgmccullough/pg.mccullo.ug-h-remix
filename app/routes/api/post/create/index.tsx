@@ -114,6 +114,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }).catch((err) => {
           console.error("[seo-meta] deferred kickoff failed:", err);
         });
+
+        // Webmentions: parse external links in the new post and send
+        // outgoing mentions to their sites. Own function budget (link
+        // discovery + fan-out can take a while).
+        void fetch(`${origin}/api/webmention/send`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Internal-Token": internalToken,
+          },
+          body,
+        }).catch((err) => {
+          console.error("[webmention] send kickoff failed:", err);
+        });
       }
 
       // Cross-post to Bluesky (if credentials are set). Best-effort —

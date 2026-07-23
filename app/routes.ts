@@ -142,6 +142,9 @@ export default [
 
     route("visitor/relabel", "routes/api/visitor/relabel/index.ts"),
 
+    route("webmention", "routes/api/webmention/index.ts"),
+    route("webmention/send", "routes/api/webmention/send/index.ts"),
+
     route("friends/thread-replies", "routes/api/friends/thread-replies/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)

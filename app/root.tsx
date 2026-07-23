@@ -96,6 +96,10 @@ export const meta: MetaFunction = () => [
   { tagName: "link", rel: "me", href: "https://beige.party/@mycotropic" },
   { tagName: "link", rel: "me", href: "https://github.com/pgmccullough" },
 
+  // Webmention endpoint discovery — other IndieWeb sites + Bridgy
+  // read this <link rel> tag to know where to send mentions.
+  { tagName: "link", rel: "webmention", href: "https://pg.mccullo.ug/api/webmention" },
+
   // Site-wide WebSite JSON-LD. No SearchAction — the site's search
   // is a POST-based fetcher, not a GET URL Google can invoke; add
   // that later if we want a Sitelinks Search Box.
