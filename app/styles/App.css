@@ -791,6 +791,89 @@ button {
   background: #eee;
   padding: 4px;
 }
+/* Tag chips row: sits between post body and the meta bar. Renders
+   LLM-generated (or manually curated) tags as small pill links to
+   the per-tag feed page /h/tag/:tag. Also serves as h-entry
+   p-category microformats markup for IndieWeb parsers. */
+.postcard__content__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px 4px;
+}
+.postcard__tag-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #506982;
+  font-size: 11px;
+  line-height: 1.6;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.postcard__tag-chip:hover {
+  background: #dde5ef;
+  color: #2f4665;
+}
+[data-theme="dark"] .postcard__tag-chip {
+  background: #2a2a2a;
+  color: #9db3d0;
+}
+[data-theme="dark"] .postcard__tag-chip:hover {
+  background: #3a3a3a;
+  color: #c0d3ee;
+}
+/* Tag feed page header: renders above the h-entry list at
+   /h/tag/:tag. Modest — tag name, post count, related tags for
+   lateral navigation. */
+.tag-feed__header {
+  padding: 8px 12px 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e6e6e6;
+}
+.tag-feed__crumbs {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+.tag-feed__crumbs a {
+  color: #4A6CBA;
+  text-decoration: none;
+}
+.tag-feed__title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 4px 0 2px;
+  color: #333;
+}
+.tag-feed__count {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 8px;
+}
+.tag-feed__related {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag-feed__related-label {
+  font-size: 12px;
+  color: #888;
+  margin-right: 2px;
+}
+[data-theme="dark"] .tag-feed__header {
+  border-bottom-color: #333;
+}
+[data-theme="dark"] .tag-feed__title {
+  color: #e6e6e6;
+}
+[data-theme="dark"] .tag-feed__count,
+[data-theme="dark"] .tag-feed__related-label,
+[data-theme="dark"] .tag-feed__crumbs {
+  color: #999;
+}
 .postcard__select {
   width: 90%;
   margin: 0 auto 0.5rem;

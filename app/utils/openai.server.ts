@@ -31,11 +31,15 @@ export function openAiConfigured(): boolean {
 
 const SEO_META_PROMPT = [
   "You'll receive the plain text of a personal blog post.",
-  "Return JSON with exactly two fields:",
+  "Return JSON with exactly three fields:",
   "  slug: a URL slug — 3 to 6 lowercase words, hyphen-separated, no punctuation, no filler words,",
   "        no numbers unless meaningful. Should read like a phrase describing the topic.",
   "  description: a meta description — max 150 characters, one sentence, factual, no clickbait,",
   "        no phrases like \"this post is about\", written as a summary of the post's topic.",
+  "  tags: an array of 1 to 4 topical tags — each tag is one lowercase word or two words",
+  "        joined by a hyphen. Pick broad reusable topics (e.g. \"music\", \"new-york\",",
+  "        \"programming\", \"writing\", \"family\"), NOT hyper-specific per-post nouns.",
+  "        Skip generic filler like \"post\", \"blog\", \"personal\", \"life\".",
 ].join(" ");
 
 /**
@@ -69,18 +73,58 @@ function sanitizeDescription(raw: string): string | null {
   return s;
 }
 
+// Blocklist of tags too generic to be useful. If the model returns any
+// of these, drop them silently — they'd cluster everything into one
+// undifferentiated bucket, defeating the point.
+const TAG_BLOCKLIST = new Set([
+  "post", "posts", "blog", "personal", "life", "misc", "miscellaneous",
+  "general", "notes", "note", "update", "updates", "thoughts", "diary",
+  "journal", "daily", "random", "stuff", "things",
+]);
+
 /**
- * Ask the model to write a slug and a meta description for a post
- * from its stripped body text. Returns { slug, description } on
- * success, or null if the model / network / parse failed.
+ * Sanitize an array of LLM-produced tags into a de-duplicated,
+ * URL-safe list. Filters blocklist entries and enforces basic shape
+ * rules. Returns [] rather than null so callers can `??` safely.
+ */
+function sanitizeTags(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    let t = item
+      .toLowerCase()
+      .replace(/[‘’“”"']/g, "")
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    if (!t || t.length < 2 || t.length > 32) continue;
+    if (/^[0-9-]+$/.test(t)) continue;
+    if (TAG_BLOCKLIST.has(t)) continue;
+    if (seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+    if (out.length >= 4) break;
+  }
+  return out;
+}
+
+/**
+ * Ask the model to write a slug, meta description, and topical tags
+ * for a post from its stripped body text. Returns the sanitized trio
+ * on success, or null if the model / network / parse failed.
  *
  * Uses JSON mode so we get parseable structured output. Cheap: one
- * gpt-4o-mini call, ~250 tokens round trip.
+ * gpt-4o-mini call, ~300 tokens round trip. Tags come back sanitized
+ * (blocklist filtered, deduped) — an empty tags array is legit and
+ * means the sanitizer discarded everything the model proposed.
  */
 export async function generateSeoMeta(args: {
   content: string;
   timeoutMs?: number;
-}): Promise<{ slug: string; description: string } | null> {
+}): Promise<{ slug: string; description: string; tags: string[] } | null> {
   if (!openAiConfigured()) return null;
   const body = args.content.trim();
   if (!body) return null;
@@ -97,7 +141,7 @@ export async function generateSeoMeta(args: {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 220,
+        max_tokens: 260,
         temperature: 0.3,
         response_format: { type: "json_object" },
         messages: [
@@ -123,8 +167,9 @@ export async function generateSeoMeta(args: {
     try { parsed = JSON.parse(raw); } catch { return null; }
     const slug = sanitizeSlug(parsed?.slug ?? "");
     const description = sanitizeDescription(parsed?.description ?? "");
+    const tags = sanitizeTags(parsed?.tags);
     if (!slug || !description) return null;
-    return { slug, description };
+    return { slug, description, tags };
   } catch (err) {
     console.error("[openai] seo-meta exception:", err);
     return null;

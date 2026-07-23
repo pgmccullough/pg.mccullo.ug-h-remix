@@ -162,21 +162,26 @@ export const PostCard: React.FC<{
       };
     }, [mediaSlides.currentSlide, mediaSlides.itemLength]);
 
+    // Canonical permalink URL — reused for both the on-page Link and
+    // for h-entry's u-url / u-uid microformats.
+    const permalinkPath = post?.seoMeta?.slug
+      ? `/h/post/${post._id}/${encodeURIComponent(post.seoMeta.slug)}`
+      : `/h/post/${post._id}`;
+
     return (
-      (<article 
-        className="postcard"
+      // h-entry: Microformats2 markup so IndieWeb parsers (Bridgy,
+      // microformats.io, etc.) can extract post metadata. Silent to
+      // human readers — none of these classes carry visual styling.
+      (<article
+        className="postcard h-entry"
         key={post._id}
       >
         <div className="postcard__time">
           <Link
-            className="postcard__time__link"
-            to={
-              post?.seoMeta?.slug
-                ? `/h/post/${post._id}/${encodeURIComponent(post.seoMeta.slug)}`
-                : `/h/post/${post._id}`
-            }
+            className="postcard__time__link u-url u-uid"
+            to={permalinkPath}
           >
-            {canShowDate?<time dateTime={new Date(post.created * 1000).toISOString()}>{stampToTime(post.created)}</time>:""}
+            {canShowDate?<time className="dt-published" dateTime={new Date(post.created * 1000).toISOString()}>{stampToTime(post.created)}</time>:""}
             {(() => {
               // Reading-time hint next to the timestamp for posts long
               // enough to warrant one (skip under 60 words — noise on
@@ -368,7 +373,7 @@ export const PostCard: React.FC<{
                   .reply-parent__content p { margin: 0.15rem 0; }
                 `}</style>
                 <a
-                  className="reply-parent"
+                  className="reply-parent u-in-reply-to"
                   href={parent.url || parent.authorActorUri}
                   target="_blank"
                   rel="noreferrer"
@@ -522,11 +527,42 @@ export const PostCard: React.FC<{
                     styleClass={`postcard__content-edit${bodyEditActive?"--active":""}`}
                   />
                 </div>
-                :<div className="postcard__content__text">
+                :<div className="postcard__content__text e-content">
                   <div className="fake-p" dangerouslySetInnerHTML={{__html: post.content}} />
                 </div>
               :""
             }
+            {/* h-entry meta: tag chips render both as human-facing
+                category links and as p-category microformats entries
+                Bridgy + IndieWeb readers pick up. Only public tags
+                (LLM-generated or manually edited) show here. */}
+            {Array.isArray((post as any)?.tags) && (post as any).tags.length > 0 ? (
+              <div className="postcard__content__tags">
+                {(post as any).tags.map((tag: string) => (
+                  <Link
+                    key={tag}
+                    to={`/h/tag/${encodeURIComponent(tag)}`}
+                    className="postcard__tag-chip p-category"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+            {/* h-entry microformats: hidden p-author h-card so parsers
+                have a canonical author, and u-syndication so Bridgy
+                can correlate a Bluesky reaction back to this specific
+                post (via its cross-posted AT URI). Neither renders. */}
+            <span className="mf2-hidden" style={{ display: "none" }}>
+              <a className="p-author h-card" href="https://pg.mccullo.ug/h/about">
+                Patrick Glendon McCullough
+              </a>
+              {(post as any)?.blueskyUri ? (
+                <a className="u-syndication" href={(post as any).blueskyUri}>
+                  Bluesky
+                </a>
+              ) : null}
+            </span>
             <div className="postcard__content__meta">
               {post.feedback?.likesOn
                 ?<EmojiReact

@@ -244,7 +244,18 @@ export default function Index() {
   }, [fetcher]);
 
   return (
-    <>
+    // h-feed wrapper: gives IndieWeb parsers (Bridgy, feed readers,
+    // microformats.io) a canonical feed anchor for all the h-entry
+    // PostCards inside. The hidden p-name + p-author h-card provide
+    // feed-level metadata; individual entries still carry their own
+    // p-author for single-post correctness.
+    <div className="h-feed">
+      <span style={{ display: "none" }}>
+        <data className="p-name" value="Patrick Glendon McCullough" />
+        <a className="p-author h-card" href="https://pg.mccullo.ug/h/about">
+          Patrick Glendon McCullough
+        </a>
+      </span>
       <SearchBar
         alterPostArray={alterPostArray}
         setPostSearchResults={setPostSearchResults}
@@ -319,6 +330,6 @@ export default function Index() {
       ) : (
         ""
       )}
-    </>
+    </div>
   );
 }

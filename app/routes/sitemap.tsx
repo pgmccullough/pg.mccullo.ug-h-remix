@@ -4,11 +4,14 @@
  *
  * Currently includes:
  *   - homepage (/h)
+ *   - about page (/h/about)
  *   - every published, non-draft, non-scheduled Public post
- *   - the "We Die In Every War" essay page
+ *   - one archive page per distinct tag (/h/tag/:tag)
  *
  * Uses each post's `lastEdited` timestamp for `<lastmod>` so search
- * engines can prioritize re-crawling posts you've edited.
+ * engines can prioritize re-crawling posts you've edited. Tag pages
+ * use their most-recent tagged post's timestamp so re-crawls follow
+ * the archive's actual freshness.
  */
 
 import type { LoaderFunctionArgs } from "react-router";
@@ -36,7 +39,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       privacy: "Public",
       state: { $nin: ["draft", "scheduled"] },
     })
-    .project({ _id: 1, created: 1, lastEdited: 1, seoMeta: 1 })
+    .project({ _id: 1, created: 1, lastEdited: 1, seoMeta: 1, tags: 1 })
     .sort({ created: -1 })
     .limit(5000)
     .toArray();
@@ -45,6 +48,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   urls.push({ loc: `${origin}/h`, priority: "1.0" });
   urls.push({ loc: `${origin}/h/about`, priority: "0.9" });
+
+  // Track the most-recent post per tag so each tag-page URL gets a
+  // sensible <lastmod>. Search engines use lastmod as a hint on
+  // whether to re-crawl, so tying it to the newest tagged post
+  // matches how the page actually changes.
+  const tagLastMod = new Map<string, number>();
 
   for (const p of posts) {
     const id = String(p._id);
@@ -59,6 +68,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       loc: permalink,
       lastmod: ts ? new Date(ts * 1000).toISOString() : undefined,
       priority: "0.7",
+    });
+    // Aggregate distinct tags along the way — one sort key traversal
+    // handles both the post list and the tag index.
+    const tags = Array.isArray((p as any).tags) ? (p as any).tags : [];
+    for (const t of tags) {
+      if (typeof t !== "string" || !t) continue;
+      const prev = tagLastMod.get(t) ?? 0;
+      if (ts && ts > prev) tagLastMod.set(t, ts);
+    }
+  }
+
+  // Emit one URL per distinct tag. Priority slightly below individual
+  // posts — these are archive pages, useful but not the primary
+  // destination we'd want a crawler ranking first.
+  for (const [tag, ts] of tagLastMod.entries()) {
+    urls.push({
+      loc: `${origin}/h/tag/${encodeURIComponent(tag)}`,
+      lastmod: ts ? new Date(ts * 1000).toISOString() : undefined,
+      priority: "0.5",
     });
   }
 

@@ -109,14 +109,19 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   } catch { /* never let backfill kickoff block the page render */ }
 
   // SEO meta backfill: same invisible pattern for slug + meta
-  // description. Fires when either is missing. Fully idempotent —
-  // once written, we never regenerate (URL stability).
+  // description + topical tags. Fires when any of the three is
+  // missing. Fully idempotent — once written, we never regenerate
+  // (URL stability + tag stability for permalink categorization).
   try {
     const seoMeta: any = (serialized as any)?.seoMeta ?? {};
+    const existingTags: string[] = Array.isArray((serialized as any)?.tags)
+      ? (serialized as any).tags
+      : [];
     const missingSlug = !seoMeta.slug;
     const missingDesc = !seoMeta.description;
+    const missingTags = existingTags.length === 0;
     const bodyText = String((serialized as any)?.content ?? "").replace(/<[^>]+>/g, "").trim();
-    if ((missingSlug || missingDesc) && bodyText.length > 0) {
+    if ((missingSlug || missingDesc || missingTags) && bodyText.length > 0) {
       const internalToken = process.env.INTERNAL_API_TOKEN;
       if (internalToken) {
         const origin = new URL(request.url).origin;

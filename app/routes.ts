@@ -58,6 +58,7 @@ export default [
     route("notifications", "routes/h/notifications.tsx"),
     route("drafts", "routes/h/drafts.tsx"),
     route("about", "routes/h/about.tsx"),
+    route("tag/:tag", "routes/h/tag/$tag.tsx"),
     route("visitor/:visitorId", "routes/h/visitor/$visitorId.tsx"),
     // 404 catchall for any /h/* path that doesn't match above
     route("*", "routes/h/$notFound.tsx"),

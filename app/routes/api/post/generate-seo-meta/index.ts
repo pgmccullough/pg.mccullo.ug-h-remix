@@ -60,9 +60,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!post) return Response.json({ error: "Post not found" }, { status: 404 });
 
   const existing = (post.seoMeta ?? {}) as { slug?: string; description?: string };
+  const existingTags: string[] = Array.isArray((post as any).tags)
+    ? (post as any).tags
+    : [];
   const needsSlug = !existing.slug;
   const needsDesc = !existing.description;
-  if (!needsSlug && !needsDesc) {
+  const needsTags = existingTags.length === 0;
+  if (!needsSlug && !needsDesc && !needsTags) {
     return Response.json({ ok: true, skipped: "already generated" });
   }
 
@@ -76,18 +80,28 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return Response.json({ ok: false, error: "generation failed" });
   }
 
-  const merged = {
+  const mergedMeta = {
     // Never overwrite an existing slug — idempotent for URL stability.
     slug: existing.slug ?? generated.slug,
     // Same for description (edits could refresh, but by default keep).
     description: existing.description ?? generated.description,
   };
+  // Tags follow the same idempotent rule: once an author-visible tag
+  // set exists, don't clobber it with fresh LLM output on next backfill.
+  const mergedTags = needsTags ? generated.tags : existingTags;
+
+  const setFields: Record<string, unknown> = { seoMeta: mergedMeta };
+  if (needsTags && mergedTags.length > 0) {
+    setFields.tags = mergedTags;
+  }
 
   await col.updateOne(
     { _id: new ObjectId(postId) },
-    { $set: { seoMeta: merged } }
+    { $set: setFields }
   );
 
-  console.log(`[seo-meta] post ${postId}: slug="${merged.slug}"`);
-  return Response.json({ ok: true, seoMeta: merged });
+  console.log(
+    `[seo-meta] post ${postId}: slug="${mergedMeta.slug}", tags=[${mergedTags.join(",")}]`
+  );
+  return Response.json({ ok: true, seoMeta: mergedMeta, tags: mergedTags });
 };
