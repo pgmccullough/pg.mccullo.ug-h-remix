@@ -139,8 +139,8 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   // site-name suffix on this article via appendSiteName:false since
   // og:site_name already carries site attribution.
   const excerptTitle = stripHtml(post.content, 55) || "Post";
-  // Description gets its own 155-char cap inside buildMeta.
-  const bodyText = stripHtml(post.content, 155);
+  // buildMeta caps to 125 internally; we still pre-strip HTML.
+  const bodyText = stripHtml(post.content, 125);
   // OG image: first attached image if present; otherwise fall back to
   // the site default (buildMeta handles that). No dynamic /api/og for
   // now — that path was returning invalid content.

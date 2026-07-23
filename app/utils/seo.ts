@@ -57,11 +57,12 @@ export function stripHtml(input?: string, max = 220): string {
 export function buildMeta(args: BuildMetaArgs): Array<Record<string, any>> {
   const url = toAbs(args.path)!;
   const image = toAbs(args.image ?? DEFAULT_OG_IMAGE)!;
-  // Cap description at 155 chars for Google + 200 for X. We take the
-  // stricter cap since a single description string is used for both.
+  // 125-char cap keeps us safely inside mobile social preview truncation
+  // as well as Google SERP + X limits. One length that works everywhere
+  // is easier than juggling per-tag caps.
   const rawDescription = args.description ?? "";
-  const description = rawDescription.length > 155
-    ? rawDescription.slice(0, 154).trimEnd() + "…"
+  const description = rawDescription.length > 125
+    ? rawDescription.slice(0, 124).trimEnd() + "…"
     : rawDescription;
   const ogType = args.ogType ?? "website";
   const appendSite = args.appendSiteName ?? true;

@@ -152,8 +152,27 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
       ? obj.Body
       : Readable.from(obj.Body as AsyncIterable<Uint8Array>);
 
+  // Content-Type: prefer whatever S3 stamped on upload, but many older
+  // uploads have no ContentType or a generic application/octet-stream.
+  // Fall back to a sensible guess from the file extension so image /
+  // video / audio scrapers accept the response.
+  const ext = keyToServe.split(".").pop()?.toLowerCase() ?? "";
+  const extToMime: Record<string, string> = {
+    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+    gif: "image/gif", webp: "image/webp", avif: "image/avif",
+    svg: "image/svg+xml", bmp: "image/bmp",
+    mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm",
+    m4v: "video/x-m4v",
+    mp3: "audio/mpeg", ogg: "audio/ogg", m4a: "audio/mp4", wav: "audio/wav",
+    pdf: "application/pdf",
+  };
+  const guessed = extToMime[ext];
+  const sourceCT = obj.ContentType && obj.ContentType !== "application/octet-stream"
+    ? obj.ContentType
+    : undefined;
+  const finalCT = sourceCT ?? guessed ?? "application/octet-stream";
   const headers = new Headers();
-  if (obj.ContentType) headers.set("Content-Type", obj.ContentType);
+  headers.set("Content-Type", finalCT);
   if (obj.ContentLength) headers.set("Content-Length", String(obj.ContentLength));
   if (obj.ETag) headers.set("ETag", obj.ETag);
   // Always advertise Range support so the browser knows it can seek.
