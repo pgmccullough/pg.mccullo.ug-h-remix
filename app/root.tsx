@@ -100,6 +100,29 @@ export const meta: MetaFunction = () => [
   // read this <link rel> tag to know where to send mentions.
   { tagName: "link", rel: "webmention", href: "https://pg.mccullo.ug/api/webmention" },
 
+  // Micropub + IndieAuth discovery — lets IndieWeb clients (Quill,
+  // Indigenous, iA Writer, micro.blog) find the auth + publishing
+  // endpoints without configuration. `indieauth-metadata` is the
+  // modern discovery mechanism (IndieAuth 2022-02-12); the individual
+  // authorization_endpoint / token_endpoint links stay for older
+  // clients that don't fetch the metadata document.
+  {
+    tagName: "link",
+    rel: "indieauth-metadata",
+    href: "https://pg.mccullo.ug/api/indieauth/metadata",
+  },
+  {
+    tagName: "link",
+    rel: "authorization_endpoint",
+    href: "https://pg.mccullo.ug/api/indieauth/authorize",
+  },
+  {
+    tagName: "link",
+    rel: "token_endpoint",
+    href: "https://pg.mccullo.ug/api/indieauth/token",
+  },
+  { tagName: "link", rel: "micropub", href: "https://pg.mccullo.ug/api/micropub" },
+
   // Site-wide WebSite JSON-LD. No SearchAction — the site's search
   // is a POST-based fetcher, not a GET URL Google can invoke; add
   // that later if we want a Sitelinks Search Box.

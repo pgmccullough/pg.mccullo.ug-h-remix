@@ -146,6 +146,12 @@ export default [
     route("webmention", "routes/api/webmention/index.ts"),
     route("webmention/send", "routes/api/webmention/send/index.ts"),
 
+    // Micropub + IndieAuth (IndieWeb publishing endpoints).
+    route("indieauth/metadata", "routes/api/indieauth/metadata.ts"),
+    route("indieauth/authorize", "routes/api/indieauth/authorize.tsx"),
+    route("indieauth/token", "routes/api/indieauth/token.ts"),
+    route("micropub", "routes/api/micropub/index.ts"),
+
     route("friends/thread-replies", "routes/api/friends/thread-replies/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)
