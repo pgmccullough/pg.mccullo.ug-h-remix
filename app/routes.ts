@@ -140,6 +140,8 @@ export default [
     route("push/subscribe", "routes/api/push/subscribe/index.ts"),
     route("push/unsubscribe", "routes/api/push/unsubscribe/index.ts"),
 
+    route("visitor/relabel", "routes/api/visitor/relabel/index.ts"),
+
     route("friends/thread-replies", "routes/api/friends/thread-replies/index.ts"),
 
     // OAuth (Google / GitHub / Mastodon)

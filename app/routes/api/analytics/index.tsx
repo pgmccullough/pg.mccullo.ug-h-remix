@@ -192,7 +192,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           // phone in your pocket). Best-effort, fire-and-forget so a
           // slow push service can't slow down the analytics response.
           if (pushConfigured()) {
+            // Precedence matches the SiteActivity widget's identity()
+            // and the visitor detail page's identityLabel() so the
+            // notification name matches what you see in the drawer.
             const identity =
+              serializable.manualLabel ||
               serializable.lastUserName ||
               serializable.user?.find((u: any) => u?.user_name)?.user_name ||
               "anon";

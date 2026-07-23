@@ -7,6 +7,8 @@ interface VisitorDoc {
   lastSeen?: number;
   lastIpData?: any;
   lastUserName?: string | null;
+  /** Admin-assigned label — overrides all other name sources when set. */
+  manualLabel?: string | null;
   ipData?: any[];
   ip?: string[];
   user?: Array<{ id?: string; user_name?: string } | null>;
@@ -67,6 +69,10 @@ function whenLabel(ms?: number): string {
 }
 
 function identity(visitor: VisitorDoc): string {
+  // Manual admin-assigned label wins over automatic detection —
+  // lets Patrick call an anon "Mom" or "Googlebot" once and have
+  // it stick.
+  if ((visitor as any).manualLabel) return String((visitor as any).manualLabel);
   if (visitor.lastUserName) return visitor.lastUserName;
   const u = visitor.user?.find((x) => x?.user_name)?.user_name;
   if (u) return u;

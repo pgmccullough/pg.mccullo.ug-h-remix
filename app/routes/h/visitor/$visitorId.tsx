@@ -6,7 +6,14 @@
  * full history table. Clickable from each row in Recent visitors.
  */
 
-import { Link, redirect, useLoaderData } from "react-router";
+import { useEffect } from "react";
+import {
+  Link,
+  redirect,
+  useFetcher,
+  useLoaderData,
+  useRevalidator,
+} from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 
 import { getUser } from "~/utils/session.server";
@@ -38,6 +45,8 @@ interface VisitorDoc {
   lastTimezone?: string | null;
   languages?: string[];
   lastLanguage?: string | null;
+  /** Admin-assigned label overriding the automatic name display. */
+  manualLabel?: string | null;
   history?: HistoryEntry[];
 }
 
@@ -71,6 +80,7 @@ function fmtDate(ms?: number): string {
 }
 
 function identityLabel(v: VisitorDoc): string {
+  if (v.manualLabel) return v.manualLabel;
   if (v.lastUserName) return v.lastUserName;
   const u = v.user?.find((x) => x?.user_name)?.user_name;
   return u || "anon";
@@ -114,6 +124,17 @@ export default function VisitorDetail() {
     .map((d) => placeLabel(d))
     .filter((x, i, arr) => x && arr.indexOf(x) === i); // unique in order
   const totalVisits = v.history?.length ?? 0;
+
+  // Label editor — admin submits to /api/visitor/relabel; on success
+  // we revalidate the loader so the new name replaces the old h1 +
+  // pill without a hard refresh.
+  const labelFetcher = useFetcher<{ ok?: boolean; label?: string; cleared?: boolean }>();
+  const revalidator = useRevalidator();
+  useEffect(() => {
+    if (labelFetcher.state === "idle" && labelFetcher.data?.ok) {
+      revalidator.revalidate();
+    }
+  }, [labelFetcher.state, labelFetcher.data]);
 
   return (
     <>
@@ -191,6 +212,77 @@ export default function VisitorDetail() {
           {" · "}first seen {fmtDate(v.firstSeen)}
           {" · "}last seen {fmtDate(v.lastSeen)}
         </div>
+
+        {/* Label editor — admin picks a friendly name for this visitor
+            (e.g. "Mom", "Googlebot", "roomate on the wifi"). Persists
+            in Mongo, wins over lastUserName / "anon" everywhere. */}
+        <div style={{
+          background: "#fff",
+          border: "1px solid #979997",
+          borderRadius: 4,
+          padding: 10,
+          margin: "6px 0 14px",
+        }} className="vd__label-editor">
+          <labelFetcher.Form
+            method="post"
+            action="/api/visitor/relabel"
+            style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}
+          >
+            <input type="hidden" name="visitorId" value={v._id} />
+            <label style={{ fontSize: 13, color: "#506982", fontWeight: 600 }}>
+              Label:
+            </label>
+            <input
+              type="text"
+              name="label"
+              defaultValue={v.manualLabel ?? ""}
+              maxLength={60}
+              placeholder="e.g. Mom, Googlebot, roommate"
+              style={{
+                flex: 1,
+                minWidth: 180,
+                padding: "4px 8px",
+                border: "1px solid #979997",
+                borderRadius: 4,
+                fontFamily: "'PGM Sans', sans-serif",
+                fontSize: 13,
+              }}
+            />
+            <button
+              type="submit"
+              disabled={labelFetcher.state !== "idle"}
+              style={{
+                padding: "6px 14px",
+                background: "#4A6CBA",
+                color: "#fff",
+                border: 0,
+                borderRadius: 4,
+                cursor: labelFetcher.state !== "idle" ? "default" : "pointer",
+                font: "600 12px 'PGM Sans', sans-serif",
+                height: "auto",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {labelFetcher.state !== "idle" ? "Saving…" : "Save"}
+            </button>
+            {v.manualLabel ? (
+              <span style={{ fontSize: 11, color: "#888" }}>
+                Leave blank + Save to clear
+              </span>
+            ) : null}
+          </labelFetcher.Form>
+        </div>
+        <style>{`
+          [data-theme="dark"] .vd__label-editor {
+            background: #1a2028 !important;
+            border-color: #2a3543 !important;
+          }
+          [data-theme="dark"] .vd__label-editor input[type="text"] {
+            background: #232b36;
+            color: #e5e7eb;
+            border-color: #2a3543;
+          }
+        `}</style>
 
         <h2>Identity</h2>
         <div className="vd__section">
