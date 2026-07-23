@@ -27,6 +27,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     "Disallow: /nodeinfo/",
     "",
     `Sitemap: ${origin}/sitemap.xml`,
+    `Sitemap: ${origin}/video-sitemap.xml`,
     "",
   ].join("\n");
 

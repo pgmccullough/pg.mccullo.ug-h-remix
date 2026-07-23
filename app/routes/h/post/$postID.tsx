@@ -11,7 +11,7 @@ import {
   getRemoteActors,
 } from "~/utils/federation-inbox-posts.server";
 import * as gtag from "~/utils/gtags.client";
-import { blogPostingJsonLd, buildMeta, stripHtml, SEO_CONST } from "~/utils/seo";
+import { blogPostingJsonLd, buildMeta, stripHtml, SEO_CONST, wordCount } from "~/utils/seo";
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { postID = "", slug: urlSlug } = params;
@@ -35,11 +35,10 @@ export const loader: LoaderFunction = async ({ params, request }) => {
       .toArray();
   }
   if (!post) {
-    throw new Response(JSON.stringify({ user, siteData }), {
-      status: 404,
-      statusText:
-        "Sorry, this page either doesn't exist (check the spelling in the URL?) or maybe it does and you're just not allowed to see it...",
-    });
+    // Redirect through the rich /h/* catchall so the visitor gets a
+    // recovery page with recent posts instead of a raw ErrorBoundary.
+    // Preserves the missing URL in the address bar via a soft path.
+    throw redirect(`/h/_missing?from=${encodeURIComponent(`/h/post/${postID}`)}`);
   }
   const serialized = serializeDoc(post);
 
@@ -219,8 +218,28 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
       image,
       publishedIso,
       modifiedIso,
+      wordCount: wordCount(post.content),
     }),
   });
+
+  // Preload the OG/hero image so the browser starts fetching it
+  // before the HTML is parsed — improves LCP (Largest Contentful
+  // Paint), which is one of the Core Web Vitals Google uses in
+  // ranking. Only preload when there's a real attached image (not
+  // the default site icon fallback).
+  if (image && firstImg) {
+    // Full-resolution image URL for the actual render, not the ?og=1
+    // cropped version we serve to scrapers.
+    const heroSrc = `${SEO_CONST.SITE_URL}/api/media/images/${firstImg}`;
+    descriptors.push({
+      tagName: "link",
+      rel: "preload",
+      as: "image",
+      href: heroSrc,
+      // fetchpriority hint for browsers that honor it (Chrome, Safari)
+      fetchpriority: "high",
+    });
+  }
 
   // BreadcrumbList JSON-LD — surfaces breadcrumbs in Google's SERP
   // entry ("pg.mccullo.ug › July 2019 › Do any places…") which reads

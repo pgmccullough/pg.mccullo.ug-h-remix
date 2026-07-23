@@ -34,6 +34,29 @@ function toAbs(u?: string): string | undefined {
   return `${SITE_URL}/${u}`;
 }
 
+/**
+ * Word count of a stripped-HTML body. Cheap and generous with word
+ * boundaries so weird formatting (line breaks, punctuation) doesn't
+ * throw it off dramatically.
+ */
+export function wordCount(html?: string): number {
+  if (!html) return 0;
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return 0;
+  return text.split(/\s+/).length;
+}
+
+/**
+ * "N min read" style estimate. 220 wpm is a common blog-reading
+ * baseline used across Medium, Substack, and similar tools.
+ */
+export function readingTimeLabel(html?: string): string {
+  const n = wordCount(html);
+  if (!n) return "";
+  const min = Math.max(1, Math.round(n / 220));
+  return `${min} min read`;
+}
+
 export function stripHtml(input?: string, max = 220): string {
   if (!input) return "";
   const stripped = input
@@ -120,6 +143,7 @@ export function blogPostingJsonLd(args: {
   image?: string;
   publishedIso?: string;
   modifiedIso?: string;
+  wordCount?: number;
 }) {
   return {
     "@context": "https://schema.org",
@@ -141,6 +165,7 @@ export function blogPostingJsonLd(args: {
     },
     ...(args.publishedIso ? { datePublished: args.publishedIso } : {}),
     ...(args.modifiedIso ? { dateModified: args.modifiedIso } : {}),
+    ...(args.wordCount && args.wordCount > 0 ? { wordCount: args.wordCount } : {}),
   };
 }
 

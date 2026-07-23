@@ -1,18 +1,46 @@
 import { useState } from "react";
 import type { MetaFunction } from "react-router";
-import { blogPostingJsonLd, buildMeta } from "~/utils/seo";
+import { buildMeta, SEO_CONST } from "~/utils/seo";
 
 export const meta: MetaFunction = () => {
   const title = "We Die in Every War";
   const description =
     "A Supernatural Horror by Patrick Glendon McCullough. A book-length poem in the mode of a mid-century pulp paperback.";
   const path = "/h/writing/we-die-in-every-war";
+  // Book schema (not BlogPosting) — this is a long-form work with a
+  // canonical title, not a blog post. Book lets Google potentially
+  // surface it in book / literary search variants.
   return buildMeta({
     title,
     description,
     path,
     ogType: "article",
-    jsonLd: blogPostingJsonLd({ title, description, url: path }),
+    appendSiteName: true,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "Book",
+      name: title,
+      alternateName: "A Supernatural Horror",
+      description,
+      inLanguage: "en",
+      bookFormat: "https://schema.org/EBook",
+      url: `${SEO_CONST.SITE_URL}${path}`,
+      author: {
+        "@type": "Person",
+        name: SEO_CONST.AUTHOR_NAME,
+        url: SEO_CONST.SITE_URL,
+      },
+      publisher: {
+        "@type": "Person",
+        name: SEO_CONST.AUTHOR_NAME,
+        url: SEO_CONST.SITE_URL,
+      },
+      genre: "Poetry",
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": `${SEO_CONST.SITE_URL}${path}`,
+      },
+    },
   });
 };
 

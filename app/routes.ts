@@ -29,6 +29,7 @@ export default [
   // reference the current origin and pull live data from Mongo.
   route("robots.txt", "routes/robots.tsx"),
   route("sitemap.xml", "routes/sitemap.tsx"),
+  route("video-sitemap.xml", "routes/video-sitemap.xml.tsx"),
   route("feed.xml", "routes/feed.xml.tsx"),
   route("feed.json", "routes/feed.json.tsx"),
 
@@ -57,6 +58,7 @@ export default [
     route("friends", "routes/h/friends.tsx"),
     route("notifications", "routes/h/notifications.tsx"),
     route("drafts", "routes/h/drafts.tsx"),
+    route("about", "routes/h/about.tsx"),
     route("visitor/:visitorId", "routes/h/visitor/$visitorId.tsx"),
     // 404 catchall for any /h/* path that doesn't match above
     route("*", "routes/h/$notFound.tsx"),

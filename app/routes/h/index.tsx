@@ -24,6 +24,41 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .toArray();
   let posts;
 
+  // ?q=... turns the home feed into a search result page. Powers
+  // Google's Sitelinks Search Box (declared in root JSON-LD's
+  // SearchAction) — visitors clicking the SERP search box land here
+  // directly with results already loaded.
+  const url = new URL(request.url);
+  const searchQ = url.searchParams.get("q")?.trim() ?? "";
+  if (searchQ.length > 0) {
+    const isAdmin = user?.role === "administrator";
+    const searchFilter: any = {
+      $text: { $search: searchQ },
+      state: { $nin: ["draft", "scheduled"] },
+    };
+    if (!isAdmin) searchFilter.privacy = "Public";
+    try {
+      const results = await db
+        .collection("myPosts")
+        .find(searchFilter)
+        .project({ score: { $meta: "textScore" } })
+        .sort({ score: { $meta: "textScore" } })
+        .limit(25)
+        .toArray();
+      return {
+        onThisDay: [],
+        posts: serializeDocs(results ?? []),
+        parentsByUri: {},
+        siteData: { ...siteData[0] },
+        user,
+        searchQ,
+      };
+    } catch (err) {
+      console.error("[/h search] failed:", err);
+      // Fall through to normal feed on search error rather than 500ing.
+    }
+  }
+
   /* On This Day Calculations */
   let onThisDay;
   const date = new Date();

@@ -107,6 +107,18 @@ export const meta: MetaFunction = () => [
       url: "https://pg.mccullo.ug/",
       description:
         "Personal site of Patrick Glendon McCullough — writing, notes, and dispatches from St. Mark's Place.",
+      // Sitelinks Search Box: Google (when eligible) renders a small
+      // search box beneath the homepage's SERP entry that invokes
+      // this URL template directly. /h?q=... runs a Mongo text search
+      // and returns the feed of matching posts.
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: "https://pg.mccullo.ug/h?q={search_term_string}",
+        },
+        "query-input": "required name=search_term_string",
+      },
       author: {
         "@type": "Person",
         name: "Patrick Glendon McCullough",

@@ -177,6 +177,21 @@ export const PostCard: React.FC<{
             }
           >
             {canShowDate?<time dateTime={new Date(post.created * 1000).toISOString()}>{stampToTime(post.created)}</time>:""}
+            {(() => {
+              // Reading-time hint next to the timestamp for posts long
+              // enough to warrant one (skip under 60 words — noise on
+              // short posts). Uses 220 wpm baseline.
+              if (!post.content) return null;
+              const stripped = String(post.content).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+              const words = stripped ? stripped.split(/\s+/).length : 0;
+              if (words < 60) return null;
+              const mins = Math.max(1, Math.round(words / 220));
+              return (
+                <span style={{ marginLeft: 8, color: "#888", fontSize: 12 }}>
+                  · {mins} min read
+                </span>
+              );
+            })()}
           </Link>
           <div style={{display: "flex"}}>
             {user?.role==="administrator"
