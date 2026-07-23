@@ -233,6 +233,10 @@ export default function VisitorDetail() {
               Label:
             </label>
             <input
+              // key ensures React unmounts + remounts on visitor change
+              // so defaultValue is respected — otherwise the field
+              // sticks to the last visitor's typed value.
+              key={v._id}
               type="text"
               name="label"
               defaultValue={v.manualLabel ?? ""}
