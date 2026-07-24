@@ -53,11 +53,15 @@ export default [
     // handles canonical redirect from bare-id → slug'd form when the
     // post has an LLM-generated slug on it.
     route("post/:postID", "routes/h/post/$postID.tsx", { id: "post-bare" }),
+    route("post/:postID/analytics", "routes/h/post/$postID.analytics.tsx"),
     route("post/:postID/:slug", "routes/h/post/$postID.tsx", { id: "post-slugged" }),
     route("friends", "routes/h/friends.tsx"),
     route("notifications", "routes/h/notifications.tsx"),
     route("drafts", "routes/h/drafts.tsx"),
     route("about", "routes/h/about.tsx"),
+    route("archive", "routes/h/archive/index.tsx"),
+    route("archive/:year", "routes/h/archive/$year.tsx"),
+    route("archive/:year/:month", "routes/h/archive/$year.$month.tsx"),
     route("tag/:tag", "routes/h/tag/$tag.tsx"),
     route("visitor/:visitorId", "routes/h/visitor/$visitorId.tsx"),
     // 404 catchall for any /h/* path that doesn't match above

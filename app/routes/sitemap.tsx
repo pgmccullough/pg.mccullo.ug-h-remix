@@ -48,12 +48,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   urls.push({ loc: `${origin}/h`, priority: "1.0" });
   urls.push({ loc: `${origin}/h/about`, priority: "0.9" });
+  urls.push({ loc: `${origin}/h/archive`, priority: "0.6" });
 
-  // Track the most-recent post per tag so each tag-page URL gets a
-  // sensible <lastmod>. Search engines use lastmod as a hint on
-  // whether to re-crawl, so tying it to the newest tagged post
-  // matches how the page actually changes.
+  // Track the most-recent post per tag AND per (year, month) bucket
+  // so each archive/tag URL gets a sensible <lastmod>. Search engines
+  // use lastmod as a hint on whether to re-crawl.
   const tagLastMod = new Map<string, number>();
+  const monthLastMod = new Map<string, number>();  // key = "YYYY-MM"
+  const yearLastMod = new Map<number, number>();
 
   for (const p of posts) {
     const id = String(p._id);
@@ -77,6 +79,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const prev = tagLastMod.get(t) ?? 0;
       if (ts && ts > prev) tagLastMod.set(t, ts);
     }
+    // Aggregate distinct (year, month) buckets for the archive drill-
+    // down index — one entry per bucket, lastmod tied to newest post
+    // in that bucket. Same idea for year-only buckets.
+    if (typeof ts === "number") {
+      const d = new Date(ts * 1000);
+      const y = d.getUTCFullYear();
+      const m = d.getUTCMonth() + 1;
+      const key = `${y}-${String(m).padStart(2, "0")}`;
+      const prevM = monthLastMod.get(key) ?? 0;
+      if (ts > prevM) monthLastMod.set(key, ts);
+      const prevY = yearLastMod.get(y) ?? 0;
+      if (ts > prevY) yearLastMod.set(y, ts);
+    }
   }
 
   // Emit one URL per distinct tag. Priority slightly below individual
@@ -87,6 +102,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       loc: `${origin}/h/tag/${encodeURIComponent(tag)}`,
       lastmod: ts ? new Date(ts * 1000).toISOString() : undefined,
       priority: "0.5",
+    });
+  }
+  // Year drill-down index pages.
+  for (const [year, ts] of yearLastMod.entries()) {
+    urls.push({
+      loc: `${origin}/h/archive/${year}`,
+      lastmod: ts ? new Date(ts * 1000).toISOString() : undefined,
+      priority: "0.5",
+    });
+  }
+  // Month drill-down index pages — terminal archive pages, one per
+  // month that has at least one post.
+  for (const [key, ts] of monthLastMod.entries()) {
+    const [year, month] = key.split("-");
+    urls.push({
+      loc: `${origin}/h/archive/${year}/${month}`,
+      lastmod: ts ? new Date(ts * 1000).toISOString() : undefined,
+      priority: "0.4",
     });
   }
 

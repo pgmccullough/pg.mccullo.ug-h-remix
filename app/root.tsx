@@ -196,6 +196,10 @@ export default function App() {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
+        {/* a11y: skip-to-content link. Visually hidden until focused
+            (Tab from the address bar reveals it), lets keyboard +
+            screen reader users bypass the header nav on every page. */}
+        <a href="#main" className="skip-link">Skip to content</a>
         {!import.meta.env.PROD || !gaTrackingId ? null : (
           <>
             <script
@@ -221,7 +225,12 @@ export default function App() {
             />
           </>
         )}
-        <Outlet />
+        {/* <main id="main"> is the target for the skip-link at the
+            top of body. tabIndex=-1 lets keyboard focus land here
+            after activating the skip link. */}
+        <main id="main" tabIndex={-1}>
+          <Outlet />
+        </main>
         <ThemeToggle />
         {gaTrackingId ? <WebVitals gaTrackingId={gaTrackingId} /> : null}
         <ScrollRestoration />

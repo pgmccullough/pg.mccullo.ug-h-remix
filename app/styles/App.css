@@ -2808,4 +2808,304 @@ body {
   border-radius: 4px;
   margin-bottom: -1rem;
   margin-left: -2rem;
+}
+
+/* Archive drill-down (year index, month index, post list).
+   Shared styles across the three archive pages under /h/archive/*. */
+.archive {
+  padding: 8px 12px 12px;
+  font-family: 'PGM Sans', sans-serif;
+  color: #333;
+}
+.archive__crumbs {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+.archive__crumbs a {
+  color: #4A6CBA;
+  text-decoration: none;
+}
+.archive__title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 4px 0 2px;
+  color: #333;
+}
+.archive__count {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 12px;
+}
+.archive__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.archive__list li {
+  border-bottom: 1px solid #f0f0f0;
+}
+.archive__list li:last-child { border-bottom: 0; }
+.archive__year-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: inherit;
+}
+.archive__year-link:hover { background: #f8f8f8; }
+.archive__year {
+  font-size: 16px;
+  font-weight: 600;
+  color: #506982;
+}
+.archive__year-count {
+  font-size: 12px;
+  color: #888;
+}
+.archive__posts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.archive__posts li { border-bottom: 1px solid #f0f0f0; }
+.archive__posts li:last-child { border-bottom: 0; }
+.archive__post-link {
+  display: flex;
+  gap: 12px;
+  padding: 10px 14px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 14px;
+}
+.archive__post-link:hover { background: #f8f8f8; }
+.archive__post-date {
+  flex: 0 0 110px;
+  color: #888;
+  font-size: 12px;
+  text-align: right;
+}
+.archive__post-excerpt {
+  flex: 1;
+  min-width: 0;
+}
+[data-theme="dark"] .archive { color: #e5e7eb; }
+[data-theme="dark"] .archive__title { color: #e6e6e6; }
+[data-theme="dark"] .archive__count,
+[data-theme="dark"] .archive__crumbs,
+[data-theme="dark"] .archive__year-count,
+[data-theme="dark"] .archive__post-date {
+  color: #94a3b8;
+}
+[data-theme="dark"] .archive__list,
+[data-theme="dark"] .archive__posts {
+  background: #1a2028;
+  border-color: #2a3543;
+}
+[data-theme="dark"] .archive__list li,
+[data-theme="dark"] .archive__posts li {
+  border-color: #232b36;
+}
+[data-theme="dark"] .archive__year { color: #a1b5c9; }
+[data-theme="dark"] .archive__year-link:hover,
+[data-theme="dark"] .archive__post-link:hover {
+  background: #232b36;
+}
+
+/* Per-post analytics dashboard (admin-only view at
+   /h/post/:postId/analytics). Number cards, sparkline-ish daily
+   chart, referrer + recent-visit tables. Muted enough to feel
+   like a utility page, not a marketing dashboard. */
+.analytics {
+  padding: 8px 12px 12px;
+  font-family: 'PGM Sans', sans-serif;
+  color: #333;
+}
+.analytics__crumbs {
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 4px;
+}
+.analytics__crumbs a {
+  color: #4A6CBA;
+  text-decoration: none;
+}
+.analytics__title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 4px 0 2px;
+  color: #333;
+}
+.analytics__excerpt {
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+.analytics__cards {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.analytics__card {
+  flex: 1 1 100px;
+  min-width: 100px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.analytics__card-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: #506982;
+  line-height: 1.1;
+}
+.analytics__card-label {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+.analytics__section {
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #506982;
+  margin: 20px 0 8px;
+}
+.analytics__chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 100px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  padding: 8px;
+}
+.analytics__bar {
+  flex: 1;
+  min-width: 2px;
+  background: #4A6CBA;
+  border-radius: 2px 2px 0 0;
+  min-height: 1px;
+  transition: background 0.15s ease;
+}
+.analytics__bar:hover { background: #6a8ad9; }
+.analytics__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 13px;
+}
+.analytics__table th,
+.analytics__table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+.analytics__table th {
+  background: #f8f8f8;
+  font-weight: 600;
+  color: #506982;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.analytics__table tr:last-child td { border-bottom: 0; }
+.analytics__empty {
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  color: #888;
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+}
+[data-theme="dark"] .analytics { color: #e5e7eb; }
+[data-theme="dark"] .analytics__title { color: #e6e6e6; }
+[data-theme="dark"] .analytics__excerpt,
+[data-theme="dark"] .analytics__card-label,
+[data-theme="dark"] .analytics__crumbs,
+[data-theme="dark"] .analytics__empty {
+  color: #94a3b8;
+}
+[data-theme="dark"] .analytics__section { color: #a1b5c9; }
+[data-theme="dark"] .analytics__card,
+[data-theme="dark"] .analytics__chart,
+[data-theme="dark"] .analytics__table,
+[data-theme="dark"] .analytics__empty {
+  background: #1a2028;
+  border-color: #2a3543;
+}
+[data-theme="dark"] .analytics__card-num { color: #a1b5c9; }
+[data-theme="dark"] .analytics__table th {
+  background: #232b36;
+  color: #a1b5c9;
+}
+[data-theme="dark"] .analytics__table td {
+  border-color: #232b36;
+}
+
+/* a11y: skip-to-content link.
+   Visually offscreen by default; snaps into place on keyboard focus
+   (Tab from address bar). Screen readers announce it normally. */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 8px;
+  z-index: 10000;
+  padding: 8px 16px;
+  background: #4A6CBA;
+  color: #fff;
+  font: 600 14px 'PGM Sans', sans-serif;
+  text-decoration: none;
+  border-radius: 0 0 6px 6px;
+  transition: top 0.15s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 0;
+  outline: 3px solid #FFC107;
+  outline-offset: 2px;
+}
+/* Suppress the default focus ring on <main> — it's a scroll target
+   for the skip-link, not an interactive element. */
+main[id="main"]:focus {
+  outline: none;
+}
+
+/* a11y: respect prefers-reduced-motion.
+   Users who've turned "reduce motion" on in their OS (macOS System
+   Settings > Accessibility > Display; iOS Settings > Accessibility;
+   Windows Settings > Ease of Access) get near-instant animations
+   instead of eased transitions. Prevents the carousel translateX,
+   modal fade-ins, hover transitions, etc. from triggering motion
+   sickness / vestibular issues. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }/*# sourceMappingURL=App.css.map */
