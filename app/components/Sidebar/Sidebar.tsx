@@ -137,7 +137,7 @@ export const Sidebar: React.FC<{
             z-index: 201;
             width: 28px;
             height: 48px;
-            background: #506982;
+            background: #4A6CBA;
             color: #fff;
             border: 0;
             border-radius: 0 6px 6px 0;
@@ -155,7 +155,9 @@ export const Sidebar: React.FC<{
             transform: translateY(-50%);
             transition: left 0.25s ease, transform 0.25s ease;
           }
-          .sidebar-mobile-tab:hover { background: #4A6CBA; }
+          /* Slightly darker on hover for visible affordance now that
+             the base color matches the site accent blue. */
+          .sidebar-mobile-tab:hover { background: #3a5aa0; }
           /* When the sidebar is open: slide tab to the right edge of the
              viewport. Don't flip — the flat side stays against the
              sidebar's right edge (or the screen edge when closed), and
