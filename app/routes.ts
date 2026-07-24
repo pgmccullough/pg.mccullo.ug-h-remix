@@ -25,6 +25,10 @@ export default [
   // Root redirect: "/" -> "/h"
   index("routes/index.tsx"),
 
+  // /now → /h/now (301). Convention for /now-page discovery via
+  // nownownow.com prefers the bare-slash URL; this catches it.
+  route("now", "routes/now.tsx"),
+
   // SEO surfaces served as routes (not static files) so they can
   // reference the current origin and pull live data from Mongo.
   route("robots.txt", "routes/robots.tsx"),
