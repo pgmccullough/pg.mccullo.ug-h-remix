@@ -156,7 +156,12 @@ export const BibleWidget: React.FC = () => {
   const [confirmDone, setConfirmDone] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Bootstrap: load full state on first mount.
+  // Bootstrap: load full state on first mount. RR v7 revalidates
+  // previously-`.load()`-ed fetchers after every action mutation,
+  // so we deliberately DON'T re-adopt stateFetcher.data on later
+  // revalidations — that would clobber the user's current
+  // navigation / in-flight edits. The `state === null` guard
+  // limits adoption to the initial payload.
   useEffect(() => {
     if (stateFetcher.state === "idle" && !stateFetcher.data && state === null) {
       stateFetcher.load("/api/bible/state");
@@ -164,10 +169,14 @@ export const BibleWidget: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
-    if (stateFetcher.state === "idle" && stateFetcher.data) {
+    if (
+      stateFetcher.state === "idle" &&
+      stateFetcher.data &&
+      state === null
+    ) {
       setState(stateFetcher.data);
     }
-  }, [stateFetcher.state, stateFetcher.data]);
+  }, [stateFetcher.state, stateFetcher.data, state]);
 
   // Navigation: replace `displayed` with the chapter fetch response,
   // preserving current/positions from the last full state.
@@ -255,8 +264,6 @@ export const BibleWidget: React.FC = () => {
 
   const sending = messageFetcher.state !== "idle";
   const advancing = doneFetcher.state !== "idle";
-  const loading =
-    chapterFetcher.state !== "idle" || stateFetcher.state !== "idle";
 
   // ------------------------------------------------------------------
   // Actions
@@ -654,9 +661,12 @@ export const BibleWidget: React.FC = () => {
                   </div>
                 ) : null}
 
-                {loading ? (
-                  <div className="bible-widget__loading">Loading chapter…</div>
-                ) : (
+                {/* No mid-render loading placeholder — content stays
+                    visible during action revalidations and in-place
+                    updates so nothing appears to "flash away". Chapter
+                    nav swap happens instantly on the client via the
+                    chapterFetcher useEffect. */}
+                {(
                   <>
                     <div className="bible-widget__verses">
                       {state.displayed.verses.map((verse, i) => {
