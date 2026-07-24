@@ -93,6 +93,30 @@ export default function NotFound() {
           background: #f3f3f3; padding: 1px 6px; border-radius: 3px;
           color: #506982;
         }
+        .nf__search {
+          display: flex; gap: 8px; margin: 12px 0 20px;
+        }
+        .nf__search input {
+          flex: 1;
+          padding: 8px 12px;
+          font: 14px 'PGM Sans', sans-serif;
+          border: 1px solid #979997;
+          border-radius: 4px;
+          background: #fff;
+          color: #333;
+        }
+        .nf__search button {
+          padding: 8px 16px;
+          background: #4A6CBA;
+          color: #fff;
+          border: 0;
+          border-radius: 4px;
+          cursor: pointer;
+          font: 600 13px 'PGM Sans', sans-serif;
+        }
+        [data-theme="dark"] .nf__search input {
+          background: #1a2028; border-color: #2a3543; color: #e5e7eb;
+        }
         .nf h2 {
           font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase;
           color: #506982; margin: 16px 0 8px;
@@ -146,6 +170,21 @@ export default function NotFound() {
             Here are some recent posts you might like instead:
           </div>
         )}
+
+        {/* Search recovery: navigates to /h?q=<query>, which the feed
+            loader turns into a search results page. Cheaper than
+            reusing the full SearchBar (which is fetcher-based and
+            wants callbacks for parent state we don't have here). */}
+        <form className="nf__search" method="get" action="/h">
+          <input
+            type="text"
+            name="q"
+            placeholder="Search the archive…"
+            aria-label="Search posts"
+            autoFocus
+          />
+          <button type="submit">Search</button>
+        </form>
 
         <h2>Recent posts</h2>
         <div className="nf__list">

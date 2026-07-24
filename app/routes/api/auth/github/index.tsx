@@ -4,6 +4,7 @@ import {
   callbackUrl,
   newStateCookie,
   badRequest,
+  sanitizeReturnTo,
 } from "~/utils/oauth.server";
 
 async function start(request: Request) {
@@ -12,7 +13,12 @@ async function start(request: Request) {
     return badRequest("GITHUB_CLIENT_ID is not set.");
   }
 
-  const { state, cookie } = await newStateCookie("github");
+  const url = new URL(request.url);
+  const returnTo =
+    sanitizeReturnTo(url.searchParams.get("returnTo")) ?? "";
+  const extras = returnTo ? { returnTo } : {};
+
+  const { state, cookie } = await newStateCookie("github", extras);
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: callbackUrl(request, "github"),

@@ -100,12 +100,16 @@ export default [
     route("post/delete/:postId", "routes/api/post/delete/$postId.tsx"),
     route("post/fetch", "routes/api/post/fetch/index.ts"),
     route("post/generate-seo-meta", "routes/api/post/generate-seo-meta/index.ts"),
+    route("post/generate-embedding", "routes/api/post/generate-embedding/index.ts"),
     route("post/publish/:postId", "routes/api/post/publish/$postId.tsx"),
     route("post/react", "routes/api/post/react/index.ts"),
     route("post/search", "routes/api/post/search/index.ts"),
     route("post/update/:postId", "routes/api/post/update/$postId.tsx"),
 
     route("cron/publish-scheduled", "routes/api/cron/publish-scheduled/index.ts"),
+
+    // On-demand OG title-card for text-only posts (Sharp-generated JPEG).
+    route("og/:postId", "routes/api/og/$postId.tsx"),
 
     route("rentalExt", "routes/api/rentalExt/index.tsx"),
     route("rentalExt/fetch", "routes/api/rentalExt/fetch/index.tsx"),

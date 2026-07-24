@@ -4,6 +4,7 @@ import {
   completeOAuthFlow,
   readStateCookie,
   badRequest,
+  sanitizeReturnTo,
 } from "~/utils/oauth.server";
 import { clientPromise } from "~/lib/mongodb";
 
@@ -21,6 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   const instance = extras.instance;
   if (!instance) return badRequest("Lost the instance hostname.");
+  const returnTo = sanitizeReturnTo(extras.returnTo) ?? "/h";
 
   // Look up the cached app credentials for this instance.
   const client = await clientPromise;
@@ -96,6 +98,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       mastodonInstance: instance,
     },
     session,
-    "/h"
+    returnTo
   );
 };

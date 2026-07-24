@@ -178,6 +178,92 @@ export async function generateSeoMeta(args: {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Text embeddings for semantic post similarity ("related posts").
+// ---------------------------------------------------------------------------
+
+const EMBEDDINGS_ENDPOINT = "https://api.openai.com/v1/embeddings";
+const EMBEDDING_MODEL = "text-embedding-3-small";
+const EMBEDDING_DIMS = 512;
+
+/**
+ * L2-normalize a vector in place, then return it. After
+ * normalization, cosine similarity between two vectors equals their
+ * dot product — a nice shortcut for the related-posts ranker so we
+ * don't recompute magnitudes on every comparison.
+ */
+function l2Normalize(v: number[]): number[] {
+  let sumSq = 0;
+  for (const x of v) sumSq += x * x;
+  const norm = Math.sqrt(sumSq);
+  if (norm === 0) return v;
+  for (let i = 0; i < v.length; i++) v[i] = v[i] / norm;
+  return v;
+}
+
+/**
+ * Generate a text embedding for a post body. Returns a 512-dim
+ * float array (L2-normalized so cosine = dot product), or null on
+ * failure. Uses text-embedding-3-small at reduced dimensions — the
+ * `dimensions` request-parameter chops the trailing dims that
+ * carry the least signal, and 512 is plenty for personal-blog
+ * scale similarity.
+ *
+ * Cost: ~0.02¢ per 1K tokens. A few hundred posts cost cents total.
+ */
+export async function generateEmbedding(args: {
+  content: string;
+  timeoutMs?: number;
+}): Promise<number[] | null> {
+  if (!openAiConfigured()) return null;
+  const body = args.content.trim();
+  if (!body) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? 15000);
+
+  try {
+    const res = await fetch(EMBEDDINGS_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: EMBEDDING_MODEL,
+        // OpenAI charges by input tokens; cap the payload so a long
+        // post doesn't burn tokens on paragraphs the embedding won't
+        // meaningfully distinguish anyway.
+        input: body.slice(0, 8000),
+        dimensions: EMBEDDING_DIMS,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      console.error(
+        "[openai] embedding failed:",
+        res.status,
+        await res.text().catch(() => "")
+      );
+      return null;
+    }
+    const data: any = await res.json();
+    const vec: unknown = data?.data?.[0]?.embedding;
+    if (!Array.isArray(vec) || vec.length !== EMBEDDING_DIMS) return null;
+    const nums = vec.map((x) => Number(x));
+    if (nums.some((n) => !Number.isFinite(n))) return null;
+    return l2Normalize(nums);
+  } catch (err) {
+    console.error("[openai] embedding exception:", err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export const EMBEDDING_DIMENSIONS = EMBEDDING_DIMS;
+
 /**
  * Generate alt text for a publicly-fetchable image URL. Returns the
  * text on success, or null on any failure (API error, timeout,

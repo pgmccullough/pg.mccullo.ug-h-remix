@@ -17,6 +17,7 @@ import { useEffect } from "react";
 import * as gtag from "~/utils/gtags.client";
 import styles from "~/styles/App.css?url";
 import { ThemeToggle } from "~/components/ThemeToggle/ThemeToggle";
+import { WebVitals } from "~/components/WebVitals/WebVitals";
 
 /**
  * Inline theme-resolution script — runs before React hydrates, so
@@ -222,6 +223,7 @@ export default function App() {
         )}
         <Outlet />
         <ThemeToggle />
+        {gaTrackingId ? <WebVitals gaTrackingId={gaTrackingId} /> : null}
         <ScrollRestoration />
         <Scripts />
       </body>

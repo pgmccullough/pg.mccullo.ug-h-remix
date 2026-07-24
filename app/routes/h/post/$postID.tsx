@@ -138,20 +138,102 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     }
   } catch { /* never let backfill kickoff block the page render */ }
 
+  // Embedding backfill: fires when the post has no semantic vector
+  // yet. Enables the related-posts ranker below to use cosine
+  // similarity instead of falling back to recency. Fully idempotent.
+  try {
+    const existingEmb: any = (serialized as any)?.embedding;
+    const hasEmbedding = Array.isArray(existingEmb) && existingEmb.length > 0;
+    const bodyText = String((serialized as any)?.content ?? "").replace(/<[^>]+>/g, "").trim();
+    if (!hasEmbedding && bodyText.length > 0) {
+      const internalToken = process.env.INTERNAL_API_TOKEN;
+      if (internalToken) {
+        const origin = new URL(request.url).origin;
+        const body = `postId=${encodeURIComponent(postID)}`;
+        void fetch(`${origin}/api/post/generate-embedding`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Internal-Token": internalToken,
+          },
+          body,
+        }).catch(() => { /* silently drop; backfill is best-effort */ });
+      }
+    }
+  } catch { /* never let backfill kickoff block the page render */ }
+
   // Related posts for internal linking + dwell time.
-  // Simplest workable heuristic: 5 most recent public+published posts
-  // other than this one. Could later swap for embedding similarity.
-  const relatedRaw = await db
-    .collection("myPosts")
-    .find({
-      privacy: "Public",
-      state: { $nin: ["draft", "scheduled"] },
-      _id: { $ne: new ObjectId(postID) },
-    })
-    .project({ _id: 1, content: 1, created: 1, seoMeta: 1 })
-    .sort({ created: -1 })
-    .limit(6)
-    .toArray();
+  // If the current post has an embedding, rank by cosine similarity
+  // (dot product on L2-normalized vectors). Fall back to recency
+  // when the post hasn't been embedded yet — first pageview kicks
+  // off the backfill above, subsequent visits get semantic ranking.
+  const currentEmb: number[] | null = Array.isArray((serialized as any)?.embedding)
+    ? ((serialized as any).embedding as number[])
+    : null;
+  let relatedRaw: any[];
+  if (currentEmb && currentEmb.length > 0) {
+    // Pull all candidates plus their embeddings, then rank in-process.
+    // At personal-blog scale (hundreds of posts, ~2KB per vector) this
+    // is a couple MB per query — acceptable. If the archive grows to
+    // thousands, move to Atlas Vector Search's $vectorSearch stage.
+    const candidates = await db
+      .collection("myPosts")
+      .find({
+        privacy: "Public",
+        state: { $nin: ["draft", "scheduled"] },
+        _id: { $ne: new ObjectId(postID) },
+        embedding: { $exists: true, $type: "array" },
+      })
+      .project({ _id: 1, content: 1, created: 1, seoMeta: 1, embedding: 1 })
+      .toArray();
+    const scored = candidates
+      .map((p: any) => {
+        const emb = p.embedding as number[];
+        if (!Array.isArray(emb) || emb.length !== currentEmb.length) {
+          return { post: p, score: -Infinity };
+        }
+        let dot = 0;
+        for (let i = 0; i < emb.length; i++) dot += currentEmb[i] * emb[i];
+        return { post: p, score: dot };
+      })
+      .filter((x) => x.score > -Infinity)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map((x) => {
+        // Trim the embedding before returning — no reason to ship 512
+        // floats to the client for each related-posts card.
+        const { embedding: _unused, ...rest } = x.post;
+        return rest;
+      });
+    if (scored.length > 0) {
+      relatedRaw = scored;
+    } else {
+      // No other embedded posts yet — fall back to recency.
+      relatedRaw = await db
+        .collection("myPosts")
+        .find({
+          privacy: "Public",
+          state: { $nin: ["draft", "scheduled"] },
+          _id: { $ne: new ObjectId(postID) },
+        })
+        .project({ _id: 1, content: 1, created: 1, seoMeta: 1 })
+        .sort({ created: -1 })
+        .limit(6)
+        .toArray();
+    }
+  } else {
+    relatedRaw = await db
+      .collection("myPosts")
+      .find({
+        privacy: "Public",
+        state: { $nin: ["draft", "scheduled"] },
+        _id: { $ne: new ObjectId(postID) },
+      })
+      .project({ _id: 1, content: 1, created: 1, seoMeta: 1 })
+      .sort({ created: -1 })
+      .limit(6)
+      .toArray();
+  }
   const related = serializeDocs(relatedRaw).slice(0, 5);
 
   // Verified webmentions targeting this post. Keyed by targetPostId
@@ -165,7 +247,12 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     .toArray();
   const webmentions = serializeDocs(rawMentions);
 
-  return { post: serialized, parent, related, webmentions, user };
+  // Trim the embedding vector off the post before shipping to the
+  // client — it's a 512-float array only useful server-side for the
+  // related-posts ranker. Cutting it saves ~2KB per pageload.
+  const { embedding: _emb, ...postForClient } = serialized as any;
+
+  return { post: postForClient, parent, related, webmentions, user };
 };
 
 // Advertise the webmention endpoint via HTTP Link header on post
@@ -208,15 +295,18 @@ export const meta: MetaFunction<typeof loader> = ({ data, params }) => {
   // first N chars of the body. Fallback keeps working for posts that
   // haven't been backfilled yet.
   const bodyText = seoMeta?.description || stripHtml(post.content, 125);
-  // OG image: first attached image if present, served through the
-  // media proxy with ?og=1 which produces a 1200x630 landscape crop
-  // (aspect ratio social platforms expect). Sharp handles the resize
-  // and caches to S3 as `<name>_og.jpg`. If no attached image, fall
-  // back to the site default (buildMeta handles that).
+  // OG image priority:
+  //   1. First attached image → served through /api/media/…?og=1
+  //      (Sharp crops to 1200x630, cached to S3 as <name>_og.jpg).
+  //   2. Generated title-card → /api/og/:postId (Sharp+SVG renders a
+  //      branded card with the post's title/date, cached at the edge).
+  //      Much better unfurl than the icon-sized site fallback.
   let image: string | undefined;
   const firstImg = Array.isArray(post.media?.images) ? post.media.images[0] : undefined;
   if (typeof firstImg === "string" && firstImg.length) {
     image = `${SEO_CONST.SITE_URL}/api/media/images/${firstImg}?og=1`;
+  } else {
+    image = `${SEO_CONST.SITE_URL}/api/og/${postId}`;
   }
   const publishedIso = typeof post.created === "number"
     ? new Date(post.created * 1000).toISOString()

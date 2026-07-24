@@ -221,6 +221,27 @@ export function callbackUrl(
   return `${new URL(request.url).origin}/api/auth/${provider}/callback`;
 }
 
+/**
+ * Validate a returnTo path to prevent open-redirect attacks. Only
+ * relative same-site paths (starting with a single "/") are allowed.
+ * Anything else — protocol-relative URLs, absolute URLs, or paths
+ * with backslash bypasses — returns null so the caller can fall back
+ * to a safe default like "/h".
+ */
+export function sanitizeReturnTo(
+  raw: string | null | undefined
+): string | null {
+  if (!raw || typeof raw !== "string") return null;
+  // Reject protocol-relative URLs (//evil.com) and absolute URLs.
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  // Backslash-based bypass: some browsers normalize \\ to //, and
+  // relative paths containing them are almost always malicious.
+  if (raw.includes("\\")) return null;
+  // Keep it small enough to survive a state-cookie roundtrip.
+  if (raw.length > 500) return null;
+  return raw;
+}
+
 export function badRequest(message: string) {
   return new Response(message, { status: 400 });
 }

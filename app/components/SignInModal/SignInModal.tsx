@@ -1,8 +1,21 @@
 import { useEffect, useState } from "react"
-import { useFetcher, Link } from "react-router";
+import { useFetcher, Link, useSearchParams } from "react-router";
 import { GitHubLogo } from "~/assets/svgs/GitHubLogo";
 import { GoogleLogo } from "~/assets/svgs/GoogleLogo";
 import { MastodonLogo } from "~/assets/svgs/MastodonLogo";
+
+/**
+ * Whitelist for returnTo values — same rule the server-side
+ * sanitizeReturnTo uses. Duplicated here (client-side) so we don't
+ * dangle broken URLs on OAuth links before the server rejects them.
+ */
+function sanitizeReturnTo(raw: string | null | undefined): string {
+  if (!raw || typeof raw !== "string") return "";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "";
+  if (raw.includes("\\")) return "";
+  if (raw.length > 500) return "";
+  return raw;
+}
 
 /**
  * SignInModal can be used two ways:
@@ -21,6 +34,14 @@ export const SignInModal: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
   // away (we don't know where to send them yet).
   const [mastodonOpen, setMastodonOpen] = useState<boolean>(false);
   const [mastodonInstance, setMastodonInstance] = useState<string>("");
+  // ?returnTo=/... deep-links the user back to wherever they were
+  // trying to go (e.g. /api/indieauth/authorize?...). Empty string
+  // means "use default /h" and we skip appending any params.
+  const [searchParams] = useSearchParams();
+  const returnTo = sanitizeReturnTo(searchParams.get("returnTo"));
+  const returnQuery = returnTo
+    ? `?returnTo=${encodeURIComponent(returnTo)}`
+    : "";
 
   // Close-on-Escape for the overlay variant.
   useEffect(() => {
@@ -110,7 +131,7 @@ export const SignInModal: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
             `}</style>
             <div className="register__card__body__apis oauth-btn-row">
               <a
-                href="/api/auth/google"
+                href={`/api/auth/google${returnQuery}`}
                 className="register__card__body__apis__button"
               >
                 <div className="register__card__body__apis__button__item">
@@ -121,7 +142,7 @@ export const SignInModal: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                 </div>
               </a>
               <a
-                href="/api/auth/github"
+                href={`/api/auth/github${returnQuery}`}
                 className="register__card__body__apis__button"
               >
                 <div className="register__card__body__apis__button__item">
@@ -164,6 +185,9 @@ export const SignInModal: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                   value={mastodonInstance}
                   onChange={(e) => setMastodonInstance(e.target.value)}
                 />
+                {returnTo ? (
+                  <input type="hidden" name="returnTo" value={returnTo} />
+                ) : null}
                 <button type="submit">CONTINUE</button>
               </form>
             )}
@@ -197,6 +221,9 @@ export const SignInModal: React.FC<{ onClose?: () => void }> = ({ onClose }) => 
                   >
                     <input type="text" name="username" placeholder="User name" className="register__card__body__input" />
                     <input type="password" name="password" placeholder="Password" className="register__card__body__input" />
+                    {returnTo ? (
+                      <input type="hidden" name="returnTo" value={returnTo} />
+                    ) : null}
                     {loginError
                       ?<div className="register__card__body__signup__error">{loginError}</div>
                       :<div className="register__card__body__signup__error"></div>

@@ -4,6 +4,7 @@ import {
   callbackUrl,
   newStateCookie,
   badRequest,
+  sanitizeReturnTo,
 } from "~/utils/oauth.server";
 
 // Initiate the Google OAuth flow.
@@ -17,7 +18,15 @@ async function start(request: Request) {
     return badRequest("GOOGLE_CLIENT_ID is not set.");
   }
 
-  const { state, cookie } = await newStateCookie("google");
+  // Preserve where the user wanted to end up after login. Read from
+  // ?returnTo= (link click) or the form (POST); stash into state
+  // cookie extras so the callback can redirect there.
+  const url = new URL(request.url);
+  const returnTo =
+    sanitizeReturnTo(url.searchParams.get("returnTo")) ?? "";
+  const extras = returnTo ? { returnTo } : {};
+
+  const { state, cookie } = await newStateCookie("google", extras);
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: callbackUrl(request, "google"),

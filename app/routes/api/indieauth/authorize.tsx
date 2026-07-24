@@ -93,11 +93,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const user = await getUser(request);
   if (!user || user.role !== "administrator") {
-    // Bounce through login and back. SignInModal currently doesn't
-    // read a returnTo, but arriving on /h/login gets Patrick oriented
-    // — after login he can hit the same client-provided authorize
-    // URL from the client to retry.
-    return redirect(`/h/login`);
+    // Bounce through login carrying returnTo so the OAuth/password
+    // callback lands the user right back on this same authorize URL
+    // and finishes the IndieAuth handshake with the client.
+    const currentPath = url.pathname + url.search;
+    return redirect(`/h/login?returnTo=${encodeURIComponent(currentPath)}`);
   }
 
   return { params: check.params };

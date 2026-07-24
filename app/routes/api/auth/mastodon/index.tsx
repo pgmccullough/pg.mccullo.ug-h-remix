@@ -4,6 +4,7 @@ import {
   callbackUrl,
   newStateCookie,
   badRequest,
+  sanitizeReturnTo,
 } from "~/utils/oauth.server";
 import { clientPromise } from "~/lib/mongodb";
 
@@ -90,7 +91,7 @@ async function ensureApp(
   return record;
 }
 
-async function start(request: Request, instanceRaw: string) {
+async function start(request: Request, instanceRaw: string, returnTo?: string) {
   const instance = normalizeInstance(instanceRaw);
   if (!instance) {
     return badRequest("Please enter a valid Mastodon instance hostname.");
@@ -105,9 +106,11 @@ async function start(request: Request, instanceRaw: string) {
     return badRequest(`Couldn't reach ${instance}. Is it spelled correctly?`);
   }
 
-  // Stash the instance in the state cookie so the callback knows where to
-  // exchange the code.
-  const { state, cookie } = await newStateCookie("mastodon", { instance });
+  // Stash the instance (and returnTo, if provided) in the state cookie
+  // so the callback can dispatch on both.
+  const extras: Record<string, string> = { instance };
+  if (returnTo) extras.returnTo = returnTo;
+  const { state, cookie } = await newStateCookie("mastodon", extras);
   const params = new URLSearchParams({
     client_id: app.client_id,
     redirect_uri: redirectUri,
@@ -124,14 +127,24 @@ async function start(request: Request, instanceRaw: string) {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const form = await request.formData();
-  return start(request, form.get("instance")?.toString() ?? "");
+  // returnTo can arrive on the form (from SignInModal's hidden input)
+  // or the query string (link click, testing).
+  const url = new URL(request.url);
+  const returnTo =
+    sanitizeReturnTo(form.get("returnTo")?.toString()) ??
+    sanitizeReturnTo(url.searchParams.get("returnTo")) ??
+    undefined;
+  return start(request, form.get("instance")?.toString() ?? "", returnTo);
 };
 
 // GET also supported via ?instance= query param, mostly for testing.
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const instance = new URL(request.url).searchParams.get("instance") ?? "";
+  const url = new URL(request.url);
+  const instance = url.searchParams.get("instance") ?? "";
   if (!instance) {
     return badRequest("Missing instance parameter.");
   }
-  return start(request, instance);
+  const returnTo =
+    sanitizeReturnTo(url.searchParams.get("returnTo")) ?? undefined;
+  return start(request, instance, returnTo);
 };

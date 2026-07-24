@@ -118,6 +118,17 @@ export async function publishSideEffects(
     }).catch((err) => {
       console.error("[webmention] send kickoff failed:", err);
     });
+    // Semantic embedding for related-posts similarity.
+    void fetch(`${origin}/api/post/generate-embedding`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-Internal-Token": internalToken,
+      },
+      body,
+    }).catch((err) => {
+      console.error("[embedding] deferred kickoff failed:", err);
+    });
   }
 
   // 3. Bluesky cross-post.

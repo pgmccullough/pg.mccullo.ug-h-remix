@@ -4,6 +4,7 @@ import {
   completeOAuthFlow,
   readStateCookie,
   badRequest,
+  sanitizeReturnTo,
 } from "~/utils/oauth.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -20,10 +21,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (oauthError) return badRequest(`GitHub rejected: ${oauthError}`);
   if (!code || !returnedState) return badRequest("Missing code/state.");
 
-  const { provider, state, session } = await readStateCookie(request);
+  const { provider, state, extras, session } = await readStateCookie(request);
   if (provider !== "github" || !state || state !== returnedState) {
     return badRequest("State mismatch.");
   }
+  const returnTo = sanitizeReturnTo(extras.returnTo) ?? "/h";
 
   // Exchange code for access token.
   const tokenRes = await fetch(
@@ -115,6 +117,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       avatarUrl: profile.avatar_url,
     },
     session,
-    "/h"
+    returnTo
   );
 };
