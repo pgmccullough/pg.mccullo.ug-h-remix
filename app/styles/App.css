@@ -640,6 +640,25 @@ button {
   border-radius: 4px 0 0 4px;
   transition: 0.25s;
 }
+/* The EDIT class is also used by the ANALYTICS <Link> so admin
+   navigation looks button-shaped. Anchors don't inherit the global
+   button reset, so re-apply the relevant properties here. */
+a.postcard__content__modal--button__edit {
+  color: #fff;
+  background: #4A6CBA;
+  font: 14px "PGM Sans";
+  margin: 0 2px;
+  padding: 4px 10px 2px;
+  border-radius: 4px;
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+  vertical-align: middle;
+}
+a.postcard__content__modal--button__edit:hover {
+  opacity: 0.7;
+  text-decoration: none;
+}
 .postcard__content__modal--button__delete {
   margin-left: 2px;
   border-radius: 0 4px 4px 0;

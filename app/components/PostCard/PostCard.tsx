@@ -306,17 +306,26 @@ export const PostCard: React.FC<{
               />
               <div className="postcard__content__modal">
                 <div>Post Options</div>
-                <button 
+                <button
                   className="postcard__content__modal--button__edit"
                   onClick={editPostCard}
                 >EDIT</button>
-                <fetcher.Form 
+                {/* Admin-only jump to the per-post analytics dashboard.
+                    Same styling as EDIT so the row reads as a group. */}
+                <Link
+                  className="postcard__content__modal--button__edit"
+                  to={`/h/post/${post._id}/analytics`}
+                  onClick={() =>
+                    setEditState({ isOn: false, id: null })
+                  }
+                >ANALYTICS</Link>
+                <fetcher.Form
                   method="post"
                   action={`/api/post/delete/${post._id}`}
                   style={{display: "inline"}}
                 >
-                  <button 
-                    className="postcard__content__modal--button__delete" 
+                  <button
+                    className="postcard__content__modal--button__delete"
                   >DELETE</button>
                 </fetcher.Form>
                 <>

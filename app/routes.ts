@@ -59,6 +59,7 @@ export default [
     route("notifications", "routes/h/notifications.tsx"),
     route("drafts", "routes/h/drafts.tsx"),
     route("about", "routes/h/about.tsx"),
+    route("now", "routes/h/now.tsx"),
     route("archive", "routes/h/archive/index.tsx"),
     route("archive/:year", "routes/h/archive/$year.tsx"),
     route("archive/:year/:month", "routes/h/archive/$year.$month.tsx"),

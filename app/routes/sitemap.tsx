@@ -48,6 +48,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   urls.push({ loc: `${origin}/h`, priority: "1.0" });
   urls.push({ loc: `${origin}/h/about`, priority: "0.9" });
+  urls.push({ loc: `${origin}/h/now`, priority: "0.8" });
   urls.push({ loc: `${origin}/h/archive`, priority: "0.6" });
 
   // Track the most-recent post per tag AND per (year, month) bucket
