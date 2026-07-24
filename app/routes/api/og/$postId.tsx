@@ -4,34 +4,52 @@
  * Endpoint: GET /api/og/:postId → 1200x630 JPEG
  *
  * When a post has no attached image, the post's meta function points
- * <meta property="og:image"> here instead of falling back to the
- * icon-sized apple-touch-icon.png (which social platforms unfurl as
- * a sad little square). This produces a legible, branded landscape
- * card with the post's title/excerpt over a solid background.
+ * <meta property="og:image"> here so social platforms unfurl a
+ * branded landscape card instead of the icon-sized site fallback.
  *
- * SVG → JPEG via Sharp — the same tool already handling media OG
- * crops elsewhere. On Vercel Lambda, librsvg finds DejaVu Sans /
- * Liberation Serif as system fallbacks so the font stack degrades
- * gracefully when 'PGM Sans' isn't installed on the server (which
- * it isn't — it's a webfont, not a system font).
+ * Rendering pipeline:
+ *   1. Sharp creates a solid blue 1200x630 base canvas.
+ *   2. Sharp's `input.text` mode uses Pango to rasterize the post
+ *      title, date, and site label from bundled Inter TTFs.
+ *      Pango markup carries the text color (`<span foreground="#fff">`).
+ *   3. Composites the rendered text layers onto the canvas, encodes JPEG.
  *
- * Cached aggressively at the edge — post titles rarely change, so
- * long TTLs are safe. If a post title changes, the cached image
- * will lag a day before Vercel re-fetches. Acceptable trade-off.
+ * Fonts are bundled in the repo at app/assets/fonts/ and read once
+ * at module init — the readFileSync(path.join(...)) call at the top
+ * of the file is what @vercel/nft traces to include them in the
+ * serverless function bundle.
+ *
+ * Long TTLs at the edge — the source (post title + date) rarely
+ * changes; a title edit will lag a day.
  */
 
 import type { LoaderFunctionArgs } from "react-router";
 import sharp from "sharp";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
-const BG = "#4A6CBA";
+const BG = { r: 74, g: 108, b: 186 }; // #4A6CBA
 const FG = "#ffffff";
 const ACCENT = "#c7d3e8";
 const SITE_LABEL = "pg.mccullo.ug";
-const MAX_LINES = 5;
-const CHARS_PER_LINE = 32;
+const MAX_TITLE_CHARS = 200;
+
+// Bundled Inter TTFs, read once at module init. Two weights:
+// Bold for the display title, Regular for the meta line. Vercel's
+// @vercel/nft traces this call and includes both files in the
+// serverless bundle. Absolute paths matter — Sharp's Pango backend
+// looks up the file by name.
+const FONT_DIR = path.join(process.cwd(), "app/assets/fonts");
+const FONT_BOLD_PATH = path.join(FONT_DIR, "Inter-Bold.ttf");
+const FONT_REGULAR_PATH = path.join(FONT_DIR, "Inter-Regular.ttf");
+// Read at module load — throws early on cold start if either file
+// is missing from the deployment, which is easier to debug than a
+// per-request Sharp error.
+readFileSync(FONT_BOLD_PATH);
+readFileSync(FONT_REGULAR_PATH);
 
 function stripHtml(html: string): string {
   return html
@@ -46,7 +64,11 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-function escapeXml(s: string): string {
+/**
+ * Escape a string for embedding in Pango markup. Pango uses
+ * XML-style entities, same as HTML — reuse the standard escapes.
+ */
+function escapePango(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -56,93 +78,42 @@ function escapeXml(s: string): string {
 }
 
 /**
- * Greedy word-wrapper: break text into lines of at most `maxChars`
- * characters, respecting word boundaries. Approximate — assumes
- * roughly uniform character width, which is a lie for proportional
- * fonts, but the display font is close enough that a slight over-
- * or under-fill on any given line doesn't look bad.
+ * Rasterize a text run to a PNG buffer via Sharp's Pango backend.
+ * Wraps the string in a `<span>` with foreground color and font size
+ * so we can carry style through Pango markup rather than trying to
+ * tint an alpha mask afterward.
+ *
+ * Sharp text sizes use Pango units where 1024 = 1 point. `fontSize`
+ * here is in whole points (like CSS).
  */
-function wrapText(text: string, maxChars: number, maxLines: number): {
-  lines: string[];
-  truncated: boolean;
-} {
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = "";
-  let idx = 0;
-  for (; idx < words.length; idx++) {
-    const w = words[idx];
-    if (!current) {
-      current = w;
-      continue;
-    }
-    if (current.length + 1 + w.length <= maxChars) {
-      current += " " + w;
-    } else {
-      lines.push(current);
-      if (lines.length === maxLines) break;
-      current = w;
-    }
-  }
-  if (lines.length < maxLines && current) {
-    lines.push(current);
-  }
-
-  const truncated = idx < words.length - 1 || lines.length === maxLines && idx < words.length;
-
-  if (truncated && lines.length) {
-    const last = lines[lines.length - 1];
-    const room = maxChars - 1;
-    const clipped =
-      last.length > room
-        ? last.slice(0, room).replace(/[\s.,;:!?]+$/, "")
-        : last.replace(/[\s.,;:!?]+$/, "");
-    lines[lines.length - 1] = clipped + "…";
-  }
-  return { lines, truncated };
-}
-
-function buildSvg(args: { title: string; dateLabel: string }): string {
-  const { lines } = wrapText(args.title, CHARS_PER_LINE, MAX_LINES);
-  const lineHeight = 72;
-  const blockHeight = lines.length * lineHeight;
-  const startY =
-    Math.round((HEIGHT - blockHeight) / 2) + lineHeight * 0.75;
-
-  const tspans = lines
-    .map(
-      (line, i) =>
-        `<tspan x="80" y="${startY + i * lineHeight}">${escapeXml(line)}</tspan>`
-    )
-    .join("");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-  <rect width="${WIDTH}" height="${HEIGHT}" fill="${BG}"/>
-  <rect x="0" y="0" width="12" height="${HEIGHT}" fill="${ACCENT}" opacity="0.6"/>
-  <text
-    font-family="Georgia, 'Liberation Serif', 'DejaVu Serif', serif"
-    font-size="60"
-    font-weight="700"
-    fill="${FG}"
-    letter-spacing="-0.5"
-  >${tspans}</text>
-  <text
-    x="80" y="${HEIGHT - 60}"
-    font-family="Verdana, 'DejaVu Sans', sans-serif"
-    font-size="26"
-    fill="${ACCENT}"
-    letter-spacing="0.5"
-  >${escapeXml(args.dateLabel)}</text>
-  <text
-    x="${WIDTH - 80}" y="${HEIGHT - 60}"
-    font-family="Verdana, 'DejaVu Sans', sans-serif"
-    font-size="26"
-    text-anchor="end"
-    fill="${ACCENT}"
-    letter-spacing="0.5"
-  >${escapeXml(SITE_LABEL)}</text>
-</svg>`;
+async function renderText(args: {
+  text: string;
+  fontfile: string;
+  fontSize: number;
+  color: string;
+  width: number;
+  height: number;
+  align?: "left" | "center" | "right";
+  wrap?: boolean;
+}): Promise<Buffer> {
+  const escaped = escapePango(args.text);
+  const markup = `<span foreground="${args.color}" font_desc="Inter ${args.fontSize}">${escaped}</span>`;
+  return sharp({
+    text: {
+      text: markup,
+      fontfile: args.fontfile,
+      // `font` is required even when using Pango markup (backend uses
+      // it as the default face resolution). Match the fontfile.
+      font: "Inter",
+      width: args.width,
+      height: args.height,
+      wrap: args.wrap ? "word" : "none",
+      align: args.align ?? "left",
+      rgba: true,
+    },
+  })
+    .png()
+    .toBuffer();
 }
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -174,13 +145,11 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
     return new Response("Not Found", { status: 404 });
   }
 
-  // Prefer the LLM-generated description (a real summary) over the
-  // raw first N characters of the body. Fall back to stripped content.
   const rawTitle =
     (post as any)?.seoMeta?.description ||
     stripHtml(String(post.content ?? "")) ||
     "Untitled post";
-  const title = rawTitle.slice(0, CHARS_PER_LINE * MAX_LINES);
+  const title = rawTitle.slice(0, MAX_TITLE_CHARS);
 
   const dateLabel =
     typeof post.created === "number"
@@ -191,10 +160,68 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
         })
       : "";
 
-  const svg = buildSvg({ title, dateLabel });
-
   try {
-    const jpeg = await sharp(Buffer.from(svg))
+    // Render the three text runs in parallel — cheap and independent.
+    const [titleLayer, dateLayer, siteLayer] = await Promise.all([
+      renderText({
+        text: title,
+        fontfile: FONT_BOLD_PATH,
+        fontSize: 52,
+        color: FG,
+        width: 1040,
+        height: 460,
+        wrap: true,
+      }),
+      renderText({
+        text: dateLabel,
+        fontfile: FONT_REGULAR_PATH,
+        fontSize: 22,
+        color: ACCENT,
+        width: 500,
+        height: 40,
+      }),
+      renderText({
+        text: SITE_LABEL,
+        fontfile: FONT_REGULAR_PATH,
+        fontSize: 22,
+        color: ACCENT,
+        width: 500,
+        height: 40,
+        align: "right",
+      }),
+    ]);
+
+    // Compose everything onto a solid-blue canvas. Layout matches
+    // the SVG version: title centered vertically in the top ~80%,
+    // date bottom-left, site label bottom-right, subtle accent bar
+    // running down the left edge.
+    const jpeg = await sharp({
+      create: {
+        width: WIDTH,
+        height: HEIGHT,
+        channels: 3,
+        background: BG,
+      },
+    })
+      .composite([
+        // Left accent stripe (subtle) — small semi-transparent overlay
+        // rendered as a solid strip, alpha handled via `png()` layer.
+        {
+          input: {
+            create: {
+              width: 12,
+              height: HEIGHT,
+              channels: 4,
+              background: { r: 199, g: 211, b: 232, alpha: 0.6 },
+            },
+          },
+          top: 0,
+          left: 0,
+        },
+        { input: titleLayer, top: 90, left: 80 },
+        { input: dateLayer, top: HEIGHT - 60, left: 80 },
+        { input: siteLayer, top: HEIGHT - 60, left: WIDTH - 500 - 80 },
+      ])
       .jpeg({ quality: 88, mozjpeg: true })
       .toBuffer();
 
@@ -202,15 +229,11 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
       headers: {
         "Content-Type": "image/jpeg",
         "Content-Length": String(jpeg.length),
-        // Long TTL — post titles rarely change. Vercel edge + browser
-        // both cache. If a title does change, cached image lags 1 day.
         "Cache-Control": "public, max-age=86400, s-maxage=604800",
       },
     });
   } catch (err) {
     console.error("[api/og] Sharp render failed:", err);
-    // On failure, fall back to the site's static icon so unfurlers
-    // still get *something*. 302 keeps CDNs sane.
     return Response.redirect(
       "https://pg.mccullo.ug/apple-touch-icon.png",
       302
