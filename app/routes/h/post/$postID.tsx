@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getUser } from "~/utils/session.server";
 import { PostCard } from "~/components/PostCard/PostCard";
 import type { PostParentSnippet } from "~/components/PostCard/PostCard";
+import { ReadingProgress } from "~/components/ReadingProgress/ReadingProgress";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { serializeDoc, serializeDocs } from "~/utils/serialize.server";
 import { findBacklinksToPost } from "~/utils/backlinks.server";
@@ -479,6 +480,10 @@ export default function SinglePost() {
 
   return (
     <>
+      {/* Thin bar at top of viewport, fills as reader scrolls
+          through the post body. Self-hides on posts shorter than
+          ~1.5x the viewport (no meaningful "progress" to show). */}
+      <ReadingProgress />
       {post && !post.error ? (
         <PostCard
           key={post._id}

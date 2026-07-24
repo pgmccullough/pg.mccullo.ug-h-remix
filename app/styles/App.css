@@ -3083,6 +3083,45 @@ body {
   border-color: #232b36;
 }
 
+/* Composer autosave-restored banner.
+   Small strip above the editor announcing that content was pulled
+   back from localStorage after a crash / lost tab / etc. Muted
+   yellow so it reads as a status note, not an error. */
+.upload__autosave-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  background: #fff8e1;
+  border: 1px solid #f0d97a;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #6a5410;
+}
+.upload__autosave-discard {
+  padding: 2px 10px;
+  font-size: 11px;
+  height: auto;
+  background: transparent;
+  color: #6a5410;
+  border: 1px solid #f0d97a;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.upload__autosave-discard:hover { background: #f7ecc1; }
+[data-theme="dark"] .upload__autosave-banner {
+  background: #2a2415;
+  border-color: #4a3d1f;
+  color: #d4c07f;
+}
+[data-theme="dark"] .upload__autosave-discard {
+  color: #d4c07f;
+  border-color: #4a3d1f;
+}
+[data-theme="dark"] .upload__autosave-discard:hover { background: #3a3020; }
+
 /* Shared "Referenced by" backlinks list — used on post permalinks,
    /h/now, and /h/about to show which other posts link there. Same
    visual pattern as related-posts / webmentions strips but

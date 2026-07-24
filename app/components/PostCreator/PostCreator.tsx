@@ -32,6 +32,10 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
   const [ isActive, setIsActive ] = useState<boolean>(false);
   const [ postText, setPostText ] = useState<string>("");
   const [ lexicalFromDraft, setLexicalFromDraft ] = useState<string>("");
+  // Signals whether we restored content from a localStorage autosave
+  // on mount. Drives the small "unsaved from earlier" banner + its
+  // Discard button.
+  const [ autosaveRestored, setAutosaveRestored ] = useState<boolean>(false);
   const [ tbProps, setTbProps ] = useState<{hidden:boolean, sticky:boolean}>({hidden:true, sticky:false});
   const [ postObject, setPostObject ] = useState<Post>(BlankPost);
   const [ pendingUploads, setPendingUploads ] = useState<{data: any, meta: any}[]>([]);
@@ -271,6 +275,86 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
     }
   },[ isFocused ])
 
+  // ----- Autosave -------------------------------------------------
+  //
+  // The composer buffers unsaved drafts to localStorage every few
+  // seconds. If the browser crashes / the tab closes / focus is
+  // lost mid-thought, the next composer mount restores the content
+  // silently and shows a small "restored" banner.
+  //
+  // localStorage is client-only + per-browser. That's fine for a
+  // single-admin site — cross-device recovery isn't needed. Skips
+  // SSR because window doesn't exist there.
+  //
+  // Storage key + shape:
+  //   pgm.composerAutosave → JSON: { content: string, updated: number }
+  //
+  // TTL: 24h. Older snapshots are ignored so a stale draft from a
+  // week ago doesn't ambush you when you sit down to write.
+
+  const AUTOSAVE_KEY = "pgm.composerAutosave";
+  const AUTOSAVE_TTL_MS = 24 * 60 * 60 * 1000;
+  const AUTOSAVE_DEBOUNCE_MS = 3000;
+
+  // Mount-only: restore from a recent snapshot, if any.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(AUTOSAVE_KEY);
+      if (!raw) return;
+      const snap = JSON.parse(raw) as { content?: string; updated?: number };
+      if (
+        typeof snap?.content === "string" &&
+        snap.content.trim().length > 0 &&
+        typeof snap?.updated === "number" &&
+        Date.now() - snap.updated < AUTOSAVE_TTL_MS
+      ) {
+        setLexicalFromDraft(snap.content);
+        setPostText(snap.content);
+        setAutosaveRestored(true);
+      } else {
+        // Stale or empty — drop it so we don't keep pinging on future
+        // mounts.
+        window.localStorage.removeItem(AUTOSAVE_KEY);
+      }
+    } catch { /* corrupt JSON or unavailable storage — ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced snapshot on every content change. Empty content clears
+  // the snapshot rather than saving an empty one.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const t = setTimeout(() => {
+      try {
+        const stripped = postText.replace(/<[^>]+>/g, "").trim();
+        if (!stripped) {
+          window.localStorage.removeItem(AUTOSAVE_KEY);
+          return;
+        }
+        window.localStorage.setItem(
+          AUTOSAVE_KEY,
+          JSON.stringify({ content: postText, updated: Date.now() })
+        );
+      } catch { /* quota exceeded, etc. — best-effort */ }
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [postText]);
+
+  // Discard the restored draft without publishing.
+  const discardAutosave = () => {
+    try {
+      if (typeof window !== "undefined")
+        window.localStorage.removeItem(AUTOSAVE_KEY);
+    } catch { /* silent */ }
+    setLexicalFromDraft("");
+    setPostText("");
+    setClearPostContent(true);
+    setAutosaveRestored(false);
+  };
+  // ----- End autosave --------------------------------------------
+
+
   useEffect(() => {
     if(submitPostForm.data?.newPost) {
       setNewPost(submitPostForm.data?.newPost);
@@ -278,6 +362,14 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
       setYouTubePreviews([]);
       setClearPostContent(true);
       setPostText("");
+      // Publish committed — drop the autosave snapshot so the next
+      // composer mount starts clean instead of restoring the just-
+      // published content.
+      try {
+        if (typeof window !== "undefined")
+          window.localStorage.removeItem(AUTOSAVE_KEY);
+      } catch { /* silent */ }
+      setAutosaveRestored(false);
       submitPostForm.data.newPost = null;
     }
   },[ submitPostForm ]);
@@ -298,6 +390,18 @@ export const PostCreator: React.FC<{setNewPost?: any}> = ({setNewPost}) => {
 
   const editorBlock = (
     <>
+      {autosaveRestored ? (
+        <div className="upload__autosave-banner">
+          <span>Restored unsaved draft from earlier.</span>
+          <button
+            type="button"
+            onClick={discardAutosave}
+            className="upload__autosave-discard"
+          >
+            Discard
+          </button>
+        </div>
+      ) : null}
       <TextEditor
         attachmentAction={() => fileInputRef.current?.click()}
         clearContent={clearPostContent}
