@@ -93,9 +93,10 @@ export const meta: MetaFunction = () => [
   // rel="me" back to your profile) and contributes to Google's
   // E-E-A-T evaluation of the author.
   { tagName: "link", rel: "me", href: "https://pg.mccullo.ug/users/patrick" },
-  { tagName: "link", rel: "me", href: "https://bsky.app/profile/patrick.mccullo.ug" },
-  { tagName: "link", rel: "me", href: "https://beige.party/@mycotropic" },
+  { tagName: "link", rel: "me", href: "https://bsky.app/profile/mccullo.ug" },
+  { tagName: "link", rel: "me", href: "https://mastodon.social/@patrick@pg.mccullo.ug/" },
   { tagName: "link", rel: "me", href: "https://github.com/pgmccullough" },
+  { tagName: "link", rel: "me", href: "https://www.instagram.com/pgmccullough/" },
 
   // Webmention endpoint discovery — other IndieWeb sites + Bridgy
   // read this <link rel> tag to know where to send mentions.
@@ -153,9 +154,10 @@ export const meta: MetaFunction = () => [
         url: "https://pg.mccullo.ug/",
         sameAs: [
           "https://pg.mccullo.ug/users/patrick",
-          "https://bsky.app/profile/patrick.mccullo.ug",
-          "https://beige.party/@mycotropic",
+          "https://bsky.app/profile/mccullo.ug",
+          "https://mastodon.social/@patrick@pg.mccullo.ug/",
           "https://github.com/pgmccullough",
+          "https://www.instagram.com/pgmccullough/",
         ],
       },
     },

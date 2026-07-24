@@ -35,9 +35,10 @@ export const meta: MetaFunction = () => {
         // the profiles that mutually verify back via rel="me".
         sameAs: [
           "https://pg.mccullo.ug/users/patrick",
-          "https://bsky.app/profile/patrick.mccullo.ug",
-          "https://beige.party/@mycotropic",
+          "https://bsky.app/profile/mccullo.ug",
+          "https://mastodon.social/@patrick@pg.mccullo.ug/",
           "https://github.com/pgmccullough",
+          "https://www.instagram.com/pgmccullough/",
         ],
       },
     },
@@ -106,12 +107,12 @@ export default function About() {
         <h2>Elsewhere</h2>
         <ul className="about__profiles">
           <li className="about__profile">
-            <a rel="me" href="https://bsky.app/profile/patrick.mccullo.ug">
+            <a rel="me" href="https://bsky.app/profile/mccullo.ug">
               🦋 Bluesky
             </a>
           </li>
           <li className="about__profile">
-            <a rel="me" href="https://beige.party/@mycotropic">
+            <a rel="me" href="https://mastodon.social/@patrick@pg.mccullo.ug/">
               🐘 Mastodon
             </a>
           </li>
@@ -123,6 +124,11 @@ export default function About() {
           <li className="about__profile">
             <a rel="me" href="https://github.com/pgmccullough">
               💻 GitHub
+            </a>
+          </li>
+          <li className="about__profile">
+            <a rel="me" href="https://www.instagram.com/pgmccullough/">
+              📷 Instagram
             </a>
           </li>
         </ul>
