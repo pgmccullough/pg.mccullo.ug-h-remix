@@ -166,11 +166,17 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         return;
       }
       const buf = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
-      // `animated: true` tells Sharp to read every frame of a
-      // multi-page image (animated GIF/WebP). Without it, .resize()
-      // silently drops all frames but the first — so animated GIFs
-      // in posts stop animating once the _600w cache is generated.
-      // For static images the flag is a no-op.
+      // Animated GIFs: skip Sharp resize entirely and never cache a
+      // _600w variant. Sharp's animated-GIF re-encode is fragile
+      // (loses frames on some inputs even with `animated: true`),
+      // and GIFs are the one format where preserving animation is
+      // more valuable than saving bytes. The media proxy will
+      // continue serving the original directly.
+      if ((contentExt ?? "").toLowerCase() === "gif") {
+        return;
+      }
+      // `animated: true` still applied to non-GIF multi-page inputs
+      // (animated WebP, etc.) so those keep animation through resize.
       const sharped = await sharp(buf, { animated: true })
         .resize(600)
         .toBuffer();
@@ -196,7 +202,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     await s3Client.send(
       new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: fullPath })
     );
-    if (isImage) {
+    // GIFs bypass the _600w cache lookup entirely — even if a stale
+    // single-frame _600w exists in S3 from before the fix, we ignore
+    // it and serve the original animated file.
+    const isGif = fullPath.split(".").pop()?.toLowerCase() === "gif";
+    if (isImage && !isGif) {
       try {
         resizeImage = await s3Client.send(
           new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: desiredPath })

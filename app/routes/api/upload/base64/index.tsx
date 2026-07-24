@@ -57,8 +57,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         );
         if (!obj.Body) return;
         const body = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
-        // animated: true preserves multi-page GIF/WebP animation
-        // through the resize. No-op for static images.
+        // Skip Sharp entirely for GIFs — its animated-GIF re-encode
+        // is unreliable, and animation matters more than byte savings
+        // for this format. Original is served directly by the proxy.
+        if ((contentExt ?? "").toLowerCase() === "gif") {
+          return;
+        }
+        // animated: true preserves multi-page WebP animation through
+        // the resize. No-op for static images.
         const sharped = await sharp(body, { animated: true })
           .resize(600)
           .toBuffer();
