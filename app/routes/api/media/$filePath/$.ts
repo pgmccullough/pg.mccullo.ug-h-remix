@@ -166,7 +166,14 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
         return;
       }
       const buf = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
-      const sharped = await sharp(buf).resize(600).toBuffer();
+      // `animated: true` tells Sharp to read every frame of a
+      // multi-page image (animated GIF/WebP). Without it, .resize()
+      // silently drops all frames but the first — so animated GIFs
+      // in posts stop animating once the _600w cache is generated.
+      // For static images the flag is a no-op.
+      const sharped = await sharp(buf, { animated: true })
+        .resize(600)
+        .toBuffer();
       await s3Client.send(
         new PutObjectCommand({
           Bucket: S3_BUCKET!,

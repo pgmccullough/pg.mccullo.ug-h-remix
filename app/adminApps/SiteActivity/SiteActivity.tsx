@@ -320,6 +320,44 @@ export const SiteActivity: React.FC<{}> = () => {
     (a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0)
   );
 
+  // Compute unread count once so both the header widget and the
+  // document.title prefix effect below read the same number.
+  const unread =
+    lastReadTs === null
+      ? 0
+      : sorted.filter((v) => (v.lastSeen ?? 0) > lastReadTs).length;
+
+  // Mirror the "(N)" from the Recent visitors header into the
+  // browser tab title so admin sees the unread count no matter
+  // which tab they're on. MutationObserver keeps the prefix in
+  // sync across RR-v7 route navigations (which reset the title
+  // via <Meta />). Non-admins skip this — the loaderVisitors is
+  // empty for them so `unread` stays 0 and the prefix never lands.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const titleEl = document.querySelector("title");
+    if (!titleEl) return;
+    const stripPrefix = (t: string) => t.replace(/^\(\d+\)\s+/, "");
+    const applyPrefix = (t: string) => {
+      const base = stripPrefix(t);
+      return unread > 0 ? `(${unread}) ${base}` : base;
+    };
+    // Apply immediately in case RR has already set title for this
+    // render pass.
+    const desired = applyPrefix(document.title);
+    if (document.title !== desired) document.title = desired;
+    // Watch for external title changes (navigation, dynamic meta
+    // updates from a loader/action) and re-apply the prefix.
+    // The equality check prevents the observer from ping-ponging
+    // on the write we just did.
+    const observer = new MutationObserver(() => {
+      const wanted = applyPrefix(document.title);
+      if (document.title !== wanted) document.title = wanted;
+    });
+    observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, [unread]);
+
   // Single container fixed to bottom: 0. Body (above) animates max-height
   // open/closed; header (below) stays anchored to the container's bottom
   // edge, which is always at the viewport bottom. As body grows, the
@@ -419,15 +457,11 @@ export const SiteActivity: React.FC<{}> = () => {
         >
           <span>
             Recent visitors
-            {lastReadTs !== null && (() => {
-              // Unread count = visitors whose lastSeen postdates the
-              // last time the drawer was opened. Rendered as " (N)"
-              // only when N > 0 so a caught-up widget reads clean.
-              const unread = sorted.filter(
-                (v) => (v.lastSeen ?? 0) > lastReadTs
-              ).length;
-              return unread > 0 ? ` (${unread})` : "";
-            })()}
+            {/* Hoisted `unread` (declared above) is what the title-
+                prefix effect uses, so the header and the browser tab
+                always agree on the count. Rendered as " (N)" only
+                when N > 0 so a caught-up widget reads clean. */}
+            {unread > 0 ? ` (${unread})` : ""}
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
             {/* Push-subscription button. If not subscribed yet, one

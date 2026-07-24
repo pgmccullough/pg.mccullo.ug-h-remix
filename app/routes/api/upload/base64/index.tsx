@@ -57,7 +57,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         );
         if (!obj.Body) return;
         const body = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
-        const sharped = await sharp(body).resize(600).toBuffer();
+        // animated: true preserves multi-page GIF/WebP animation
+        // through the resize. No-op for static images.
+        const sharped = await sharp(body, { animated: true })
+          .resize(600)
+          .toBuffer();
         await s3Client.send(
           new PutObjectCommand({
             Bucket: S3_BUCKET!,

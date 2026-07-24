@@ -91,7 +91,9 @@ export async function uploadFileToS3(
       );
       if (obj.Body) {
         const buf = await streamToBuffer(obj.Body as AsyncIterable<Uint8Array>);
-        const sharped = await sharp(buf)
+        // animated: true preserves multi-page GIF/WebP animation
+        // through the resize. No-op for static images.
+        const sharped = await sharp(buf, { animated: true })
           .resize(
             parts[2] === "cover"
               ? 1600
