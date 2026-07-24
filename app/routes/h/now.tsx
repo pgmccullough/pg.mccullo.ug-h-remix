@@ -17,10 +17,13 @@ import type {
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
+import { Link } from "react-router";
 import { clientPromise } from "~/lib/mongodb";
 import { getUser } from "~/utils/session.server";
 import { TextEditor } from "~/components/TextEditor/TextEditor";
 import { buildMeta, SEO_CONST, stripHtml } from "~/utils/seo";
+import { findBacklinksToPath } from "~/utils/backlinks.server";
+import type { Backlink } from "~/utils/backlinks.server";
 
 // Fallback shown before any admin save has written a `now_page` doc.
 // Structured as HTML so the same rendering path handles both this
@@ -65,9 +68,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       ? stored.content
       : DEFAULT_CONTENT;
   const updated = typeof stored?.updated === "number" ? stored.updated : null;
+  // Any post that links here — surfaced as a "Referenced by" list at
+  // the bottom of the page. Cheap regex scan; see backlinks.server.
+  const backlinks = await findBacklinksToPath("/h/now");
   return {
     content,
     updated,
+    backlinks,
     isAdmin: user?.role === "administrator",
   };
 };
@@ -106,8 +113,24 @@ function fmtUpdated(unix: number | null): string {
   });
 }
 
+function excerpt(html: string | undefined, max = 120): string {
+  if (!html) return "Untitled";
+  const s = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
+}
+function fmtDate(unix?: number): string {
+  if (!unix) return "";
+  return new Date(unix * 1000).toLocaleDateString("en-US", {
+    year: "numeric", month: "short", day: "numeric",
+  });
+}
+function permalink(b: Backlink): string {
+  const slug = b.seoMeta?.slug;
+  return slug ? `/h/post/${b._id}/${encodeURIComponent(slug)}` : `/h/post/${b._id}`;
+}
+
 export default function Now() {
-  const { content, updated, isAdmin } = useLoaderData<typeof loader>();
+  const { content, updated, backlinks, isAdmin } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
   const [editing, setEditing] = useState(false);
@@ -269,6 +292,21 @@ export default function Now() {
               className="fake-p"
               dangerouslySetInnerHTML={{ __html: content }}
             />
+            {backlinks.length > 0 ? (
+              <>
+                <h2>Referenced by</h2>
+                <ul className="backlinks">
+                  {backlinks.map((b: Backlink) => (
+                    <li key={b._id}>
+                      <Link to={permalink(b)} className="backlinks__item">
+                        <span className="backlinks__date">{fmtDate(b.created)}</span>
+                        <span className="backlinks__excerpt">{excerpt(b.content)}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
             <div className="now__footer">
               Inspired by the{" "}
               <a href="https://nownownow.com" rel="noopener">

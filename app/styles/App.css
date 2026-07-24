@@ -3083,6 +3083,83 @@ body {
   border-color: #232b36;
 }
 
+/* Shared "Referenced by" backlinks list — used on post permalinks,
+   /h/now, and /h/about to show which other posts link there. Same
+   visual pattern as related-posts / webmentions strips but
+   generalized so all three surfaces render consistently. */
+.backlinks {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 12px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.backlinks li {
+  border-bottom: 1px solid #f0f0f0;
+}
+.backlinks li:last-child { border-bottom: 0; }
+.backlinks__item,
+.backlinks__item:visited {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 12px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.backlinks__item:hover { background: #f8f8f8; }
+.backlinks__date {
+  flex: 0 0 90px;
+  color: #888;
+  font-size: 12px;
+  text-align: right;
+}
+.backlinks__excerpt { flex: 1; min-width: 0; }
+/* When rendered on a post permalink (inside the article body), wrap
+   the list with a labeled head bar so the "Referenced by" section
+   reads as a distinct card, matching Related posts styling. */
+.backlinks-section {
+  margin: 24px 0 8px;
+  background: #fff;
+  border: 1px solid #979997;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.backlinks-section__head {
+  background: #eee;
+  padding: 8px 12px;
+  font: 600 12px 'PGM Sans', sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #506982;
+  border-bottom: 1px solid #979997;
+}
+.backlinks-section .backlinks {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+[data-theme="dark"] .backlinks,
+[data-theme="dark"] .backlinks-section {
+  background: #1a2028;
+  border-color: #2a3543;
+}
+[data-theme="dark"] .backlinks li {
+  border-color: #232b36;
+}
+[data-theme="dark"] .backlinks__item { color: #e5e7eb; }
+[data-theme="dark"] .backlinks__item:hover { background: #232b36; }
+[data-theme="dark"] .backlinks__date { color: #94a3b8; }
+[data-theme="dark"] .backlinks-section__head {
+  background: #232b36;
+  color: #a1b5c9;
+  border-color: #2a3543;
+}
+
 /* a11y: skip-to-content link.
    Visually offscreen by default; snaps into place on keyboard focus
    (Tab from address bar). Screen readers announce it normally. */

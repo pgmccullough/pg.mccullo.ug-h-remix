@@ -10,8 +10,34 @@
  * can tweak the paragraphs without going through an admin UI.
  */
 
-import type { MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { buildMeta, SEO_CONST } from "~/utils/seo";
+import { findBacklinksToPath } from "~/utils/backlinks.server";
+import type { Backlink } from "~/utils/backlinks.server";
+
+export const loader = async (_args: LoaderFunctionArgs) => {
+  // Posts linking to /h/about, surfaced as a "Referenced by" list
+  // at the bottom. Cheap regex scan; see backlinks.server.
+  const backlinks = await findBacklinksToPath("/h/about");
+  return { backlinks };
+};
+
+function excerpt(html: string | undefined, max = 120): string {
+  if (!html) return "Untitled";
+  const s = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s;
+}
+function fmtDate(unix?: number): string {
+  if (!unix) return "";
+  return new Date(unix * 1000).toLocaleDateString("en-US", {
+    year: "numeric", month: "short", day: "numeric",
+  });
+}
+function permalink(b: Backlink): string {
+  const slug = b.seoMeta?.slug;
+  return slug ? `/h/post/${b._id}/${encodeURIComponent(slug)}` : `/h/post/${b._id}`;
+}
 
 export const meta: MetaFunction = () => {
   const description =
@@ -46,6 +72,7 @@ export const meta: MetaFunction = () => {
 };
 
 export default function About() {
+  const { backlinks } = useLoaderData<typeof loader>();
   return (
     <>
       <style>{`
@@ -105,29 +132,34 @@ export default function About() {
         </p>
 
         <h2>Elsewhere</h2>
+        {/* target="_blank" keeps the reader anchored on the About
+            page while they check out the linked profile. rel keeps
+            'me' (Mastodon/IndieAuth verification) plus 'noopener
+            noreferrer' — the security-standard pair when opening
+            in a new tab so window.opener + referrer don't leak. */}
         <ul className="about__profiles">
           <li className="about__profile">
-            <a rel="me" href="https://bsky.app/profile/mccullo.ug">
+            <a rel="me noopener noreferrer" target="_blank" href="https://bsky.app/profile/mccullo.ug">
               🦋 Bluesky
             </a>
           </li>
           <li className="about__profile">
-            <a rel="me" href="https://mastodon.social/@patrick@pg.mccullo.ug/">
+            <a rel="me noopener noreferrer" target="_blank" href="https://mastodon.social/@patrick@pg.mccullo.ug/">
               🐘 Mastodon
             </a>
           </li>
           <li className="about__profile">
-            <a rel="me" href="https://pg.mccullo.ug/users/patrick">
+            <a rel="me noopener noreferrer" target="_blank" href="https://pg.mccullo.ug/users/patrick">
               🌐 Fediverse
             </a>
           </li>
           <li className="about__profile">
-            <a rel="me" href="https://github.com/pgmccullough">
+            <a rel="me noopener noreferrer" target="_blank" href="https://github.com/pgmccullough">
               💻 GitHub
             </a>
           </li>
           <li className="about__profile">
-            <a rel="me" href="https://www.instagram.com/pgmccullough/">
+            <a rel="me noopener noreferrer" target="_blank" href="https://www.instagram.com/pgmccullough/">
               📷 Instagram
             </a>
           </li>
@@ -139,6 +171,22 @@ export default function About() {
           <a href="/feed.xml">Atom</a> or{" "}
           <a href="/feed.json">JSON Feed</a>.
         </p>
+
+        {backlinks.length > 0 ? (
+          <>
+            <h2>Referenced by</h2>
+            <ul className="backlinks">
+              {backlinks.map((b: Backlink) => (
+                <li key={b._id}>
+                  <Link to={permalink(b)} className="backlinks__item">
+                    <span className="backlinks__date">{fmtDate(b.created)}</span>
+                    <span className="backlinks__excerpt">{excerpt(b.content)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
       </section>
         </div>
       </article>

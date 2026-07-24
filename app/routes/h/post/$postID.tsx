@@ -6,6 +6,8 @@ import { PostCard } from "~/components/PostCard/PostCard";
 import type { PostParentSnippet } from "~/components/PostCard/PostCard";
 import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { serializeDoc, serializeDocs } from "~/utils/serialize.server";
+import { findBacklinksToPost } from "~/utils/backlinks.server";
+import type { Backlink } from "~/utils/backlinks.server";
 import {
   getInboxPostsByUris,
   getRemoteActors,
@@ -247,12 +249,18 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     .toArray();
   const webmentions = serializeDocs(rawMentions);
 
+  // Internal backlinks — other posts on this site that link here.
+  // Distinct from webmentions (which are external cross-site pings);
+  // this is my-own-posts-referencing-this-post, useful for
+  // permalinks that get cited later in follow-up posts.
+  const backlinks = await findBacklinksToPost(postID);
+
   // Trim the embedding vector off the post before shipping to the
   // client — it's a 512-float array only useful server-side for the
   // related-posts ranker. Cutting it saves ~2KB per pageload.
   const { embedding: _emb, ...postForClient } = serialized as any;
 
-  return { post: postForClient, parent, related, webmentions, user };
+  return { post: postForClient, parent, related, webmentions, backlinks, user };
 };
 
 // Advertise the webmention endpoint via HTTP Link header on post
@@ -440,11 +448,12 @@ function relatedDate(unix?: number): string {
 }
 
 export default function SinglePost() {
-  const { post, parent, related = [], webmentions = [] } = useLoaderData<{
+  const { post, parent, related = [], webmentions = [], backlinks = [] } = useLoaderData<{
     post: any;
     parent: PostParentSnippet | null;
     related?: RelatedPost[];
     webmentions?: WebmentionRow[];
+    backlinks?: Backlink[];
   }>();
 
   // Split webmentions by type for display — "reactions" get compacted
@@ -648,6 +657,33 @@ export default function SinglePost() {
             ) : null}
           </div>
         </>
+      ) : null}
+
+      {/* Internal backlinks — other posts on this site that link to
+          this one. Distinct from webmentions (external) — this is
+          "you cited yourself" reverse discovery. Reuses the
+          .backlinks CSS shared with /h/now and /h/about. */}
+      {backlinks && backlinks.length > 0 ? (
+        <nav className="backlinks-section" aria-label="Referenced by">
+          <div className="backlinks-section__head">Referenced by</div>
+          <ul className="backlinks">
+            {backlinks.map((b) => (
+              <li key={b._id}>
+                <Link
+                  to={
+                    b.seoMeta?.slug
+                      ? `/h/post/${b._id}/${encodeURIComponent(b.seoMeta.slug)}`
+                      : `/h/post/${b._id}`
+                  }
+                  className="backlinks__item"
+                >
+                  <span className="backlinks__date">{relatedDate(b.created)}</span>
+                  <span className="backlinks__excerpt">{relatedExcerpt(b.content)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       ) : null}
 
       {/* Related posts — internal linking that helps Google map the
