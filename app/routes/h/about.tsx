@@ -52,7 +52,6 @@ export default function About() {
           padding: 16px;
           font-family: 'PGM Sans', sans-serif;
           color: #333;
-          max-width: 620px;
         }
         .about h1 { font-size: 24px; color: #506982; margin: 0 0 12px; }
         .about h2 {
@@ -79,6 +78,17 @@ export default function About() {
           background: #232b36; border-color: #2a3543; color: #e5e7eb;
         }
       `}</style>
+      {/* Wrap the page content in the site's standard postcard shell so
+          it visually reads as part of the feed — gray header bar with
+          the page name, white content area with a border. Matches how
+          post permalinks look. */}
+      <article className="postcard">
+        <div className="postcard__time">
+          <div className="postcard__time__link--unlink" style={{ flex: 1 }}>
+            About
+          </div>
+        </div>
+        <div className="postcard__content">
       <section className="about">
         <h1>Patrick Glendon McCullough</h1>
 
@@ -124,6 +134,8 @@ export default function About() {
           <a href="/feed.json">JSON Feed</a>.
         </p>
       </section>
+        </div>
+      </article>
     </>
   );
 }

@@ -146,13 +146,6 @@ export default function Now() {
           padding: 16px;
           font-family: 'PGM Sans', sans-serif;
           color: #333;
-          max-width: 620px;
-        }
-        .now__head {
-          display: flex;
-          align-items: baseline;
-          justify-content: space-between;
-          gap: 12px;
         }
         .now h1 { font-size: 24px; color: #506982; margin: 0 0 4px; }
         .now__updated { font-size: 12px; color: #888; margin-bottom: 20px; }
@@ -208,17 +201,27 @@ export default function Now() {
           border-color: #2a3543;
         }
       `}</style>
-      <section className="now">
-        <div className="now__head">
-          <h1>Now</h1>
+      {/* Postcard-shaped wrapper for visual continuity with the feed —
+          gray title bar with page label + admin edit button, white
+          content area below. */}
+      <article className="postcard">
+        <div className="postcard__time">
+          <div className="postcard__time__link--unlink" style={{ flex: 1 }}>
+            Now
+          </div>
           {isAdmin && !editing ? (
-            <div className="now__actions">
-              <button type="button" onClick={() => setEditing(true)}>
-                EDIT
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              style={{ padding: "2px 12px 0", height: "auto" }}
+            >
+              EDIT
+            </button>
           ) : null}
         </div>
+        <div className="postcard__content">
+      <section className="now">
+        <h1>Now</h1>
         <div className="now__updated">
           {updated ? `Updated ${fmtUpdated(updated)}` : "Not yet updated"}
         </div>
@@ -276,6 +279,8 @@ export default function Now() {
           </>
         )}
       </section>
+        </div>
+      </article>
     </>
   );
 }
