@@ -37,6 +37,114 @@ const STREAM_LABEL: Record<BibleData["stream"], string> = {
   NT: "New Testament",
 };
 
+// ---------------------------------------------------------------------------
+// KJV curly-brace conventions
+//
+// The KJV text uses two overlapping conventions inside {curly braces}:
+//
+//   1. Inserted words         →  {was}, {it was}
+//      Words supplied by translators for readability that aren't in the
+//      Hebrew/Greek. Standard editorial practice: render italicized,
+//      strip the braces.
+//
+//   2. Marginal notes          →  {the light from...: Heb. between the
+//                                  light and between the darkness}
+//      Alternative translations, literal-Hebrew glosses, etc. The
+//      convention is `{ref-prefix...: note}` where `ref-prefix` is the
+//      opening words of the text the note comments on, ellipsis meaning
+//      "…and so on up to the end of the referenced passage". We render
+//      the referenced text with a dotted underline + native title="…"
+//      tooltip carrying the note.
+//
+// Distinguisher: presence of ":" in the brace content = marginal note.
+// Everything else = inserted words. Handles the two examples cleanly and
+// falls back to italic-only if the note's prefix can't be found in the
+// preceding text (rare — usually the ellipsis prefix matches cleanly).
+// ---------------------------------------------------------------------------
+
+type VersePart =
+  | { type: "text"; text: string }
+  | { type: "italic"; text: string }
+  | { type: "note"; text: string; note: string };
+
+function parseVerse(raw: string): VersePart[] {
+  const parts: VersePart[] = [];
+  const braceRe = /\{([^}]*)\}/g;
+  let cursor = 0;
+  let m: RegExpExecArray | null;
+
+  while ((m = braceRe.exec(raw)) !== null) {
+    // Emit any plain text between the previous brace and this one.
+    if (m.index > cursor) {
+      parts.push({ type: "text", text: raw.slice(cursor, m.index) });
+    }
+    const content = m[1];
+
+    if (content.includes(":")) {
+      // Marginal note. Parse prefix + note.
+      const colonIdx = content.indexOf(":");
+      const prefixRaw = content.slice(0, colonIdx);
+      const note = content.slice(colonIdx + 1).trim();
+      // Strip any "..." from the prefix and normalize whitespace — the
+      // remainder is what we look for in the preceding verse text.
+      const key = prefixRaw.replace(/\.\.\./g, "").replace(/\s+/g, " ").trim();
+
+      // Walk backward through already-accumulated parts looking for a
+      // text run that contains the key. Case-sensitive first (the KJV
+      // capitalization is usually preserved verbatim), then fall back
+      // to case-insensitive so a note like {the light...} still finds
+      // "The light" at sentence start.
+      let placed = false;
+      if (key) {
+        for (let i = parts.length - 1; i >= 0; i--) {
+          const p = parts[i];
+          if (p.type !== "text") continue;
+          let idx = p.text.lastIndexOf(key);
+          if (idx < 0) {
+            const lower = p.text.toLowerCase();
+            idx = lower.lastIndexOf(key.toLowerCase());
+          }
+          if (idx < 0) continue;
+          // Extend the target range from `idx` to the next period
+          // (inclusive) or end-of-run — matches the KJV convention that
+          // notes cover the sentence they're attached to.
+          const before = p.text.slice(0, idx);
+          const tail = p.text.slice(idx);
+          const periodMatch = tail.match(/^[^.]*\.?/);
+          const targetLen = periodMatch ? periodMatch[0].length : tail.length;
+          const target = tail.slice(0, targetLen);
+          const after = tail.slice(targetLen);
+          // Splice the found text run into three parts. Splice may
+          // produce empty text runs; renderer filters them out below.
+          parts.splice(
+            i,
+            1,
+            { type: "text", text: before },
+            { type: "note", text: target, note },
+            { type: "text", text: after }
+          );
+          placed = true;
+          break;
+        }
+      }
+      // Fallback: the key didn't match anywhere prior. Rare, but rather
+      // than swallow the note silently we render it as an inline italic
+      // aside so the reader still sees it.
+      if (!placed) {
+        parts.push({ type: "italic", text: `[${note}]` });
+      }
+    } else {
+      // Inserted-word convention: strip braces, render italic.
+      parts.push({ type: "italic", text: content });
+    }
+    cursor = m.index + m[0].length;
+  }
+  if (cursor < raw.length) {
+    parts.push({ type: "text", text: raw.slice(cursor) });
+  }
+  return parts;
+}
+
 export const BibleWidget: React.FC = () => {
   // Root loader gives us `user` — used to gate the admin controls.
   // The widget is rendered from Sidebar which is rendered from
@@ -160,6 +268,8 @@ export const BibleWidget: React.FC = () => {
         }
         .bible-widget__verse {
           margin-bottom: 5px;
+          font-size: 15px;
+          line-height: 1.5;
         }
         .bible-widget__verse-num {
           color: #888;
@@ -167,6 +277,16 @@ export const BibleWidget: React.FC = () => {
           font-weight: 700;
           vertical-align: super;
           margin-right: 3px;
+        }
+        /* KJV notes: text carrying a marginal-note gets a dotted
+           underline so it reads as "hover for more". Native title=""
+           tooltip supplies the note content. */
+        .bible-widget__note {
+          border-bottom: 1px dotted #999;
+          cursor: help;
+        }
+        [data-theme="dark"] .bible-widget__note {
+          border-bottom-color: #94a3b8;
         }
         .bible-widget__messages {
           max-height: 300px;
@@ -284,12 +404,30 @@ export const BibleWidget: React.FC = () => {
             ) : (
               <>
                 <div className="bible-widget__verses">
-                  {data.verses.map((verse, i) => (
-                    <div key={i} className="bible-widget__verse">
-                      <span className="bible-widget__verse-num">{i + 1}</span>
-                      {verse}
-                    </div>
-                  ))}
+                  {data.verses.map((verse, i) => {
+                    const parts = parseVerse(verse);
+                    return (
+                      <div key={i} className="bible-widget__verse">
+                        <span className="bible-widget__verse-num">{i + 1}</span>
+                        {parts.map((p, j) => {
+                          if (!p.text) return null;
+                          if (p.type === "italic") return <em key={j}>{p.text}</em>;
+                          if (p.type === "note") {
+                            return (
+                              <span
+                                key={j}
+                                className="bible-widget__note"
+                                title={p.note}
+                              >
+                                {p.text}
+                              </span>
+                            );
+                          }
+                          return <span key={j}>{p.text}</span>;
+                        })}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="bible-widget__messages">
