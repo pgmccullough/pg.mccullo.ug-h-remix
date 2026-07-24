@@ -4,10 +4,5 @@
       "path": "/api/cron/publish-scheduled",
       "schedule": "0 12 * * *"
     }
-  ],
-  "functions": {
-    "app/routes/api/og/$postId.tsx": {
-      "includeFiles": "app/assets/fonts/**"
-    }
-  }
+  ]
 }
