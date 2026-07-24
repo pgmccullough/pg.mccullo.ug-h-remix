@@ -214,7 +214,7 @@ export const Sidebar: React.FC<{
             {siteData?.site_description
               ?editMode
                 ?<>
-                  <TextEditor 
+                  <TextEditor
                     htmlString={siteData?.site_description}
                     contentStateSetter={setBioContent}
                   />
@@ -227,6 +227,61 @@ export const Sidebar: React.FC<{
               :""
             }
           </div>
+          {/* Static footer — lives inside the postcard shell but
+              outside the editable bio area, so it can't be
+              accidentally clobbered by an admin edit. Mirrors the
+              "Elsewhere" chips + navigation from /h/about so any
+              page in the app is one click from a profile link or
+              a nav landing. */}
+          <nav className="sidebar-about-footer" aria-label="About links">
+            <div className="sidebar-about-footer__nav">
+              <Link to="/h/about" onClick={() => setMobileOpen(false)}>About</Link>
+              <span aria-hidden="true">·</span>
+              <Link to="/h/now" onClick={() => setMobileOpen(false)}>Now</Link>
+            </div>
+            <div className="sidebar-about-footer__chips">
+              <a
+                className="sidebar-about-footer__chip"
+                rel="me noopener noreferrer"
+                target="_blank"
+                href="https://bsky.app/profile/mccullo.ug"
+                title="Bluesky"
+                aria-label="Bluesky"
+              >🦋</a>
+              <a
+                className="sidebar-about-footer__chip"
+                rel="me noopener noreferrer"
+                target="_blank"
+                href="https://mastodon.social/@patrick@pg.mccullo.ug/"
+                title="Mastodon"
+                aria-label="Mastodon"
+              >🐘</a>
+              <a
+                className="sidebar-about-footer__chip"
+                rel="me noopener noreferrer"
+                target="_blank"
+                href="https://pg.mccullo.ug/users/patrick"
+                title="Fediverse"
+                aria-label="Fediverse"
+              >🌐</a>
+              <a
+                className="sidebar-about-footer__chip"
+                rel="me noopener noreferrer"
+                target="_blank"
+                href="https://github.com/pgmccullough"
+                title="GitHub"
+                aria-label="GitHub"
+              >💻</a>
+              <a
+                className="sidebar-about-footer__chip"
+                rel="me noopener noreferrer"
+                target="_blank"
+                href="https://www.instagram.com/pgmccullough/"
+                title="Instagram"
+                aria-label="Instagram"
+              >📷</a>
+            </div>
+          </nav>
         </div>
       </article>
 
@@ -239,6 +294,68 @@ export const Sidebar: React.FC<{
           (#4A6CBA), 4px radii, and the box-shadow hover treatment used
           on .postcard__time__option. */}
       <style>{`
+        /* Sidebar About postcard footer — nav + social chips
+           lives outside the editable bio area so admin edits
+           can't accidentally wipe it. Matches the About page
+           chip visual but scaled down for the narrow sidebar. */
+        .sidebar-about-footer {
+          padding: 8px 10px 10px;
+          border-top: 1px solid #f0f0f0;
+          text-align: center;
+        }
+        .sidebar-about-footer__nav {
+          font: 600 12px 'PGM Sans', sans-serif;
+          margin-bottom: 8px;
+          color: #506982;
+        }
+        .sidebar-about-footer__nav a,
+        .sidebar-about-footer__nav a:visited {
+          color: #4A6CBA;
+          text-decoration: none;
+        }
+        .sidebar-about-footer__nav a:hover { text-decoration: underline; }
+        .sidebar-about-footer__nav span {
+          margin: 0 6px;
+          color: #999;
+        }
+        .sidebar-about-footer__chips {
+          display: flex;
+          justify-content: center;
+          gap: 4px;
+          flex-wrap: wrap;
+        }
+        .sidebar-about-footer__chip,
+        .sidebar-about-footer__chip:visited {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          background: #eef2f7;
+          font-size: 14px;
+          text-decoration: none;
+          transition: background 0.15s ease, transform 0.15s ease;
+        }
+        .sidebar-about-footer__chip:hover {
+          background: #dde5ef;
+          transform: translateY(-1px);
+        }
+        [data-theme="dark"] .sidebar-about-footer {
+          border-top-color: #232b36;
+        }
+        [data-theme="dark"] .sidebar-about-footer__nav {
+          color: #a1b5c9;
+        }
+        [data-theme="dark"] .sidebar-about-footer__nav span {
+          color: #4a5568;
+        }
+        [data-theme="dark"] .sidebar-about-footer__chip {
+          background: #2a2a2a;
+        }
+        [data-theme="dark"] .sidebar-about-footer__chip:hover {
+          background: #3a3a3a;
+        }
         .sidebar-session {
           text-align: center;
           padding: 14px 12px;
