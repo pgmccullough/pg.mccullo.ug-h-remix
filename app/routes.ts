@@ -126,6 +126,11 @@ export default [
     route("scraper", "routes/api/scraper/index.tsx"),
     route("scraper/delete", "routes/api/scraper/delete/index.tsx"),
 
+    // Bible reading widget — public state, admin-only message/done.
+    route("bible/state", "routes/api/bible/state.ts"),
+    route("bible/message", "routes/api/bible/message.ts"),
+    route("bible/done", "routes/api/bible/done.ts"),
+
     route("siteData/bio", "routes/api/siteData/bio/index.ts"),
     route("siteData/now", "routes/api/siteData/now/index.ts"),
     route("siteData/profileImage", "routes/api/siteData/profileImage/index.tsx"),

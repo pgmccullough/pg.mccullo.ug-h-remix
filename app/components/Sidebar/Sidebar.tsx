@@ -3,6 +3,7 @@ import { useFetcher, useLoaderData } from "react-router";
 import { useEffect, useState } from 'react';
 import type { User, SiteData } from '../../common/types';
 import { Calendar, Email, Notes, RentalProperties, TaskTracker, Webcam, WishList } from '~/adminApps';
+import { BibleWidget } from '~/components/BibleWidget/BibleWidget';
 import { TextEditor } from '../TextEditor/TextEditor';
 import { SignInModal } from '../SignInModal/SignInModal';
 
@@ -437,6 +438,7 @@ export const Sidebar: React.FC<{
         <SignInModal onClose={() => setShowSignInModal(false)} />
       )}
 
+      {/* Admin-only widgets that sit above the Bible reader. */}
       {!manualSiteData && user?.role === "administrator"
         ?<>
           <NotificationsBadge />
@@ -445,6 +447,18 @@ export const Sidebar: React.FC<{
           </article>
           {/* <Email /> */}
           <Calendar />
+        </>
+        :""}
+
+      {/* Bible reader widget — rendered for everyone (public
+          read-only for non-admins). Positioned between Calendar
+          and Notes per Patrick's request; the admin block was
+          split into "above" + "below" fragments so this row lands
+          in the same visual slot regardless of viewer role. */}
+      {!manualSiteData ? <BibleWidget /> : ""}
+
+      {!manualSiteData && user?.role === "administrator"
+        ?<>
           <Notes />
           {/* <TaskTracker /> */}
           <WishList />

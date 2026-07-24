@@ -264,6 +264,85 @@ export async function generateEmbedding(args: {
 
 export const EMBEDDING_DIMENSIONS = EMBEDDING_DIMS;
 
+// ---------------------------------------------------------------------------
+// Bible-reading companion chat.
+//
+// Powers the sidebar Bible widget: user pastes a question or note
+// about a chapter, we send the full chapter text + the conversation
+// history + a scholarly-companion system prompt to gpt-4o-mini and
+// return the reply.
+//
+// Each chapter is a fresh conversation (no cross-chapter memory).
+// Callers pass the full message history each turn.
+// ---------------------------------------------------------------------------
+
+export async function bibleChat(args: {
+  book: string;
+  chapter: number;
+  verses: string[];
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+  timeoutMs?: number;
+}): Promise<string | null> {
+  if (!openAiConfigured()) return null;
+
+  const chapterText = args.verses
+    .map((v, i) => `${i + 1}. ${v}`)
+    .join("\n");
+
+  const systemPrompt = [
+    `You are a knowledgeable and honest companion helping the user think through ${args.book} ${args.chapter} (KJV).`,
+    `Draw freely on biblical scholarship, historical context, textual variants, comparative Ancient Near Eastern literature, and the range of interpretive traditions (Jewish, Catholic, Orthodox, Protestant mainline, evangelical, secular/academic).`,
+    `Be honest about ambiguities, contradictions, and places where scholars or traditions genuinely disagree — don't paper over them.`,
+    `Don't proselytize or offer devotional pep-talks unless explicitly asked. The user has already read the passage; skip preamble and get to substance.`,
+    `Keep responses focused — 2 to 5 short paragraphs unless the question warrants more depth. Cite verse numbers when pointing to specifics.`,
+    `The chapter text is provided below; you can quote from it directly.`,
+    ``,
+    `${args.book} ${args.chapter} (KJV):`,
+    chapterText,
+  ].join("\n");
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? 30000);
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 900,
+        temperature: 0.4,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...args.messages,
+        ],
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      console.error(
+        "[bible-chat] failed:",
+        res.status,
+        await res.text().catch(() => "")
+      );
+      return null;
+    }
+    const data: any = await res.json();
+    const text: string | undefined = data?.choices?.[0]?.message?.content;
+    if (typeof text !== "string" || !text.trim()) return null;
+    return text.trim();
+  } catch (err) {
+    console.error("[bible-chat] exception:", err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Generate alt text for a publicly-fetchable image URL. Returns the
  * text on success, or null on any failure (API error, timeout,
