@@ -123,6 +123,7 @@ export default [
     route("scraper/delete", "routes/api/scraper/delete/index.tsx"),
 
     route("siteData/bio", "routes/api/siteData/bio/index.ts"),
+    route("siteData/now", "routes/api/siteData/now/index.ts"),
     route("siteData/profileImage", "routes/api/siteData/profileImage/index.tsx"),
     route("siteData/storyImage", "routes/api/siteData/storyImage/index.tsx"),
     route("siteData/watchword", "routes/api/siteData/watchword/index.tsx"),
