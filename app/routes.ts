@@ -128,8 +128,10 @@ export default [
 
     // Bible reading widget — public state, admin-only message/done.
     route("bible/state", "routes/api/bible/state.ts"),
+    route("bible/chapter", "routes/api/bible/chapter.ts"),
     route("bible/message", "routes/api/bible/message.ts"),
     route("bible/done", "routes/api/bible/done.ts"),
+    route("bible/highlight", "routes/api/bible/highlight.ts"),
 
     route("siteData/bio", "routes/api/siteData/bio/index.ts"),
     route("siteData/now", "routes/api/siteData/now/index.ts"),

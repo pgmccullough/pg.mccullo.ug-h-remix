@@ -104,6 +104,128 @@ export function nextStream(stream: Stream): Stream {
   return STREAM_ORDER[(i + 1) % STREAM_ORDER.length];
 }
 
+export function prevStream(stream: Stream): Stream {
+  const i = STREAM_ORDER.indexOf(stream);
+  return STREAM_ORDER[(i - 1 + STREAM_ORDER.length) % STREAM_ORDER.length];
+}
+
+/**
+ * Adjacent chapter within a stream, without wrapping.
+ * Returns null at the boundary (first chapter of first book for "prev",
+ * last chapter of last book for "next") so the widget can disable
+ * the chevron. This is intentionally different from the DONE-driven
+ * advance in `advanceStream`, which does wrap — DONE is "reading
+ * plan" (infinite loop), while nav is "browsing" (finite range).
+ */
+export function getAdjacentChapter(
+  direction: "prev" | "next",
+  stream: Stream,
+  book: string,
+  chapter: number
+): { book: string; chapter: number } | null {
+  const books = getStreamBooks(stream);
+  const idx = books.findIndex((b) => b.name === book);
+  if (idx < 0) return null;
+  if (direction === "next") {
+    if (chapter < books[idx].chapters.length) {
+      return { book, chapter: chapter + 1 };
+    }
+    if (idx + 1 < books.length) {
+      return { book: books[idx + 1].name, chapter: 1 };
+    }
+    return null;
+  } else {
+    if (chapter > 1) {
+      return { book, chapter: chapter - 1 };
+    }
+    if (idx > 0) {
+      const prev = books[idx - 1];
+      return { book: prev.name, chapter: prev.chapters.length };
+    }
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Highlights collection: bibleHighlights.
+//   - one doc per (book, chapter)
+//   - verses[] = 1-indexed verse numbers currently highlighted
+//   - admin can toggle; everyone reads
+// ---------------------------------------------------------------------------
+
+export async function getHighlights(
+  book: string,
+  chapter: number
+): Promise<number[]> {
+  const client = await clientPromise;
+  const db = client.db("user_posts");
+  const key = `${book}::${chapter}`;
+  const doc = await db
+    .collection<{ _id: string; verses: number[] }>("bibleHighlights")
+    .findOne({ _id: key });
+  return Array.isArray(doc?.verses) ? doc!.verses : [];
+}
+
+/**
+ * Toggle a verse's highlight status. Returns the updated verse list.
+ * Adds if absent, removes if present. Persists.
+ */
+export async function toggleHighlight(
+  book: string,
+  chapter: number,
+  verse: number
+): Promise<number[]> {
+  const client = await clientPromise;
+  const db = client.db("user_posts");
+  const col = db.collection<{ _id: string; book: string; chapter: number; verses: number[]; updated: number }>(
+    "bibleHighlights"
+  );
+  const key = `${book}::${chapter}`;
+  const existing = await col.findOne({ _id: key });
+  const current = Array.isArray(existing?.verses) ? existing!.verses : [];
+  const has = current.includes(verse);
+  const next = has ? current.filter((v) => v !== verse) : [...current, verse].sort((a, b) => a - b);
+  const now = Math.floor(Date.now() / 1000);
+  await col.updateOne(
+    { _id: key },
+    {
+      $set: {
+        book,
+        chapter,
+        verses: next,
+        updated: now,
+      },
+      $setOnInsert: { _id: key },
+    },
+    { upsert: true }
+  );
+  return next;
+}
+
+/**
+ * Fetch the *most recent* notes for a chapter — the active one if
+ * one exists, else the most recently completed one. Used by
+ * navigation so browsing to a chapter you've already worked on
+ * shows your prior thoughts.
+ */
+export async function getLatestNotes(
+  book: string,
+  chapter: number
+): Promise<BibleNotes | null> {
+  const client = await clientPromise;
+  const db = client.db("user_posts");
+  const active = await db
+    .collection<BibleNotes>("bibleNotes")
+    .findOne({ book, chapter, completed: false });
+  if (active) return active;
+  return await db
+    .collection<BibleNotes>("bibleNotes")
+    .find({ book, chapter, completed: true })
+    .sort({ completedAt: -1 })
+    .limit(1)
+    .next();
+}
+
 /**
  * Return the verses of a specific chapter as a string array.
  * Returns null if the book or chapter doesn't exist — callers
