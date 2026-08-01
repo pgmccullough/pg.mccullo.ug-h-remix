@@ -21,6 +21,19 @@ import { countUnreadNotifications } from "~/utils/federation-interactions.server
 import * as postmark from "postmark";
 import type { Post } from "~/common/types";
 
+/**
+ * Race a promise against a timeout. Never rejects — resolves with
+ * `fallback` if the promise doesn't settle in `ms`. Duplicated
+ * from post/$postID.tsx; keeps each route's timeout handling
+ * self-contained and easy to reason about.
+ */
+function raceOr<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise.catch(() => fallback),
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const IPSTACK_APIKEY = process.env.IPSTACK_APIKEY;
   const client = await clientPromise;
@@ -32,16 +45,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // reads instead of blocking them. All four are independent, so
   // total latency ≈ slowest single query instead of the sum.
   const [rawUser, siteData, wishList, storyPost] = await Promise.all([
-    getUser(request).catch(() => null),
-    db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
-    db.collection("myWishList").find().sort({ created: -1 }).toArray(),
-    db.collection("myPosts")
-      .find({
-        privacy: "Story",
-        created: { $gt: new Date().getTime() / 1000 - 86400 },
-      })
-      .sort({ created: -1 })
-      .toArray(),
+    raceOr(getUser(request), 2500, null),
+    raceOr(
+      db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
+      2500,
+      [] as any[]
+    ),
+    raceOr(
+      db.collection("myWishList").find().sort({ created: -1 }).toArray(),
+      2000,
+      [] as any[]
+    ),
+    raceOr(
+      db.collection("myPosts")
+        .find({
+          privacy: "Story",
+          created: { $gt: new Date().getTime() / 1000 - 86400 },
+        })
+        .sort({ created: -1 })
+        .toArray(),
+      2000,
+      [] as any[]
+    ),
   ]);
   const user = rawUser || { user_name: null, role: null };
   let notes: any[] = [];
@@ -67,6 +92,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // fetches (myNotes, myDates, myProperties, myJobs) — sidebar
     // widgets don't need every record ever, and hundreds of docs
     // wire-transferred per pageview is wasteful.
+    // Each admin fetch bounded at 2.5s. myVisitors is the known
+    // slow one — sort on unindexed lastSeen against a collection
+    // that bloated during yesterday's bot burst. Timing out returns
+    // an empty widget rather than 504'ing the whole page. Fix at
+    // the DB layer: add an index on myVisitors.lastSeen (see
+    // Atlas → Collections → myVisitors → Indexes → Create Index).
     [
       visitors,
       notes,
@@ -76,13 +107,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       sentEmails,
       jobs,
     ] = await Promise.all([
-      db.collection("myVisitors").find().sort({ lastSeen: -1 }).limit(50).toArray(),
-      db.collection("myNotes").find().sort({ created: -1 }).limit(100).toArray(),
-      db.collection("myDates").find().sort({ created: -1 }).limit(100).toArray(),
-      db.collection("myProperties").find().sort({ created: -1 }).limit(50).toArray(),
-      db.collection("myEmails").find({ MessageStream: "inbound" }).sort({ created: -1 }).limit(25).toArray(),
-      db.collection("myEmails").find({ MessageStream: "outbound" }).sort({ created: -1 }).limit(25).toArray(),
-      db.collection("myJobs").find().sort({ created: -1 }).limit(50).toArray(),
+      raceOr(
+        db.collection("myVisitors").find().sort({ lastSeen: -1 }).limit(50).toArray(),
+        2500,
+        [] as any[]
+      ),
+      raceOr(db.collection("myNotes").find().sort({ created: -1 }).limit(100).toArray(), 2000, [] as any[]),
+      raceOr(db.collection("myDates").find().sort({ created: -1 }).limit(100).toArray(), 2000, [] as any[]),
+      raceOr(db.collection("myProperties").find().sort({ created: -1 }).limit(50).toArray(), 2000, [] as any[]),
+      raceOr(db.collection("myEmails").find({ MessageStream: "inbound" }).sort({ created: -1 }).limit(25).toArray(), 2000, [] as any[]),
+      raceOr(db.collection("myEmails").find({ MessageStream: "outbound" }).sort({ created: -1 }).limit(25).toArray(), 2000, [] as any[]),
+      raceOr(db.collection("myJobs").find().sort({ created: -1 }).limit(50).toArray(), 2000, [] as any[]),
     ]);
     // Postmark "opened" backfill — only runs for admin sessions. Currently
     // disabled because the email client UI is also disabled; re-enable when
@@ -136,7 +171,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     wishList,
     unreadNotifications:
       user?.role === "administrator"
-        ? await countUnreadNotifications().catch(() => 0)
+        ? await raceOr(countUnreadNotifications(), 1500, 0)
         : 0,
   };
 };
