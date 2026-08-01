@@ -19,6 +19,21 @@ import { getAllEmbeddedPosts } from "~/utils/embeddings-cache.server";
  * hammered when a share on Facebook / Twitter / Slack triggers 50
  * concurrent scraper fetches of the same URL.
  */
+/**
+ * Race a promise against a timeout. If the promise doesn't settle
+ * by `ms`, resolve with `fallback` instead. Never rejects. Used to
+ * bound how long the loader waits on Mongo — under M0 shared-tier
+ * contention any single query can hang for 5+ seconds and blow
+ * Vercel's function budget. Better to serve a partial page (no
+ * related posts, no backlinks) than a 504.
+ */
+function raceOr<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise.catch(() => fallback),
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 function isLinkPreviewBot(userAgent: string): boolean {
   if (!userAgent) return false;
   const ua = userAgent.toLowerCase();
@@ -131,33 +146,50 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   // (privacy filter depends on user role). Under M0 contention
   // this cuts total loader time from ~sum-of-queries to ~max-of-
   // queries — the difference between 504 and success.
+  // 2s bound on the "nice-to-have" fetches. Under normal Mongo
+  // they finish in <200ms; under contention they may hang and
+  // would blow the 10s Vercel budget. Timing out returns an empty
+  // list — the widget just doesn't render that section for this
+  // request. Retry succeeds when Mongo is healthy again.
   const objectId = ObjectId.isValid(postID) ? new ObjectId(postID) : null;
   const [user, siteData, backlinks, rawMentionsEarly] = await Promise.all([
-    getUser(request).catch(() => null),
-    db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
-    findBacklinksToPost(postID).catch(() => [] as Backlink[]),
+    raceOr(getUser(request), 2500, null),
+    raceOr(
+      db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
+      2500,
+      [] as any[]
+    ),
+    raceOr(findBacklinksToPost(postID), 2000, [] as Backlink[]),
     objectId
-      ? db
-          .collection("webmentions")
-          .find({ targetPostId: postID, status: "verified" })
-          .sort({ "meta.publishedAt": -1, receivedAt: -1 })
-          .limit(50)
-          .toArray()
-          .catch(() => [] as any[])
+      ? raceOr(
+          db
+            .collection("webmentions")
+            .find({ targetPostId: postID, status: "verified" })
+            .sort({ "meta.publishedAt": -1, receivedAt: -1 })
+            .limit(50)
+            .toArray(),
+          2000,
+          [] as any[]
+        )
       : Promise.resolve([] as any[]),
   ]);
-  let post;
-  if (user?.role !== "administrator") {
-    [post] = await db
-      .collection("myPosts")
-      .find({ privacy: "Public", _id: new ObjectId(postID) })
-      .toArray();
-  } else {
-    [post] = await db
-      .collection("myPosts")
-      .find({ _id: new ObjectId(postID) })
-      .toArray();
+  // Post fetch: bounded but with a longer budget than the nice-to-
+  // haves, because the page can't render without it. If this
+  // *also* times out we throw a 503 up the stack rather than
+  // serving an empty page.
+  const postFilter =
+    user?.role !== "administrator"
+      ? { privacy: "Public", _id: new ObjectId(postID) }
+      : { _id: new ObjectId(postID) };
+  const postRows = await raceOr(
+    db.collection("myPosts").find(postFilter).toArray(),
+    4000,
+    null as any[] | null
+  );
+  if (postRows === null) {
+    throw new Response("Mongo timeout — please retry.", { status: 503 });
   }
+  const [post] = postRows;
   if (!post) {
     // Redirect through the rich /h/* catchall so the visitor gets a
     // recovery page with recent posts instead of a raw ErrorBoundary.
@@ -304,11 +336,11 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     // is a couple MB per query — acceptable. If the archive grows to
     // thousands, move to Atlas Vector Search's $vectorSearch stage.
     // Fetched via the shared in-memory cache — see
-    // embeddings-cache.server for TTL rationale. This one call was
-    // previously scanning the whole myPosts collection on every
-    // permalink pageview; now it's cached across requests per
-    // function instance and survives Atlas noisy-neighbor slowdowns.
-    const allEmbedded = await getAllEmbeddedPosts();
+    // embeddings-cache.server for TTL rationale. Bounded to 2s so
+    // a cold cache under Mongo contention doesn't blow the loader
+    // budget; degrades to no related-posts section on that request,
+    // recovers on the next call after cache warms.
+    const allEmbedded = await raceOr(getAllEmbeddedPosts(), 2000, []);
     const candidates = allEmbedded.filter((p) => p._id !== postID);
     const scored = candidates
       .map((p: any) => {
