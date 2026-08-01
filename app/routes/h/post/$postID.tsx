@@ -50,9 +50,44 @@ import { blogPostingJsonLd, buildMeta, stripHtml, SEO_CONST, wordCount } from "~
 
 export const loader: LoaderFunction = async ({ params, request }) => {
   const { postID = "", slug: urlSlug } = params;
-  const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");
+
+  // Fast path for link-preview scrapers: skip the user-session
+  // lookup and siteData fetch entirely — scrapers don't need
+  // auth-gated content (they only see Public posts anyway) and
+  // don't consume siteData. One Mongo query total instead of three,
+  // followed by an early return with the minimal payload.
+  const ua = request.headers.get("user-agent") ?? "";
+  if (isLinkPreviewBot(ua)) {
+    const [botPost] = await db
+      .collection("myPosts")
+      .find({ privacy: "Public", _id: new ObjectId(postID) })
+      .toArray();
+    if (!botPost) {
+      throw redirect(
+        `/h/_missing?from=${encodeURIComponent(`/h/post/${postID}`)}`
+      );
+    }
+    const botSerialized = serializeDoc(botPost);
+    // Canonical slug redirect still applies for scrapers so they
+    // land on the URL that gets shared / indexed.
+    const botSlug: string | undefined = (botSerialized as any)?.seoMeta?.slug;
+    if (botSlug && urlSlug !== botSlug) {
+      throw redirect(`/h/post/${postID}/${encodeURIComponent(botSlug)}`, 301);
+    }
+    const { embedding: _emb, ...postForClient } = botSerialized as any;
+    return {
+      post: postForClient,
+      parent: null,
+      related: [],
+      webmentions: [],
+      backlinks: [],
+      user: null,
+    };
+  }
+
+  const user = await getUser(request);
   const siteData = await db
     .collection("myUsers")
     .find({ user_name: "PGMcCullough" })
@@ -86,26 +121,8 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     throw redirect(`/h/post/${postID}/${encodeURIComponent(postSlug)}`, 301);
   }
 
-  // Bot bail-out: link-preview scrapers (Facebook, Twitter, Slack,
-  // etc.) don't need the backlinks / embeddings / webmentions /
-  // backfill work — they only render the meta tags. Return the
-  // minimal payload and skip everything below. Guards against the
-  // Mongo-hammering cascade when a share triggers dozens of
-  // concurrent scraper fetches.
-  const ua = request.headers.get("user-agent") ?? "";
-  if (isLinkPreviewBot(ua)) {
-    // Strip the embedding vector for the same reason as below —
-    // saves bytes even for a bot response.
-    const { embedding: _emb, ...postForClient } = serialized as any;
-    return {
-      post: postForClient,
-      parent: null,
-      related: [],
-      webmentions: [],
-      backlinks: [],
-      user,
-    };
-  }
+  // (Bot bail-out is handled at the top of the loader, before any
+  // auth/siteData work — see the isLinkPreviewBot() branch there.)
 
   // If this post is a reply, try to load the parent for the inline snippet.
   let parent: PostParentSnippet | null = null;
