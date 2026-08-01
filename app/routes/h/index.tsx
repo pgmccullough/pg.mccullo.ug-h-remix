@@ -14,10 +14,84 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import type { Post } from "~/common/types";
 
+/**
+ * Substring-match against link-preview and search bots. Duplicated
+ * from post/$postID.tsx — kept inline in each route file so a future
+ * change in one doesn't accidentally change matching in the other.
+ */
+function isLinkPreviewBot(userAgent: string): boolean {
+  if (!userAgent) return false;
+  const ua = userAgent.toLowerCase();
+  if (
+    ua.includes("facebookexternalhit") ||
+    ua.includes("facebot") ||
+    ua.includes("facebookcatalog") ||
+    ua.includes("meta-externalagent") ||
+    ua.includes("twitterbot") ||
+    ua.includes("linkedinbot") ||
+    ua.includes("slackbot") ||
+    ua.includes("discordbot") ||
+    ua.includes("whatsapp") ||
+    ua.includes("telegrambot") ||
+    ua.includes("skypeuripreview") ||
+    ua.includes("iframely") ||
+    ua.includes("embedly") ||
+    ua.includes("pinterest") ||
+    ua.includes("mastodon") ||
+    ua.includes("pleroma") ||
+    ua.includes("misskey")
+  ) return true;
+  if (
+    ua.includes("googlebot") ||
+    ua.includes("bingbot") ||
+    ua.includes("applebot") ||
+    ua.includes("duckduckbot") ||
+    ua.includes("yandex") ||
+    ua.includes("baiduspider") ||
+    ua.includes("bytespider") ||
+    ua.includes("petalbot") ||
+    ua.includes("ahrefsbot") ||
+    ua.includes("semrushbot") ||
+    ua.includes("mj12bot") ||
+    ua.includes("dotbot") ||
+    ua.includes("dataforseobot") ||
+    ua.includes("seznambot") ||
+    ua.includes("gptbot") ||
+    ua.includes("claudebot") ||
+    ua.includes("perplexitybot") ||
+    ua.includes("redditbot")
+  ) return true;
+  if (
+    ua.includes("crawler") ||
+    ua.includes("spider") ||
+    /\bbot\b/.test(ua)
+  ) return true;
+  return false;
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const user = await getUser(request);
   const client = await clientPromise;
   const db = client.db("user_posts");
+
+  // Fast path for link-preview scrapers and search engines. The
+  // feed's meta tags only need the site name + description (both
+  // static in root.tsx) so a bot can be served an essentially
+  // empty payload. Humans still get the full feed below.
+  const ua = request.headers.get("user-agent") ?? "";
+  if (isLinkPreviewBot(ua)) {
+    // Return the same shape the component expects but with empty
+    // arrays. Meta rendering doesn't depend on loader data on this
+    // route — root defaults handle title + OG.
+    return {
+      onThisDay: [],
+      posts: [],
+      parentsByUri: {},
+      siteData: {},
+      user: null,
+    };
+  }
+
+  const user = await getUser(request);
   const siteData = await db
     .collection("myUsers")
     .find({ user_name: "PGMcCullough" })

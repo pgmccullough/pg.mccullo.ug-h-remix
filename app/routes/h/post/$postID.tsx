@@ -126,11 +126,26 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     };
   }
 
-  const user = await getUser(request);
-  const siteData = await db
-    .collection("myUsers")
-    .find({ user_name: "PGMcCullough" })
-    .toArray();
+  // Parallelize user + siteData + backlinks + webmentions — none
+  // depend on the post document. Then fetch the post itself
+  // (privacy filter depends on user role). Under M0 contention
+  // this cuts total loader time from ~sum-of-queries to ~max-of-
+  // queries — the difference between 504 and success.
+  const objectId = ObjectId.isValid(postID) ? new ObjectId(postID) : null;
+  const [user, siteData, backlinks, rawMentionsEarly] = await Promise.all([
+    getUser(request).catch(() => null),
+    db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
+    findBacklinksToPost(postID).catch(() => [] as Backlink[]),
+    objectId
+      ? db
+          .collection("webmentions")
+          .find({ targetPostId: postID, status: "verified" })
+          .sort({ "meta.publishedAt": -1, receivedAt: -1 })
+          .limit(50)
+          .toArray()
+          .catch(() => [] as any[])
+      : Promise.resolve([] as any[]),
+  ]);
   let post;
   if (user?.role !== "administrator") {
     [post] = await db
@@ -345,22 +360,9 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   }
   const related = serializeDocs(relatedRaw).slice(0, 5);
 
-  // Verified webmentions targeting this post. Keyed by targetPostId
-  // which the receive endpoint sets from the URL when it matches
-  // /h/post/:id or /h/post/:id/:slug.
-  const rawMentions = await db
-    .collection("webmentions")
-    .find({ targetPostId: postID, status: "verified" })
-    .sort({ "meta.publishedAt": -1, receivedAt: -1 })
-    .limit(50)
-    .toArray();
-  const webmentions = serializeDocs(rawMentions);
-
-  // Internal backlinks — other posts on this site that link here.
-  // Distinct from webmentions (which are external cross-site pings);
-  // this is my-own-posts-referencing-this-post, useful for
-  // permalinks that get cited later in follow-up posts.
-  const backlinks = await findBacklinksToPost(postID);
+  // webmentions + backlinks were fetched in the parallel wave at
+  // the top of the loader — see rawMentionsEarly and `backlinks`.
+  const webmentions = serializeDocs(rawMentionsEarly as any);
 
   // Trim the embedding vector off the post before shipping to the
   // client — it's a 512-float array only useful server-side for the

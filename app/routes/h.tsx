@@ -23,15 +23,27 @@ import type { Post } from "~/common/types";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const IPSTACK_APIKEY = process.env.IPSTACK_APIKEY;
-  const user =
-    (await getUser(request)) || { user_name: null, role: null };
   const client = await clientPromise;
   const db = client.db("user_posts");
-  const siteData = await db
-    .collection("myUsers")
-    .find({ user_name: "PGMcCullough" })
-    .toArray();
   const serverTime = new Date();
+
+  // Parallelize the always-needed queries. `getUser` is a Mongo hit
+  // itself so it goes in the parallel wave alongside the collection
+  // reads instead of blocking them. All four are independent, so
+  // total latency ≈ slowest single query instead of the sum.
+  const [rawUser, siteData, wishList, storyPost] = await Promise.all([
+    getUser(request).catch(() => null),
+    db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
+    db.collection("myWishList").find().sort({ created: -1 }).toArray(),
+    db.collection("myPosts")
+      .find({
+        privacy: "Story",
+        created: { $gt: new Date().getTime() / 1000 - 86400 },
+      })
+      .sort({ created: -1 })
+      .toArray(),
+  ]);
+  const user = rawUser || { user_name: null, role: null };
   let notes: any[] = [];
   let emails: any[] = [];
   let rentalProperties: any[] = [];
@@ -40,56 +52,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   let jobs: any[] = [];
   let visitors: any[] = [];
   if (user?.role === "administrator") {
-    // One-shot cleanup: purge any existing records from known
-    // datacenter-origin "visitors" (scrapers/lambdas/VPN exit nodes).
-    // Mirrors the filter list in /api/analytics so future visits never
-    // land in the collection; this catches anything that landed before
-    // the filter was added. Idempotent + cheap.
-    try {
-      await db.collection("myVisitors").deleteMany({
-        $or: [
-          {
-            "lastIpData.city": "Boardman",
-            "lastIpData.region_code": "OR",
-            "lastIpData.country_code": "US",
-          },
-        ],
-      });
-    } catch (err) {
-      console.error("[h loader] scraper-visitor cleanup failed:", err);
-    }
-    // myVisitors documents don't have a `created` field — the loader
-    // was sorting on an undefined field, so Mongo returned whichever
-    // 25 rows the storage engine served first (roughly insertion
-    // order, which drifts as records get updated). The client's own
-    // resort by lastSeen then made 25 unrelated rows LOOK chronological.
-    // Sort by lastSeen at query time so we actually get the newest.
-    visitors = await db
-      .collection("myVisitors")
-      .find()
-      .sort({ lastSeen: -1 })
-      .limit(50)
-      .toArray();
-    notes = await db.collection("myNotes").find().sort({ created: -1 }).toArray();
-    calDates = await db.collection("myDates").find().sort({ created: -1 }).toArray();
-    rentalProperties = await db
-      .collection("myProperties")
-      .find()
-      .sort({ created: -1 })
-      .toArray();
-    emails = await db
-      .collection("myEmails")
-      .find({ MessageStream: "inbound" })
-      .sort({ created: -1 })
-      .limit(25)
-      .toArray();
-    sentEmails = await db
-      .collection("myEmails")
-      .find({ MessageStream: "outbound" })
-      .sort({ created: -1 })
-      .limit(25)
-      .toArray();
-    jobs = await db.collection("myJobs").find().sort({ created: -1 }).toArray();
+    // Datacenter-visitor cleanup used to run here as a deleteMany
+    // on every admin pageview — that was a write + collection scan
+    // every navigation, which under M0 shared-tier contention
+    // stacked into 504s. Move to a one-off script / cron when
+    // needed; the /api/analytics filter already prevents new
+    // datacenter records from landing, so the leftover set is
+    // capped and doesn't grow.
+    //
+    // Run all admin-scoped fetches in PARALLEL via Promise.all so
+    // slow-Mongo latency doesn't multiply. Was 9 sequential awaits
+    // ≈ 4.5s under contention; now bounded by the slowest single
+    // query. Also added defensive limits to the previously-unbounded
+    // fetches (myNotes, myDates, myProperties, myJobs) — sidebar
+    // widgets don't need every record ever, and hundreds of docs
+    // wire-transferred per pageview is wasteful.
+    [
+      visitors,
+      notes,
+      calDates,
+      rentalProperties,
+      emails,
+      sentEmails,
+      jobs,
+    ] = await Promise.all([
+      db.collection("myVisitors").find().sort({ lastSeen: -1 }).limit(50).toArray(),
+      db.collection("myNotes").find().sort({ created: -1 }).limit(100).toArray(),
+      db.collection("myDates").find().sort({ created: -1 }).limit(100).toArray(),
+      db.collection("myProperties").find().sort({ created: -1 }).limit(50).toArray(),
+      db.collection("myEmails").find({ MessageStream: "inbound" }).sort({ created: -1 }).limit(25).toArray(),
+      db.collection("myEmails").find({ MessageStream: "outbound" }).sort({ created: -1 }).limit(25).toArray(),
+      db.collection("myJobs").find().sort({ created: -1 }).limit(50).toArray(),
+    ]);
     // Postmark "opened" backfill — only runs for admin sessions. Currently
     // disabled because the email client UI is also disabled; re-enable when
     // re-enabling the email feature.
@@ -118,19 +112,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       });
     }
   }
-  const wishList = await db
-    .collection("myWishList")
-    .find()
-    .sort({ created: -1 })
-    .toArray();
-  const storyPost = await db
-    .collection("myPosts")
-    .find({
-      privacy: "Story",
-      created: { $gt: new Date().getTime() / 1000 - 86400 },
-    })
-    .sort({ created: -1 })
-    .toArray();
+  // wishList + storyPost fetched in the parallel Promise.all above.
   return {
     // Exposed so SiteActivity can subscribe the browser to Web Push.
     // Safe to hand to the client — VAPID public keys are meant to be
