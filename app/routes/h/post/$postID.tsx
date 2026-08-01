@@ -9,6 +9,7 @@ import { clientPromise, ObjectId } from "~/lib/mongodb";
 import { serializeDoc, serializeDocs } from "~/utils/serialize.server";
 import { findBacklinksToPost } from "~/utils/backlinks.server";
 import type { Backlink } from "~/utils/backlinks.server";
+import { getAllEmbeddedPosts } from "~/utils/embeddings-cache.server";
 import {
   getInboxPostsByUris,
   getRemoteActors,
@@ -179,16 +180,13 @@ export const loader: LoaderFunction = async ({ params, request }) => {
     // At personal-blog scale (hundreds of posts, ~2KB per vector) this
     // is a couple MB per query — acceptable. If the archive grows to
     // thousands, move to Atlas Vector Search's $vectorSearch stage.
-    const candidates = await db
-      .collection("myPosts")
-      .find({
-        privacy: "Public",
-        state: { $nin: ["draft", "scheduled"] },
-        _id: { $ne: new ObjectId(postID) },
-        embedding: { $exists: true, $type: "array" },
-      })
-      .project({ _id: 1, content: 1, created: 1, seoMeta: 1, embedding: 1 })
-      .toArray();
+    // Fetched via the shared in-memory cache — see
+    // embeddings-cache.server for TTL rationale. This one call was
+    // previously scanning the whole myPosts collection on every
+    // permalink pageview; now it's cached across requests per
+    // function instance and survives Atlas noisy-neighbor slowdowns.
+    const allEmbedded = await getAllEmbeddedPosts();
+    const candidates = allEmbedded.filter((p) => p._id !== postID);
     const scored = candidates
       .map((p: any) => {
         const emb = p.embedding as number[];

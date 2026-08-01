@@ -7,10 +7,13 @@
  *
  * Implementation: a regex scan over the `content` field of the
  * myPosts collection. Cheap at personal-blog scale (hundreds of
- * posts, each a few KB); would want a materialized reverse-index
- * once the archive hits thousands. The regex matches both root-
- * relative hrefs and absolute pg.mccullo.ug URLs, and matches
- * bare-id post URLs plus their slug'd equivalents.
+ * posts, each a few KB) BUT the regex is unindexable, so under any
+ * shared-tier Mongo contention it can be slow enough to bring the
+ * whole pageview down. Wrapped in a per-instance in-memory cache
+ * with a short TTL to keep it survivable during noisy-neighbor
+ * events on Atlas M0. First request after cold start pays the
+ * lookup; subsequent requests for the same path within the TTL
+ * window get an instant response.
  */
 
 import { clientPromise, ObjectId } from "~/lib/mongodb";
@@ -18,6 +21,18 @@ import { serializeDocs } from "~/utils/serialize.server";
 
 const DOMAIN = "pg.mccullo.ug";
 const MAX_BACKLINKS = 20;
+
+// Cache TTL — long enough to absorb bursts and slow-Mongo periods,
+// short enough that a newly-linked post shows up as a backlink
+// within a few minutes of publish. Cache lives per Vercel function
+// instance; multiple instances each maintain their own.
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry {
+  backlinks: Backlink[];
+  expires: number;
+}
+const backlinkCache = new Map<string, CacheEntry>();
 
 export interface Backlink {
   _id: string;
@@ -63,6 +78,12 @@ export async function findBacklinksToPath(
   targetPath: string,
   opts: { excludePostId?: string } = {}
 ): Promise<Backlink[]> {
+  const cacheKey = `${targetPath}::${opts.excludePostId ?? ""}`;
+  const cached = backlinkCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return cached.backlinks;
+  }
+
   const client = await clientPromise;
   const db = client.db("user_posts");
   const filter: any = {
@@ -80,7 +101,12 @@ export async function findBacklinksToPath(
     .sort({ created: -1 })
     .limit(MAX_BACKLINKS)
     .toArray();
-  return serializeDocs(raw) as unknown as Backlink[];
+  const backlinks = serializeDocs(raw) as unknown as Backlink[];
+  backlinkCache.set(cacheKey, {
+    backlinks,
+    expires: Date.now() + CACHE_TTL_MS,
+  });
+  return backlinks;
 }
 
 /**
