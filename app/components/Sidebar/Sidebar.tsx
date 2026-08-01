@@ -3,7 +3,12 @@ import { useFetcher, useLoaderData } from "react-router";
 import { useEffect, useState } from 'react';
 import type { User, SiteData } from '../../common/types';
 import { Calendar, Email, Notes, RentalProperties, TaskTracker, Webcam, WishList } from '~/adminApps';
-import { BibleWidget } from '~/components/BibleWidget/BibleWidget';
+// Temporarily disabled while investigating M0 Mongo contention —
+// the widget fetches /api/bible/state on every sidebar mount,
+// which hits Mongo on every /h/* pageview site-wide, and the
+// 4.5MB KJV JSON is bundled into the function (memory pressure
+// on cold start). Restore when the Mongo tier is upgraded.
+// import { BibleWidget } from '~/components/BibleWidget/BibleWidget';
 import { TextEditor } from '../TextEditor/TextEditor';
 import { SignInModal } from '../SignInModal/SignInModal';
 
@@ -452,12 +457,8 @@ export const Sidebar: React.FC<{
         </>
         :""}
 
-      {/* Bible reader widget — rendered for everyone (public
-          read-only for non-admins). Positioned between Calendar
-          and Notes per Patrick's request; the admin block was
-          split into "above" + "below" fragments so this row lands
-          in the same visual slot regardless of viewer role. */}
-      {!manualSiteData ? <BibleWidget /> : ""}
+      {/* Bible widget disabled — see import comment above. */}
+      {/* {!manualSiteData ? <BibleWidget /> : ""} */}
 
       {!manualSiteData && user?.role === "administrator"
         ?<>

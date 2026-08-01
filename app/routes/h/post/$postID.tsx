@@ -22,24 +22,63 @@ import { getAllEmbeddedPosts } from "~/utils/embeddings-cache.server";
 function isLinkPreviewBot(userAgent: string): boolean {
   if (!userAgent) return false;
   const ua = userAgent.toLowerCase();
-  return (
+  // Link-preview scrapers
+  if (
     ua.includes("facebookexternalhit") ||
+    ua.includes("facebot") ||                // Facebook secondary
+    ua.includes("facebookcatalog") ||
     ua.includes("meta-externalagent") ||    // Meta's newer scraper (Threads, etc.)
     ua.includes("twitterbot") ||
     ua.includes("linkedinbot") ||
-    ua.includes("slackbot-linkexpanding") ||
+    ua.includes("slackbot") ||
     ua.includes("discordbot") ||
     ua.includes("whatsapp") ||
     ua.includes("telegrambot") ||
-    ua.includes("bingbot") ||
-    ua.includes("googlebot") ||
-    ua.includes("applebot") ||
-    ua.includes("bytespider") ||             // ByteDance / TikTok
-    ua.includes("redditbot") ||
-    ua.includes("mastodon") ||               // Mastodon link preview
+    ua.includes("skypeuripreview") ||
+    ua.includes("iframely") ||
+    ua.includes("embedly") ||
+    ua.includes("pinterest") ||
+    ua.includes("mastodon") ||
     ua.includes("pleroma") ||
     ua.includes("misskey")
-  );
+  ) {
+    return true;
+  }
+  // Search + SEO crawlers (they hit hard and don't need heavy loaders)
+  if (
+    ua.includes("googlebot") ||
+    ua.includes("bingbot") ||
+    ua.includes("applebot") ||
+    ua.includes("duckduckbot") ||
+    ua.includes("yandex") ||
+    ua.includes("baiduspider") ||
+    ua.includes("bytespider") ||             // ByteDance / TikTok
+    ua.includes("petalbot") ||
+    ua.includes("ahrefsbot") ||
+    ua.includes("semrushbot") ||
+    ua.includes("mj12bot") ||
+    ua.includes("dotbot") ||
+    ua.includes("dataforseobot") ||
+    ua.includes("seznambot") ||
+    ua.includes("gptbot") ||                 // OpenAI web crawler
+    ua.includes("claudebot") ||              // Anthropic
+    ua.includes("perplexitybot") ||
+    ua.includes("redditbot")
+  ) {
+    return true;
+  }
+  // Generic bot fallback — catches long tail of scrapers without
+  // over-matching real browsers (all major browsers include
+  // "Mozilla" in their UA, so bots that don't spoof it and mark
+  // themselves with "bot"/"crawler"/"spider" get caught here).
+  if (
+    ua.includes("crawler") ||
+    ua.includes("spider") ||
+    /\bbot\b/.test(ua)
+  ) {
+    return true;
+  }
+  return false;
 }
 import {
   getInboxPostsByUris,
