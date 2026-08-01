@@ -34,6 +34,24 @@ function raceOr<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   ]);
 }
 
+/**
+ * Tiny per-function-instance cache for the h.tsx layout data.
+ * siteData / wishList / storyPost change infrequently (bio edits,
+ * wishlist additions, story posts) and don't need to be fetched on
+ * every navigation. Short TTL bounds staleness.
+ *
+ * Serverless instances live for a few minutes at a time; each
+ * amortizes its Mongo work across many requests.
+ */
+interface LayoutCache {
+  siteData: any[];
+  wishList: any[];
+  storyPost: any[];
+  expires: number;
+}
+const LAYOUT_CACHE_TTL_MS = 60 * 1000; // 1 minute
+let layoutCache: LayoutCache | null = null;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const IPSTACK_APIKEY = process.env.IPSTACK_APIKEY;
   const client = await clientPromise;
@@ -44,31 +62,51 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // itself so it goes in the parallel wave alongside the collection
   // reads instead of blocking them. All four are independent, so
   // total latency ≈ slowest single query instead of the sum.
-  const [rawUser, siteData, wishList, storyPost] = await Promise.all([
-    raceOr(getUser(request), 2500, null),
-    raceOr(
-      db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
-      2500,
-      [] as any[]
-    ),
-    raceOr(
-      db.collection("myWishList").find().sort({ created: -1 }).toArray(),
-      2000,
-      [] as any[]
-    ),
-    raceOr(
-      db.collection("myPosts")
-        .find({
-          privacy: "Story",
-          created: { $gt: new Date().getTime() / 1000 - 86400 },
-        })
-        .sort({ created: -1 })
-        .toArray(),
-      2000,
-      [] as any[]
-    ),
-  ]);
+  // Always fetch the current user's session — that's the only
+  // per-request piece here. Cache the rest across requests.
+  const rawUser = await raceOr(getUser(request), 2500, null);
   const user = rawUser || { user_name: null, role: null };
+
+  let siteData: any[];
+  let wishList: any[];
+  let storyPost: any[];
+  if (layoutCache && layoutCache.expires > Date.now()) {
+    // Cache hit — zero Mongo queries for the layout non-user data.
+    siteData = layoutCache.siteData;
+    wishList = layoutCache.wishList;
+    storyPost = layoutCache.storyPost;
+  } else {
+    // Cache miss — parallel fetch, then cache for the next minute.
+    [siteData, wishList, storyPost] = await Promise.all([
+      raceOr(
+        db.collection("myUsers").find({ user_name: "PGMcCullough" }).toArray(),
+        2500,
+        [] as any[]
+      ),
+      raceOr(
+        db.collection("myWishList").find().sort({ created: -1 }).toArray(),
+        2000,
+        [] as any[]
+      ),
+      raceOr(
+        db.collection("myPosts")
+          .find({
+            privacy: "Story",
+            created: { $gt: new Date().getTime() / 1000 - 86400 },
+          })
+          .sort({ created: -1 })
+          .toArray(),
+        2000,
+        [] as any[]
+      ),
+    ]);
+    layoutCache = {
+      siteData,
+      wishList,
+      storyPost,
+      expires: Date.now() + LAYOUT_CACHE_TTL_MS,
+    };
+  }
   let notes: any[] = [];
   let emails: any[] = [];
   let rentalProperties: any[] = [];
