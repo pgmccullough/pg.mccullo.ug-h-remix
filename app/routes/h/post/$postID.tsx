@@ -10,6 +10,37 @@ import { serializeDoc, serializeDocs } from "~/utils/serialize.server";
 import { findBacklinksToPost } from "~/utils/backlinks.server";
 import type { Backlink } from "~/utils/backlinks.server";
 import { getAllEmbeddedPosts } from "~/utils/embeddings-cache.server";
+
+/**
+ * Substring-match against known link-preview and search-engine bots.
+ * They only need the meta tags for their unfurl / index — skip the
+ * expensive backlinks / embeddings / webmentions / backfill work
+ * that a human's page-load needs. Keeps M0 Mongo from getting
+ * hammered when a share on Facebook / Twitter / Slack triggers 50
+ * concurrent scraper fetches of the same URL.
+ */
+function isLinkPreviewBot(userAgent: string): boolean {
+  if (!userAgent) return false;
+  const ua = userAgent.toLowerCase();
+  return (
+    ua.includes("facebookexternalhit") ||
+    ua.includes("meta-externalagent") ||    // Meta's newer scraper (Threads, etc.)
+    ua.includes("twitterbot") ||
+    ua.includes("linkedinbot") ||
+    ua.includes("slackbot-linkexpanding") ||
+    ua.includes("discordbot") ||
+    ua.includes("whatsapp") ||
+    ua.includes("telegrambot") ||
+    ua.includes("bingbot") ||
+    ua.includes("googlebot") ||
+    ua.includes("applebot") ||
+    ua.includes("bytespider") ||             // ByteDance / TikTok
+    ua.includes("redditbot") ||
+    ua.includes("mastodon") ||               // Mastodon link preview
+    ua.includes("pleroma") ||
+    ua.includes("misskey")
+  );
+}
 import {
   getInboxPostsByUris,
   getRemoteActors,
@@ -53,6 +84,27 @@ export const loader: LoaderFunction = async ({ params, request }) => {
   const postSlug: string | undefined = (serialized as any)?.seoMeta?.slug;
   if (postSlug && urlSlug !== postSlug) {
     throw redirect(`/h/post/${postID}/${encodeURIComponent(postSlug)}`, 301);
+  }
+
+  // Bot bail-out: link-preview scrapers (Facebook, Twitter, Slack,
+  // etc.) don't need the backlinks / embeddings / webmentions /
+  // backfill work — they only render the meta tags. Return the
+  // minimal payload and skip everything below. Guards against the
+  // Mongo-hammering cascade when a share triggers dozens of
+  // concurrent scraper fetches.
+  const ua = request.headers.get("user-agent") ?? "";
+  if (isLinkPreviewBot(ua)) {
+    // Strip the embedding vector for the same reason as below —
+    // saves bytes even for a bot response.
+    const { embedding: _emb, ...postForClient } = serialized as any;
+    return {
+      post: postForClient,
+      parent: null,
+      related: [],
+      webmentions: [],
+      backlinks: [],
+      user,
+    };
   }
 
   // If this post is a reply, try to load the parent for the inline snippet.

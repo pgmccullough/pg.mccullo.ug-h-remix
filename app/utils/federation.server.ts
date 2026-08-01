@@ -702,6 +702,11 @@ federation.setNodeInfoDispatcher("/nodeinfo/2.1", async (_ctx) => {
     usage: {
       users: { total: 1, activeMonth: 1, activeHalfyear: 1 },
       localPosts: postCount,
+      // Fedify's nodeInfoToJson validator requires localComments as a
+      // number — omitting it throws "Invalid local comments". Ship 0
+      // for now; if the count ever matters, aggregate feedback.comments
+      // across myPosts.
+      localComments: 0,
     },
   };
 });
