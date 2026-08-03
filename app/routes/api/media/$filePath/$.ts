@@ -270,13 +270,28 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   // We forward the Range header straight to S3, which speaks Range
   // natively, and return 206 + Content-Range when the response is partial.
   const rangeHeader = request.headers.get("range") ?? undefined;
-  const obj = await s3Client.send(
-    new GetObjectCommand({
-      Bucket: S3_BUCKET!,
-      Key: keyToServe,
-      Range: rangeHeader,
-    })
-  );
+  let obj;
+  try {
+    obj = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: S3_BUCKET!,
+        Key: keyToServe,
+        Range: rangeHeader,
+      })
+    );
+  } catch (err: any) {
+    // Log so we can see WHY in Vercel logs — most commonly
+    // NoSuchKey (file genuinely missing) or an S3 permission /
+    // network hiccup. Convert to 404 rather than propagating a
+    // 500 for the not-found case; anything else logs the raw
+    // error but still returns 404 so callers get a stable status.
+    const name = err?.name || "Unknown";
+    const message = err?.message || String(err);
+    console.error(
+      `[media] S3 GetObject failed for key="${keyToServe}" (fullPath="${fullPath}"): ${name}: ${message}`
+    );
+    throw new Response("Not Found", { status: 404 });
+  }
 
   if (!obj.Body) {
     throw new Response("Not Found", { status: 404 });
