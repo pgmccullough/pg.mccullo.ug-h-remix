@@ -192,6 +192,18 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     }
   };
 
+  // Historic Instagram-backup files were uploaded to S3 with their
+  // spaces URL-encoded as %20 in the actual object key (e.g.
+  // "Instagram%20Backup" literal characters). But RR v7 URL-decodes
+  // params["*"] on the way in, so we always start with a space in
+  // fullPath. Probe both forms; whichever HEAD succeeds becomes the
+  // key we use for the rest of the request.
+  let effectivePath = fullPath;
+  const hasSpaces = fullPath!.includes(" ");
+  const encodedSpaceVariant = hasSpaces
+    ? fullPath!.replace(/ /g, "%20")
+    : null;
+
   // Probe original + resize. Only try sharp on actual image extensions
   // — videos/audio/PDFs don't have an _600w variant and shouldn't waste
   // a sharp call on every fetch.
@@ -199,9 +211,30 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const isImage = looksLikeImagePath(fullPath);
   try {
     // headObject on the original — throws if missing.
-    await s3Client.send(
-      new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: fullPath })
-    );
+    try {
+      await s3Client.send(
+        new HeadObjectCommand({ Bucket: S3_BUCKET!, Key: effectivePath })
+      );
+    } catch (headErr: any) {
+      // First HEAD failed — if we have a spaces-in-path candidate,
+      // try the %20 variant before giving up. Fixes historic
+      // uploads whose keys were URL-encoded at upload time.
+      if (encodedSpaceVariant) {
+        try {
+          await s3Client.send(
+            new HeadObjectCommand({
+              Bucket: S3_BUCKET!,
+              Key: encodedSpaceVariant,
+            })
+          );
+          effectivePath = encodedSpaceVariant;
+        } catch {
+          throw headErr;
+        }
+      } else {
+        throw headErr;
+      }
+    }
     // GIFs bypass the _600w cache lookup entirely — even if a stale
     // single-frame _600w exists in S3 from before the fix, we ignore
     // it and serve the original animated file.
@@ -226,7 +259,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
     /* original missing — fall through and let getObject throw */
   }
 
-  const keyToServe = resizeImage ? desiredPath : fullPath;
+  // Use effectivePath (which was updated above if the encoded-space
+  // variant was the one that actually exists in S3). Only images have
+  // a `desiredPath` _600w variant; videos/audio serve at effectivePath.
+  const keyToServe = resizeImage ? desiredPath : effectivePath;
 
   // Honor HTTP Range so the browser can scrub video / resume large
   // downloads. Without this, <video> playback either re-downloads the
