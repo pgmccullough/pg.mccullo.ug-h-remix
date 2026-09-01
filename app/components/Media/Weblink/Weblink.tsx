@@ -55,6 +55,29 @@ function youTubeEmbedUrl(rawUrl: string): string | null {
 }
 
 export const Weblink: React.FC<{src:string|any,alt:string}>  = ({src,alt}) => {
+  // Legacy posts stored media.links as bare strings instead of the
+  // {video, show, meta} object shape the composer produces today. If
+  // the string is a recognizable YouTube URL, short-circuit and
+  // embed directly — skipping the scrape roundtrip that (a) costs a
+  // request and (b) fails outright when music.youtube.com blocks
+  // OG scrapers.
+  if (typeof src === "string") {
+    const embed = youTubeEmbedUrl(src);
+    if (embed) {
+      return (
+        <div className="postcard__content__media__slider__weblink__video-container">
+          <iframe
+            className="postcard__content__media__slider__weblink__video-container__iframe"
+            src={embed}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+  }
   if(!src.video) {
     const fetcher = useFetcher();
 
