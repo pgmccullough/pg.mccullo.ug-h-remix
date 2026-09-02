@@ -15,6 +15,11 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { buildMeta, SEO_CONST } from "~/utils/seo";
 import { findBacklinksToPath } from "~/utils/backlinks.server";
 import type { Backlink } from "~/utils/backlinks.server";
+import { BlueskyIcon } from "~/assets/svgs/BlueskyIcon";
+import { MastodonIcon } from "~/assets/svgs/MastodonIcon";
+import { FediverseIcon } from "~/assets/svgs/FediverseIcon";
+import { GithubIcon } from "~/assets/svgs/GithubIcon";
+import { InstagramIcon } from "~/assets/svgs/InstagramIcon";
 
 export const loader = async (_args: LoaderFunctionArgs) => {
   // Posts linking to /h/about, surfaced as a "Referenced by" list
@@ -93,18 +98,22 @@ export default function About() {
           list-style: none; padding: 0; margin: 0;
           display: flex; flex-wrap: wrap; gap: 10px;
         }
-        .about__profile {
-          display: inline-flex; gap: 6px; align-items: center;
+        .about__profile a {
+          display: inline-flex; gap: 8px; align-items: center;
           padding: 6px 12px;
           background: #fff; border: 1px solid #979997;
           border-radius: 999px; font-size: 13px;
+          color: #333;
         }
+        .about__profile a:hover { text-decoration: none; background: #f5f7fa; }
+        .about__profile svg { display: block; flex: none; }
+        [data-theme="dark"] .about__profile a {
+          background: #232b36; border-color: #2a3543; color: #e5e7eb;
+        }
+        [data-theme="dark"] .about__profile a:hover { background: #2a3543; }
         [data-theme="dark"] .about { color: #e5e7eb; }
         [data-theme="dark"] .about h1 { color: #a1b5c9; }
         [data-theme="dark"] .about h2 { color: #a1b5c9; }
-        [data-theme="dark"] .about__profile {
-          background: #232b36; border-color: #2a3543; color: #e5e7eb;
-        }
       `}</style>
       {/* Wrap the page content in the site's standard postcard shell so
           it visually reads as part of the feed — gray header bar with
@@ -140,27 +149,27 @@ export default function About() {
         <ul className="about__profiles">
           <li className="about__profile">
             <a rel="me noopener noreferrer" target="_blank" href="https://bsky.app/profile/mccullo.ug">
-              🦋 Bluesky
+              <BlueskyIcon size={16} /> Bluesky
             </a>
           </li>
           <li className="about__profile">
             <a rel="me noopener noreferrer" target="_blank" href="https://mastodon.social/@patrick@pg.mccullo.ug/">
-              🐘 Mastodon
+              <MastodonIcon size={16} /> Mastodon
             </a>
           </li>
           <li className="about__profile">
             <a rel="me noopener noreferrer" target="_blank" href="https://pg.mccullo.ug/users/patrick">
-              🌐 Fediverse
+              <FediverseIcon size={16} /> Fediverse
             </a>
           </li>
           <li className="about__profile">
             <a rel="me noopener noreferrer" target="_blank" href="https://github.com/pgmccullough">
-              💻 GitHub
+              <GithubIcon size={16} /> GitHub
             </a>
           </li>
           <li className="about__profile">
             <a rel="me noopener noreferrer" target="_blank" href="https://www.instagram.com/pgmccullough/">
-              📷 Instagram
+              <InstagramIcon size={16} /> Instagram
             </a>
           </li>
         </ul>

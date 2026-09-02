@@ -11,6 +11,11 @@ import { Calendar, Email, Notes, RentalProperties, TaskTracker, Webcam, WishList
 // import { BibleWidget } from '~/components/BibleWidget/BibleWidget';
 import { TextEditor } from '../TextEditor/TextEditor';
 import { SignInModal } from '../SignInModal/SignInModal';
+import { BlueskyIcon } from '~/assets/svgs/BlueskyIcon';
+import { MastodonIcon } from '~/assets/svgs/MastodonIcon';
+import { FediverseIcon } from '~/assets/svgs/FediverseIcon';
+import { GithubIcon } from '~/assets/svgs/GithubIcon';
+import { InstagramIcon } from '~/assets/svgs/InstagramIcon';
 
 const NotificationsBadge: React.FC = () => {
   const data = useLoaderData<{ unreadNotifications?: number }>();
@@ -255,7 +260,7 @@ export const Sidebar: React.FC<{
                 href="https://bsky.app/profile/mccullo.ug"
                 title="Bluesky"
                 aria-label="Bluesky"
-              >🦋</a>
+              ><BlueskyIcon size={18} /></a>
               <a
                 className="sidebar-about-footer__chip"
                 rel="me noopener noreferrer"
@@ -263,7 +268,7 @@ export const Sidebar: React.FC<{
                 href="https://mastodon.social/@patrick@pg.mccullo.ug/"
                 title="Mastodon"
                 aria-label="Mastodon"
-              >🐘</a>
+              ><MastodonIcon size={18} /></a>
               <a
                 className="sidebar-about-footer__chip"
                 rel="me noopener noreferrer"
@@ -271,15 +276,15 @@ export const Sidebar: React.FC<{
                 href="https://pg.mccullo.ug/users/patrick"
                 title="Fediverse"
                 aria-label="Fediverse"
-              >🌐</a>
+              ><FediverseIcon size={18} /></a>
               <a
-                className="sidebar-about-footer__chip"
+                className="sidebar-about-footer__chip sidebar-about-footer__chip--github"
                 rel="me noopener noreferrer"
                 target="_blank"
                 href="https://github.com/pgmccullough"
                 title="GitHub"
                 aria-label="GitHub"
-              >💻</a>
+              ><GithubIcon size={18} /></a>
               <a
                 className="sidebar-about-footer__chip"
                 rel="me noopener noreferrer"
@@ -287,7 +292,7 @@ export const Sidebar: React.FC<{
                 href="https://www.instagram.com/pgmccullough/"
                 title="Instagram"
                 aria-label="Instagram"
-              >📷</a>
+              ><InstagramIcon size={18} /></a>
             </div>
           </nav>
         </div>
@@ -349,6 +354,11 @@ export const Sidebar: React.FC<{
           background: #dde5ef;
           transform: translateY(-1px);
         }
+        .sidebar-about-footer__chip svg { display: block; }
+        /* GitHub mark uses currentColor so it inherits chip text color;
+           default to near-black in light mode, invert in dark. */
+        .sidebar-about-footer__chip--github { color: #1B1F23; }
+        [data-theme="dark"] .sidebar-about-footer__chip--github { color: #f0f6fc; }
         [data-theme="dark"] .sidebar-about-footer {
           border-top-color: #232b36;
         }
